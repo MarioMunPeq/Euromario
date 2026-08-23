@@ -1,0 +1,37 @@
+# Fuentes de noticias del pipeline.
+#
+# URLs concretas pendientes de validar al implementar los fetchers
+# (especificación, sección 10); estas son puntos de partida razonables.
+
+medios:
+  - nombre: IGN
+    feed: https://feeds.ign.com/ign/games-all
+    idioma: en
+  - nombre: Eurogamer
+    feed: https://www.eurogamer.net/feed
+    idioma: en
+  - nombre: PC Gamer
+    feed: https://www.pcgamer.com/rss/
+    idioma: en
+  - nombre: Polygon
+    feed: https://www.polygon.com/rss/index.xml
+    idioma: en
+  - nombre: Rock Paper Shotgun
+    feed: https://www.rockpapershotgun.com/feed
+    idioma: en
+  # Medios en español pendientes de definir (Vandal, 3DJuegos, MeriStation...)
+
+steam:
+  habilitado: true
+  app_ids: [] # app_ids de las sagas seguidas, pendiente de definir
+
+reddit:
+  habilitado: true
+  subreddits:
+    - nombre: gamingleaks
+      etiqueta: rumores
+  # Subreddits de sagas concretas: se añadirán según crezca la lista de inclusión
+
+limites:
+  max_items_por_fuente: 20
+  timeout_segundos: 15

@@ -1,0 +1,29 @@
+# Listas de seguimiento del filtro de contenido.
+#
+# - incluir: juegos/sagas de los que SÍ se quieren ver noticias.
+# - excluir: juegos que NO se quieren ver NUNCA; tiene prioridad sobre `incluir`.
+#
+# Cada entrada admite un nombre canónico y una lista de aliases
+# (abreviaturas, secuelas, nombres alternativos). El matcher usa límites
+# de palabra, por lo que los aliases cortos (ej. "GTA") son seguros.
+#
+# Para editar: modifica este archivo y haz commit; la siguiente ejecución
+# horaria del pipeline ya lo aplica. No hace falta tocar código.
+#
+# Lista completa definitiva pendiente (especificación, sección 10).
+
+incluir:
+  - nombre: Grand Theft Auto
+    aliases: [GTA]
+  - nombre: Call of Duty
+    aliases: [CoD]
+  - nombre: Persona
+    aliases: []
+  - nombre: The Legend of Zelda
+    aliases: [Zelda]
+  # ... ampliar aquí
+
+excluir:
+  - nombre: EA Sports FC
+    aliases: [FIFA]
+  # ... ampliar aquí

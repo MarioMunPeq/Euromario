@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Testing / linting
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Entorno y secretos
+.env
+.env.*
+
+# Ollama local (modelos descargados en desarrollo)
+.ollama/
+
+# Editores / sistema operativo
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# NOTA: frontend/data/*.json se versiona a propósito (lo genera el pipeline
+# en GitHub Actions y lo consume la GitHub Page). No ignorar.

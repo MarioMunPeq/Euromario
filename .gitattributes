@@ -1,0 +1,3 @@
+# Todos los archivos de texto se versionan y se extraen con LF,
+# también en Windows (evita avisos CRLF↔LF y diffs ruidosos).
+* text=auto eol=lf

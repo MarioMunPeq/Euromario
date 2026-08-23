@@ -1,0 +1,20 @@
+medios:
+  - nombre: IGN
+    feed: https://feeds.ign.com/ign/games-all
+    idioma: en
+  - nombre: Vandal
+    feed: https://vandal.elespanol.com/rss/xml/noticias.rdf
+    idioma: es
+
+steam:
+  habilitado: true
+  app_ids: [271590, 1174180]
+
+reddit:
+  habilitado: true
+  subreddits:
+    - nombre: gamingleaks
+
+limites:
+  max_items_por_fuente: 10
+  timeout_segundos: 5

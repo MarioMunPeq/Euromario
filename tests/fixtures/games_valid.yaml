@@ -1,0 +1,8 @@
+incluir:
+  - nombre: Grand Theft Auto
+    aliases: [GTA, GTA VI]
+  - nombre: Persona
+
+excluir:
+  - nombre: EA Sports FC
+    aliases: [FIFA]

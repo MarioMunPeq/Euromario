@@ -13,6 +13,11 @@
     <div class="header__brand">
       <h1 class="header__title" id="app-title">Gaming Digest</h1>
     </div>
+    <div class="header__meta" id="header-meta" aria-live="polite">
+      <span class="header__meta-item" id="header-count">0 noticias</span>
+      <span class="header__meta-separator" aria-hidden="true">•</span>
+      <time class="header__meta-item" id="header-updated" datetime="">—</time>
+    </div>
     <div class="header__controls">
       <div class="search-box" role="search">
         <label for="search" class="visually-hidden">Buscar noticias</label>
@@ -52,11 +57,11 @@
     </section>
 
     <section class="news-grid" id="news-grid" aria-live="polite" aria-label="Noticias">
-      <div class="loading" id="loading" aria-live="assertive">
+      <div class="state state--loading" id="state-loading" aria-live="assertive" hidden>
         <div class="spinner" aria-hidden="true"></div>
         <p>Cargando noticias...</p>
       </div>
-      <div class="error" id="error" hidden>
+      <div class="state state--error" id="state-error" hidden>
         <svg class="error__icon" aria-hidden="true" viewBox="0 0 24 24" width="48" height="48">
           <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
           <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -66,14 +71,14 @@
         <p id="error-message">No se pudieron cargar las noticias.</p>
         <button type="button" class="btn" id="retry-btn">Reintentar</button>
       </div>
-      <div class="empty" id="empty" hidden>
+      <div class="state state--empty" id="state-empty" hidden>
         <svg class="empty__icon" aria-hidden="true" viewBox="0 0 24 24" width="48" height="48">
           <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z" fill="currentColor"/>
           <path d="M11 7h2v2h-2zm0 4h2v6h-2z" fill="currentColor" opacity="0.5"/>
         </svg>
         <h2>No hay noticias</h2>
         <p>No hay noticias que coincidan con los filtros actuales.</      </div>
-      <div class="news-grid__list" id="news-list" role="list" aria-label="Noticias"></div>
+      <div class="news-grid__list" id="news-list" role="list" aria-label="Noticias" hidden></div>
     </section>
   </main>
 

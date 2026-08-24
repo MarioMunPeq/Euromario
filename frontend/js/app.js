@@ -43,11 +43,14 @@ const state = {
 
 const els = {
   title: document.getElementById('app-title'),
-  loading: document.getElementById('loading'),
-  error: document.getElementById('error'),
+  headerCount: document.getElementById('header-count'),
+  headerUpdated: document.getElementById('header-updated'),
+  stateLoading: document.getElementById('state-loading'),
+  stateError: document.getElementById('state-error'),
+  stateEmpty: document.getElementById('state-empty'),
   errorTitle: document.getElementById('error-title'),
   errorMessage: document.getElementById('error-message'),
-  empty: document.getElementById('empty'),
+  stateEmpty: document.getElementById('state-empty'),
   newsList: document.getElementById('news-list'),
   retryBtn: document.getElementById('retry-btn'),
   search: document.getElementById('search'),
@@ -57,9 +60,10 @@ const els = {
   dateTo: document.getElementById('date-to'),
   clearFilters: document.getElementById('clear-filters'),
   retryBtn: document.getElementById('retry-btn'),
-  newsList: document.getElementById('news-list'),
   statsCount: document.getElementById('stats-count'),
   statsUpdated: document.getElementById('stats-updated'),
+  headerCount: document.getElementById('header-count'),
+  headerUpdated: document.getElementById('header-updated'),
 };
 
 // ============================================================
@@ -213,18 +217,30 @@ function renderNewsCard(item) {
 function renderNewsList(items) {
   if (!items.length) {
     els.newsList.innerHTML = '';
+    setState('empty');
     return;
   }
 
   els.newsList.innerHTML = items.map(renderNewsCard).join('');
+  setState('content');
 }
 
 function renderStats(data) {
   const count = data.total ?? data.news?.length ?? 0;
   const generatedAt = data.generated_at ? new Date(data.generated_at) : new Date();
+  const countStr = count.toLocaleString('es');
+  const updatedStr = `Actualizado: ${formatDate(new Date(data.generated_at))} ${formatRelativeDate(new Date(data.generated_at))}`;
 
-  els.statsCount.textContent = count.toLocaleString('es');
-  els.statsUpdated.textContent = `Actualizado: ${formatDate(new Date(data.generated_at))} ${formatRelativeDate(new Date(data.generated_at))}`;
+  // Update footer stats
+  if (els.statsCount) els.statsCount.textContent = countStr;
+  if (els.statsUpdated) els.statsUpdated.textContent = updatedStr;
+
+  // Update header meta
+  if (els.headerCount) els.headerCount.textContent = `${countStr} noticias`;
+  if (els.headerUpdated) {
+    els.headerUpdated.textContent = `Actualizado ${formatRelativeDate(new Date(data.generated_at))}`;
+    els.headerUpdated.dateTime = new Date(data.generated_at).toISOString();
+  }
 }
 
 function setAppTitle() {
@@ -238,34 +254,43 @@ function setAppTitle() {
 // State Management
 // ============================================================
 
+function setState(stateName) {
+  // Hide all states
+  els.stateLoading.hidden = true;
+  els.stateError.hidden = true;
+  els.stateEmpty.hidden = true;
+  els.newsList.hidden = true;
+  
+  // Show requested state
+  const stateEl = document.getElementById(`state-${stateName}`);
+  if (stateEl) {
+    stateEl.hidden = false;
+  } else if (stateName === 'content') {
+    els.newsList.hidden = false;
+  }
+}
+
 function setLoading(loading) {
   state.ui.loading = loading;
-  els.loading.hidden = !loading;
-  els.newsList.hidden = loading;
-  els.empty.hidden = !loading || state.filteredNews.length > 0;
-  els.error.hidden = !loading || !state.ui.error;
+  if (loading) {
+    setState('loading');
+  }
 }
 
 function setError(message, title = 'Error al cargar') {
   state.ui.error = message;
   state.ui.loading = false;
-  els.loading.hidden = true;
-  els.newsList.hidden = true;
-  els.empty.hidden = true;
-  els.error.hidden = false;
-  els.errorTitle.textContent = 'Error al cargar';
+  els.stateError.querySelector('#error-title').textContent = title;
   els.errorMessage.textContent = message;
+  setState('error');
 }
 
 function clearError() {
   state.ui.error = null;
-  els.error.hidden = true;
 }
 
 function showEmpty() {
-  els.newsList.innerHTML = '';
-  els.empty.hidden = false;
-  els.newsList.hidden = true;
+  setState('empty');
 }
 
 // ============================================================
@@ -306,8 +331,9 @@ function applyFilters() {
   }
 
   renderNewsList(state.filteredNews);
-  els.empty.hidden = state.filteredNews.length > 0;
-  els.statsCount.textContent = state.filteredNews.length.toLocaleString('es');
+  
+  // Update footer stats (only count, not the full renderStats)
+  if (els.statsCount) els.statsCount.textContent = state.filteredNews.length.toLocaleString('es');
 }
 
 function populateGameFilter(items) {

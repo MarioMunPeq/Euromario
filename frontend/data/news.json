@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-08-24T12:00:00Z",
-  "total": 3,
+  "generated_at": "2026-08-24T14:30:00Z",
+  "total": 10,
   "news": [
     {
-      "id": "abc123",
-      "title": "Persona 6 anunciado oficialmente",
-      "summary": "Atlus confirma el desarrollo de Persona 6 para 2027.",
-      "url": "https://example.com/persona6",
+      "id": "a1b2c3d4e5f60001",
+      "title": "Persona 6 anunciado oficialmente para 2027",
+      "summary": "Atlus confirma el desarrollo de la próxima entrega principal de la saga Persona con tráiler cinematográfico.",
+      "url": "https://www.ign.com/articles/persona-6-announced",
       "source": {
         "name": "IGN",
         "type": "media",
@@ -19,26 +19,26 @@
       "category": "lanzamiento"
     },
     {
-      "id": "def456",
-      "title": "Supuesto leak de GTA 6",
-      "summary": "Usuario de Reddit filtra detalles de GTA 6.",
-      "url": "https://reddit.com/r/gamingleaks/comments/abc123",
+      "id": "b2c3d4e5f60002",
+      "title": "Elden Ring: Shadow of the Erdtree ya disponible",
+      "summary": "La esperada expansión del GOTY 2022 llega con nuevas áreas, jefes y armas.",
+      "url": "https://www.eurogamer.net/elden-ring-shadow-erdtree-released",
       "source": {
-        "name": "Reddit",
-        "type": "reddit",
-        "subreddit": "gamingleaks"
+        "name": "Eurogamer",
+        "type": "media",
+        "subreddit": null
       },
-      "game": "Grand Theft Auto",
+      "game": "Elden Ring",
       "language": "en",
-      "published_at": "2026-08-24T08:00:00Z",
-      "relevance": 3,
-      "category": "rumor"
+      "published_at": "2026-08-24T08:30:00Z",
+      "relevance": 5,
+      "category": "lanzamiento"
     },
     {
-      "id": "ghi789",
-      "title": "Cyberpunk 2077: Parche 2.1 disponible",
-      "summary": "CD Projekt RED lanza parche con mejoras de rendimiento.",
-      "url": "https://store.steampowered.com/news/app/1091500/view/123",
+      "id": "c3d4e5f60003",
+      "title": "Cyberpunk 2077: Parche 2.2 llega con metro y nuevo contenido",
+      "summary": "CD Projekt RED lanza actualización masiva con sistema de metro, nuevos gigs y mejoras de rendimiento.",
+      "url": "https://store.steampowered.com/news/app/1091500/view/12345",
       "source": {
         "name": "Steam",
         "type": "steam",
@@ -46,8 +46,120 @@
       },
       "game": "Cyberpunk 2077",
       "language": "en",
-      "published_at": "2026-08-23T18:00:00Z",
+      "published_at": "2026-08-24T06:45:00Z",
       "relevance": 4,
+      "category": "actualizacion"
+    },
+    {
+      "id": "d4e5f60004",
+      "title": "Supuesto leak de GTA 6 revela mapa y protagonistas",
+      "summary": "Usuario de r/gamingleaks filtra detalles del mapa de Vice City y los dos protagonistas jugables.",
+      "url": "https://www.reddit.com/r/gamingleaks/comments/abc123/gta6_leak",
+      "source": {
+        "name": "Reddit",
+        "type": "reddit",
+        "subreddit": "gamingleaks"
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-24T04:20:00Z",
+      "relevance": 3,
+      "category": "rumor"
+    },
+    {
+      "id": "e5f60005",
+      "title": "Starfield: Shattered Space ya tiene fecha de lanzamiento",
+      "summary": "Bethesda confirma la primera gran expansión de Starfield para octubre con nueva historia y ubicaciones.",
+      "url": "https://www.pcgamer.com/starfield-shattered-space-release-date",
+      "source": {
+        "name": "PC Gamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Starfield",
+      "language": "en",
+      "published_at": "2026-08-23T22:15:00Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "f60006",
+      "title": "Baldur's Gate 3: Parche 7 añade modo foto y cross-play",
+      "summary": "Larian Studios lanza actualización masiva con cross-play entre PC/Mac/PS5 y modo foto completo.",
+      "url": "https://store.steampowered.com/news/app/1086940/view/98765",
+      "source": {
+        "name": "Steam",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Baldur's Gate 3",
+      "language": "en",
+      "published_at": "2026-08-23T20:30:00Z",
+      "relevance": 4,
+      "category": "actualizacion"
+    },
+    {
+      "id": "0007",
+      "title": "Hollow Knight: Silksong - Nuevo tráiler en Gamescom",
+      "summary": "Team Cherry muestra gameplay extendido de Silksong con nuevas habilidades y jefes.",
+      "url": "https://www.rockpapershotgun.com/hollow-knight-silksong-gamescom-trailer",
+      "source": {
+        "name": "Rock Paper Shotgun",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Hollow Knight",
+      "language": "en",
+      "published_at": "2026-08-23T14:00:00Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "0008",
+      "title": "Rumor: Nintendo Switch 2 se anunciaría en septiembre",
+      "summary": "Insiders de r/NintendoLeaks afirman que el sucesor de Switch se revelaría en un Direct de septiembre.",
+      "url": "https://www.reddit.com/r/NintendoLeaks/comments/def456/switch2_announcement",
+      "source": {
+        "name": "Reddit",
+        "type": "reddit",
+        "subreddit": "NintendoLeaks"
+      },
+      "game": "Nintendo Switch 2",
+      "language": "en",
+      "published_at": "2026-08-23T10:00:00Z",
+      "relevance": 2,
+      "category": "rumor"
+    },
+    {
+      "id": "0009",
+      "title": "Final Fantasy VII Rebirth: Análisis - Una secuela maestra",
+      "summary": "Análisis profundo de la segunda parte del remake: combate, historia y mundo abierto.",
+      "url": "https://www.eurogamer.net/final-fantasy-vii-rebirth-review",
+      "source": {
+        "name": "Eurogamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Final Fantasy VII",
+      "language": "en",
+      "published_at": "2026-08-22T18:00:00Z",
+      "relevance": 5,
+      "category": "analisis"
+    },
+    {
+      "id": "0010",
+      "title": "Helldivers 2: Parche 1.001.100 corrige matchmaking y balance",
+      "summary": "Arrowhead lanza hotfix que soluciona problemas de emparejamiento y ajusta armas pesadas.",
+      "url": "https://store.steampowered.com/news/app/553850/view/55555",
+      "source": {
+        "name": "Steam",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Helldivers 2",
+      "language": "en",
+      "published_at": "2026-08-22T14:30:00Z",
+      "relevance": 2,
       "category": "actualizacion"
     }
   ]

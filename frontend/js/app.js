@@ -50,7 +50,6 @@ const els = {
   stateEmpty: document.getElementById('state-empty'),
   errorTitle: document.getElementById('error-title'),
   errorMessage: document.getElementById('error-message'),
-  stateEmpty: document.getElementById('state-empty'),
   newsList: document.getElementById('news-list'),
   retryBtn: document.getElementById('retry-btn'),
   search: document.getElementById('search'),
@@ -59,11 +58,8 @@ const els = {
   dateFrom: document.getElementById('date-from'),
   dateTo: document.getElementById('date-to'),
   clearFilters: document.getElementById('clear-filters'),
-  retryBtn: document.getElementById('retry-btn'),
   statsCount: document.getElementById('stats-count'),
   statsUpdated: document.getElementById('stats-updated'),
-  headerCount: document.getElementById('header-count'),
-  headerUpdated: document.getElementById('header-updated'),
 };
 
 // ============================================================
@@ -471,9 +467,12 @@ async function loadData() {
         : `Error de red: ${err.message}`,
       'No se pudieron cargar las noticias'
     );
-  } finally {
-    setLoading(false);
+    // No finally block that overrides error state
+    return;
   }
+
+  // Only set to content state on success
+  setLoading(false);
 }
 
 // ============================================================

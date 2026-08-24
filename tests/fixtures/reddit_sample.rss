@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <category term="r/gamingleaks"/>
+  <title>r/gamingleaks · new</title>
+  <id>https://www.reddit.com/r/gamingleaks/.rss</id>
+  <updated>2026-08-23T11:00:00Z</updated>
+  <entry>
+    <author><name>/u/dataminer42</name></author>
+    <category term="Rumor"/>
+    <content type="html">&amp;lt;p&amp;gt;Supuesto &amp;lt;b&amp;gt;leak&amp;lt;/b&amp;gt; de Persona 6&amp;lt;/p&amp;gt;</content>
+    <id>t3_abc123</id>
+    <link href="https://www.reddit.com/r/gamingleaks/comments/abc/supuesto_leak/"/>
+    <published>2026-08-23T10:45:00+00:00</published>
+    <updated>2026-08-23T10:45:00+00:00</updated>
+    <title>[Rumor] Supuesto leak de Persona 6</title>
+  </entry>
+  <entry>
+    <author><name>/u/anon</name></author>
+    <content type="text">Texto sin tags</content>
+    <id>t3_def456</id>
+    <link href="https://www.reddit.com/r/gamingleaks/comments/def/hilo_gamescom/"/>
+    <updated>2026-08-23T09:00:00+00:00</updated>
+    <title>Hilo: ¿qué anuncios esperáis de la Gamescom?</title>
+  </entry>
+  <entry>
+    <author><name>/u/spam</name></author>
+    <id>t3_ghi789</id>
+    <published>2026-08-23T08:00:00+00:00</published>
+    <title>Sin link (debe descartarse)</title>
+  </entry>
+</feed>

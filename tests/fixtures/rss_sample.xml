@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>IGN</title>
+    <link>https://www.ign.com</link>
+    <description>Noticias de videojuegos</description>
+    <item>
+      <title>Persona 6 muestra su primer tráiler</title>
+      <link>https://www.ign.com/articles/persona-6-trailer</link>
+      <pubDate>Sat, 22 Aug 2026 09:15:00 GMT</pubDate>
+      <description><![CDATA[<p>Atlus confirma <b>novedades</b> para 2027.</p>]]></description>
+    </item>
+    <item>
+      <title>Parche de Cyberpunk 2077</title>
+      <link>https://www.ign.com/articles/cyberpunk-patch</link>
+      <pubDate>Fri, 21 Aug 2026 18:30:00 GMT</pubDate>
+      <description>CD Projekt detalla todos los cambios.</description>
+    </item>
+    <item>
+      <title>Entrada sin link (debe descartarse)</title>
+      <description>No sirve sin URL.</description>
+    </item>
+    <item>
+      <title>Anuncio en la Gamescom</title>
+      <link>https://www.ign.com/articles/gamescom-anuncio</link>
+      <pubDate>Thu, 20 Aug 2026 12:00:00 GMT</pubDate>
+      <description><![CDATA[Con <i>tráiler</i> incluido]]></description>
+    </item>
+  </channel>
+</rss>

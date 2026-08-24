@@ -8,7 +8,11 @@ medios:
 
 steam:
   habilitado: true
-  app_ids: [271590, 1174180]
+  juegos:
+    - app_id: 271590
+      nombre: Grand Theft Auto
+    - app_id: 1174180
+      nombre: Red Dead Redemption 2
 
 reddit:
   habilitado: true

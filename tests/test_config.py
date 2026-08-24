@@ -8,6 +8,7 @@ from gaming_news_digest.config import (
     DEFAULT_MAX_ITEMS_PER_SOURCE,
     DEFAULT_TIMEOUT_SECONDS,
     ConfigError,
+    SteamGame,
     load_games,
     load_sources,
 )
@@ -87,7 +88,10 @@ class TestLoadSources:
         assert config.media[1].language.value == "es"
         assert config.media[1].feed_url.startswith("https://vandal.")
         assert config.steam.enabled is True
-        assert config.steam.app_ids == (271590, 1174180)
+        assert config.steam.games == (
+            SteamGame(app_id=271590, nombre="Grand Theft Auto"),
+            SteamGame(app_id=1174180, nombre="Red Dead Redemption 2"),
+        )
         assert config.reddit.subreddits[0].name == "gamingleaks"
         assert config.reddit.subreddits[0].tag == "rumores"
         assert config.limits.max_items_per_source == 10
@@ -136,11 +140,27 @@ class TestLoadSources:
         with pytest.raises(ConfigError, match="http"):
             load_sources(path)
 
-    def test_app_ids_no_enteros(self, tmp_path):
-        content = "steam:\n  app_ids: [271590, abc]\n"
+    def test_app_id_no_entero_positivo(self, tmp_path):
+        content = (
+            "steam:\n"
+            "  juegos:\n"
+            "    - app_id: abc\n"
+            "      nombre: Grand Theft Auto\n"
+        )
         path = write_yaml(tmp_path, content)
 
-        with pytest.raises(ConfigError, match="app_ids"):
+        with pytest.raises(ConfigError, match="app_id"):
+            load_sources(path)
+
+    def test_juego_de_steam_sin_app_id(self, tmp_path):
+        content = (
+            "steam:\n"
+            "  juegos:\n"
+            "    - nombre: Grand Theft Auto\n"
+        )
+        path = write_yaml(tmp_path, content)
+
+        with pytest.raises(ConfigError, match="'app_id'"):
             load_sources(path)
 
     def test_habilitado_no_booleano(self, tmp_path):

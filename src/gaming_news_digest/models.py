@@ -73,6 +73,17 @@ def _optional_text(value: str | None, label: str) -> str | None:
     return text
 
 
+def _ensure_utc(value: object) -> datetime:
+    """Valida que la fecha sea un datetime tz-aware y la normaliza a UTC."""
+    if not isinstance(value, datetime):
+        raise ModelValidationError(
+            "la fecha debe ser un datetime con zona horaria explícita"
+        )
+    if value.tzinfo is None:
+        raise ModelValidationError("la fecha es naive: necesita zona horaria")
+    return value.astimezone(timezone.utc)
+
+
 def normalize_url(url: str) -> str:
     """Devuelve la forma canónica de una URL para derivar ids estables.
 
@@ -162,7 +173,7 @@ class NewsItem:
             self, "category", _coerce_enum(self.category, Category, "la categoría")
         )
         self._validate_relevance()
-        self._normalize_published_at()
+        object.__setattr__(self, "published_at", _ensure_utc(self.published_at))
         object.__setattr__(self, "summary", _optional_text(self.summary, "el resumen"))
         digest = hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()
         object.__setattr__(self, "id", digest[:16])
@@ -175,18 +186,6 @@ class NewsItem:
             )
         if not 1 <= score <= 5:
             raise ModelValidationError(f"la relevancia debe estar entre 1 y 5, no {score}")
-
-    def _normalize_published_at(self):
-        moment = self.published_at
-        if not isinstance(moment, datetime):
-            raise ModelValidationError(
-                "published_at debe ser un datetime con zona horaria explícita"
-            )
-        if moment.tzinfo is None:
-            raise ModelValidationError(
-                "published_at es naive: necesita zona horaria explícita"
-            )
-        object.__setattr__(self, "published_at", moment.astimezone(timezone.utc))
 
     def to_dict(self) -> dict:
         """Serializa según el contrato JSON documentado en CONTRIBUTING.md."""
@@ -202,3 +201,38 @@ class NewsItem:
             "relevance": self.relevance,
             "category": self.category.value,
         }
+
+
+@dataclass(frozen=True, slots=True)
+class FetchedItem:
+    """Noticia recién rastreada, pendiente de filtrar y enriquecer.
+
+    La producen los fetchers; ``game``, ``category``, ``relevance`` y
+    ``summary`` los completan más adelante el filtro y la IA. Las fechas
+    llegan siempre tz-aware en UTC (ver ``fetchers/base.py``).
+    """
+
+    title: str
+    url: str
+    source: Source
+    published_at: datetime
+    body_text: str | None = None
+    language: Language | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.source, Source):
+            raise ModelValidationError("source debe ser una instancia de Source")
+        object.__setattr__(self, "title", _required_text(self.title, "el título"))
+        url = self.url.strip()
+        if not _HTTP_PREFIX.match(url):
+            raise ModelValidationError(f"url inválida (solo http/https): {url!r}")
+        object.__setattr__(self, "url", url)
+        object.__setattr__(self, "published_at", _ensure_utc(self.published_at))
+        if self.body_text is not None and not isinstance(self.body_text, str):
+            raise ModelValidationError("body_text debe ser texto o None")
+        body = self.body_text.strip() if self.body_text else None
+        object.__setattr__(self, "body_text", body or None)
+        language = self.language
+        if language is not None:
+            language = _coerce_enum(language, Language, "el idioma")
+        object.__setattr__(self, "language", language)

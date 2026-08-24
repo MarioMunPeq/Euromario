@@ -61,11 +61,19 @@ class Subreddit:
 
 
 @dataclass(frozen=True, slots=True)
+class SteamGame:
+    """Juego seguido en Steam: app_id y nombre canónico (para el filtro)."""
+
+    app_id: int
+    nombre: str
+
+
+@dataclass(frozen=True, slots=True)
 class SteamConfig:
     """Configuración de Steam News API."""
 
     enabled: bool = False
-    app_ids: tuple[int, ...] = ()
+    games: tuple[SteamGame, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -230,17 +238,27 @@ def _parse_bool(value: Any, key: str, path: Path) -> bool:
 def _parse_steam(raw: Any, path: Path) -> SteamConfig:
     if not isinstance(raw, dict):
         raise ConfigError(f"{path}: la sección 'steam' debe ser un mapa")
-    app_ids = []
-    for value in raw.get("app_ids") or []:
-        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-            raise ConfigError(
-                f"{path}: 'steam.app_ids' solo admite enteros positivos, no {value!r}"
-            )
-        app_ids.append(value)
     return SteamConfig(
         enabled=_parse_bool(raw.get("habilitado", False), "steam.habilitado", path),
-        app_ids=tuple(app_ids),
+        games=_parse_steam_games(raw.get("juegos") or [], path),
     )
+
+
+def _parse_steam_games(raw: Any, path: Path) -> tuple[SteamGame, ...]:
+    if not isinstance(raw, list):
+        raise ConfigError(f"{path}: 'steam.juegos' debe ser una lista")
+    games = []
+    for index, entry in enumerate(raw):
+        ctx = f"la entrada {index} de 'steam.juegos'"
+        if not isinstance(entry, dict):
+            raise ConfigError(f"{path}: {ctx} debe ser un mapa")
+        app_id = _require(entry, "app_id", ctx, path)
+        if isinstance(app_id, bool) or not isinstance(app_id, int) or app_id <= 0:
+            raise ConfigError(
+                f"{path}: {ctx} tiene un 'app_id' no entero positivo: {app_id!r}"
+            )
+        games.append(SteamGame(app_id=app_id, nombre=_required_name(entry, ctx, path)))
+    return tuple(games)
 
 
 def _parse_reddit(raw: Any, path: Path) -> RedditConfig:

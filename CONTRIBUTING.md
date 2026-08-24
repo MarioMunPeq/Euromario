@@ -32,9 +32,9 @@ Este documento define las pautas obligatorias para desarrollar G-Patch Notes: pr
 ├── src/gaming_news_digest/     # Paquete principal (src layout)
 │   ├── __main__.py             # CLI: python -m gaming_news_digest
 │   ├── config.py               # Carga y validación de los YAML
-│   ├── models.py               # Modelos de dominio (dataclasses)
+│   ├── models.py               # Modelos de dominio (NewsItem, Source, FetchedItem)
 │   ├── pipeline.py             # Orquestador de las 5 fases
-│   ├── fetchers/               # rss.py, steam.py, reddit.py
+│   ├── fetchers/               # rss.py, steam.py, reddit.py + base.py compartido
 │   ├── filtering/              # matcher.py (inclusión/exclusión robusto)
 │   ├── ai/                     # base.py (interfaz común), ollama_client.py, groq_client.py
 │   └── storage/                # json_store.py, retention.py (histórico)
@@ -118,6 +118,17 @@ Ejecutado cada hora por `.github/workflows/digest.yml` (y manualmente con `pytho
 4. **Retención** — `storage/retention.py` limpia el histórico cuando se cumple **cualquiera** de: la noticia más antigua supera **14 días**, o el total supera **200 noticias** (recorte eliminando primero las más antiguas). Ambas condiciones combinadas, evaluadas tras cada merge.
 5. **Escritura atómica y commit** — si el JSON resultante difiere del actual, se escribe de forma atómica en `frontend/data/news.json` y el workflow hace commit con el bot `github-actions[bot]` (`chore(datos): actualizar digest automático`). Ese commit toca `frontend/**`, así que dispara automáticamente el redeploy en Pages. Sin cambios → sin commit.
 
+### Manejo de fechas en los fetchers
+
+Los feeds reales llegan con fechas ausentes, malformadas o de fuentes con el reloj desajustado. Política implementada en `fetchers/base.py::resolve_date` y cubierta por tests:
+
+1. **Cadena de fallback:** `published` → `updated` → **ahora (UTC)**. Nunca se descarta una noticia por su fecha: perder contenido real por metadatos rotos es peor que una fecha aproximada.
+2. **Clamp anti-reloj adelantado:** una fecha más de **24 horas** en el futuro se recorta a «ahora», para que no rompa el orden descendente del JSON.
+3. **Steam:** su campo `date` (epoch Unix) se convierte a UTC; valores ausentes, no numéricos o ≤ 0 caen en la misma cadena de fallback.
+4. feedparser entrega las fechas ya interpretadas como `struct_time` en UTC; cualquier formato que no pueda interpretar llega como ausente y activa el punto 1.
+
+Por la misma regla de robustez: una fuente caída (HTTP ≠ 200, timeout, JSON inválido) eleva `FetchError`, el pipeline la registra y continúa con el resto. En Steam el fallo es por app: si fallan todas se eleva el error; si falla una, se sigue con las demás.
+
 Detalles de CI: `concurrency.group: digest` para evitar solapes entre ejecuciones; el modelo de Ollama se instala en el runner en cada ejecución (`ollama pull "$OLLAMA_MODEL"`).
 
 ---
@@ -173,7 +184,7 @@ Sin red: los fetchers se testean con fixtures locales (XML/HTML/JSON guardados e
 3. **`json_store`** — schema válido, orden descendente, id estable y determinista, escritura atómica, no-reescritura si no hay cambios.
 4. **`config`** — carga correcta de YAML válidos y errores claros ante YAML inválido o incompleto.
 5. **Clientes IA (mockeados)** — parseo de respuesta válida, rechazo de respuesta malformada, y activación del fallback Groq ante fallos/timeout de Ollama.
-6. **Fetchers** — parseo de fixtures reales de feed RSS, respuesta Steam y RSS de Reddit; tolerancia a items incompletos.
+6. **Fetchers** — parseo de fixtures reales de feed RSS, respuesta Steam y RSS de Reddit; tolerancia a items incompletos; cadena de fechas (published → updated → ahora) y clamp de futuro.
 
 Cobertura objetivo: ≥ 90 % en los módulos críticos (`matcher`, `retention`, `json_store`); resto, razonable sin obsesión.
 

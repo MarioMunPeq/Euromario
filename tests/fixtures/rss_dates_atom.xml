@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Medio de pruebas</title>
+  <id>urn:test:medio</id>
+  <updated>2026-08-23T00:00:00Z</updated>
+  <entry>
+    <title>Solo published</title>
+    <id>urn:test:e1</id>
+    <link href="https://medio.test/solo-published"/>
+    <published>2026-08-22T08:00:00Z</published>
+  </entry>
+  <entry>
+    <title>Solo updated (fallback)</title>
+    <id>urn:test:e2</id>
+    <link href="https://medio.test/solo-updated"/>
+    <updated>2026-08-21T10:00:00Z</updated>
+  </entry>
+  <entry>
+    <title>Fecha muy futura (clamp)</title>
+    <id>urn:test:e3</id>
+    <link href="https://medio.test/futuro"/>
+    <updated>2030-01-01T00:00:00Z</updated>
+  </entry>
+  <entry>
+    <title>Fecha inservible</title>
+    <id>urn:test:e4</id>
+    <link href="https://medio.test/sin-fecha"/>
+    <updated>no-es-una-fecha</updated>
+  </entry>
+  <entry>
+    <title>Sin fecha alguna</title>
+    <id>urn:test:e5</id>
+    <link href="https://medio.test/nada"/>
+  </entry>
+</feed>

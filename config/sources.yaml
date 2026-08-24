@@ -23,7 +23,12 @@ medios:
 
 steam:
   habilitado: true
-  app_ids: [] # app_ids de las sagas seguidas, pendiente de definir
+  juegos:
+    - app_id: 271590
+      nombre: Grand Theft Auto
+    - app_id: 1687950
+      nombre: Persona
+  # Añadir aquí las demás sagas seguidas con página en Steam
 
 reddit:
   habilitado: true

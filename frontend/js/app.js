@@ -154,23 +154,32 @@ const REDDIT_SVG = `
 
 async function fetchNews() {
   const url = `${CONFIG.dataUrl}?${CONFIG.cacheBustParam}=${Date.now()}`;
-  const response = await fetch(url, {
-    cache: 'no-store',
-    headers: { 'Accept': 'application/json' },
-  });
+  console.log('[DEBUG] fetchNews: START', { url: url, dataUrl: CONFIG.dataUrl, cacheBustParam: CONFIG.cacheBustParam });
+  try {
+    const response = await fetch(url, {
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' },
+    });
+    console.log('[DEBUG] fetchNews: response received', { status: response.status, ok: response.ok, url: response.url });
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('[DEBUG] fetchNews: JSON parsed', { hasData: !!data, hasNews: Array.isArray(data?.news), newsLength: data?.news?.length, keys: data ? Object.keys(data) : 'no data' });
+
+    // Validate structure
+    if (!data || !Array.isArray(data.news)) {
+      throw new Error('Formato de datos inválido');
+    }
+
+    console.log('[app] fetchNews: parsed', data.news.length, 'news items');
+    return data;
+  } catch (err) {
+    console.error('[ERROR] fetchNews failed:', err);
+    throw err;
   }
-
-  const data = await response.json();
-
-  // Validate structure
-  if (!data || !Array.isArray(data.news)) {
-    throw new Error('Formato de datos inválido');
-  }
-
-  return data;
 }
 
 // ============================================================
@@ -255,7 +264,9 @@ function setAppTitle() {
 // ============================================================
 
 function setState(stateName) {
+  console.log('[DEBUG] setState:', stateName);
   // Hide all states
+  console.log('[DEBUG] setState: hiding all states');
   els.stateLoading.hidden = true;
   els.stateError.hidden = true;
   els.stateEmpty.hidden = true;
@@ -264,9 +275,13 @@ function setState(stateName) {
   // Show requested state
   const stateEl = document.getElementById(`state-${stateName}`);
   if (stateEl) {
+    console.log('[DEBUG] setState: showing state element', stateName);
     stateEl.hidden = false;
   } else if (stateName === 'content') {
+    console.log('[DEBUG] setState: showing content (news-list)');
     els.newsList.hidden = false;
+  } else {
+    console.warn('[WARN] setState: unknown state', stateName);
   }
 }
 
@@ -330,7 +345,7 @@ function applyFilters() {
     }
 
     return true;
-  }
+  });
 
   renderNewsList(state.filteredNews);
   
@@ -424,11 +439,14 @@ function onRetry() {
 // ============================================================
 
 async function loadData() {
+  console.log('[DEBUG] loadData: START');
   setLoading(true);
   clearError();
 
   try {
+    console.log('[DEBUG] loadData: calling fetchNews');
     const data = await fetchNews();
+    console.log('[DEBUG] loadData: fetchNews returned', { newsLength: data.news.length, total: data.total, generated_at: data.generated_at });
     state.allNews = data.news;
     state.filteredNews = data.news;
 
@@ -444,8 +462,9 @@ async function loadData() {
     renderNewsList(state.filteredNews);
     renderStats(data);
     setAppTitle();
+    console.log('[DEBUG] loadData: COMPLETE, filteredNews=', state.filteredNews.length);
   } catch (err) {
-    console.error('Error loading news:', err);
+    console.error('[ERROR] loadData failed:', err);
     setError(
       err.message.includes('404') || err.message.includes('Failed to fetch')
         ? 'No se encontraron noticias (primera ejecución pendiente).'
@@ -462,6 +481,7 @@ async function loadData() {
 // ============================================================
 
 function init() {
+  console.log('[DEBUG] init: START');
   setAppTitle();
 
   // Event listeners
@@ -483,6 +503,7 @@ function init() {
   });
 
   // Initial load
+  console.log('[DEBUG] init: calling loadData');
   loadData();
 }
 

@@ -154,7 +154,7 @@ const REDDIT_SVG = `
 
 async function fetchNews() {
   const url = `${CONFIG.dataUrl}?${CONFIG.cacheBustParam}=${Date.now()}`;
-  const response = await fetch(CONFIG.dataUrl, {
+  const response = await fetch(url, {
     cache: 'no-store',
     headers: { 'Accept': 'application/json' },
   });
@@ -274,6 +274,8 @@ function setLoading(loading) {
   state.ui.loading = loading;
   if (loading) {
     setState('loading');
+  } else {
+    setState('content');
   }
 }
 

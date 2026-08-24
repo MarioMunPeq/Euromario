@@ -218,6 +218,7 @@ class FetchedItem:
     published_at: datetime
     body_text: str | None = None
     language: Language | None = None
+    game: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.source, Source):

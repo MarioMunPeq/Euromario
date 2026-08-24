@@ -137,9 +137,29 @@ El matcher (`filtering/matcher.py`) aplica reglas estrictas para evitar ruido:
 
 1. **Exclusión = "poison pill" global.** Si **cualquier** juego de la lista de exclusión aparece **una sola vez** en el artículo (título o body), el artículo completo se descarta, **incluso si también menciona juegos de la lista de inclusión como tema principal**. Un falso negativo en exclusión (ver FIFA cuando no quieres verlo) es peor que perder una noticia válida que casualmente menciona un juego excluido.
 2. **Inclusión exige "tema principal".** Un juego de la lista de inclusión solo hace entrar el artículo si aparece en el **título** O se menciona **≥2 veces en el body**. Una sola mención en el body sin título no basta.
-3. **Normalización robusta:** NFKC + lowercase; límites de palabra (`\b`); aliases y variantes numéricas/romanas vienen de `config/games.yaml`.
+3. **Normalización robusta:** NFD + quita diacríticos + lowercase; límites de palabra (`\b`); aliases y variantes numéricas/romanas vienen de `config/games.yaml`.
 
 La decisión de que la exclusión "envenene" el artículo completo (en lugar de solo ignorar el juego excluido y aceptar por el incluido) es deliberada: la lista de inclusión es amplia y genera ruido cruzado; la exclusión es blacklist deliberada y debe ganar siempre.
+
+---
+
+### Pipeline de IA: fallback Ollama → Groq y manejo de errores
+
+El pipeline (`pipeline.py`) orquesta la IA con una política de resiliencia clara:
+
+| Situación | Comportamiento |
+|-----------|----------------|
+| Ollama `AIError` (validación) | Fallback seguro para ese item (`summary=None, relevance=1, category="rumor"`) + pipeline continúa. Contador consecutivo +1. |
+| Ollama infra (ConnectionError, Timeout, HTTP ≥500) | **Switch inmediato a Groq** y **reintenta el mismo item** con Groq. Contador a 0. |
+| Groq `AIError` (validación) | **Fallback seguro para ese item** + pipeline continúa (no aborta). |
+| Groq infra (ConnectionError, Timeout, HTTP ≥500) | **Crítico**: guarda en JSON lo ya procesado (items con resumen + fallbacks seguros) y aborta con error (commit parcial). |
+| 3 `AIError` consecutivos en Ollama | Switch a Groq **antes del siguiente item**; el item que causó el 3er fallo se reintenta con Groq. |
+
+> **Fallo crítico tras fallback**  
+> Si Groq falla con error de infraestructura tras el fallback, el pipeline **guarda lo procesado hasta ese momento** (items con resumen válido + items con fallback seguro) y termina con error. No se descarta el trabajo ya hecho.
+
+> **AIError en Groq tras fallback**  
+> Un `AIError` de Groq (fallo de validación tras reintentos) **no aborta** el pipeline: el item recibe fallback seguro y el pipeline continúa con el siguiente. Solo errores de infraestructura (conexión, timeout, HTTP 5xx) son críticos en Groq.
 
 Detalles de CI: `concurrency.group: digest` para evitar solapes entre ejecuciones; el modelo de Ollama se instala en el runner en cada ejecución (`ollama pull "$OLLAMA_MODEL"`).
 

@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-08-24T12:00:00Z",
+  "total": 3,
+  "news": [
+    {
+      "id": "abc123",
+      "title": "Persona 6 anunciado oficialmente",
+      "summary": "Atlus confirma el desarrollo de Persona 6 para 2027.",
+      "url": "https://example.com/persona6",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Persona",
+      "language": "en",
+      "published_at": "2026-08-24T10:00:00Z",
+      "relevance": 5,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "def456",
+      "title": "Supuesto leak de GTA 6",
+      "summary": "Usuario de Reddit filtra detalles de GTA 6.",
+      "url": "https://reddit.com/r/gamingleaks/comments/abc123",
+      "source": {
+        "name": "Reddit",
+        "type": "reddit",
+        "subreddit": "gamingleaks"
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-24T08:00:00Z",
+      "relevance": 3,
+      "category": "rumor"
+    },
+    {
+      "id": "ghi789",
+      "title": "Cyberpunk 2077: Parche 2.1 disponible",
+      "summary": "CD Projekt RED lanza parche con mejoras de rendimiento.",
+      "url": "https://store.steampowered.com/news/app/1091500/view/123",
+      "source": {
+        "name": "Steam",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Cyberpunk 2077",
+      "language": "en",
+      "published_at": "2026-08-23T18:00:00Z",
+      "relevance": 4,
+      "category": "actualizacion"
+    }
+  ]
+}

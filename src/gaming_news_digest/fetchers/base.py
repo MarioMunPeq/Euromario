@@ -90,5 +90,9 @@ def strip_html(raw: str | None) -> str | None:
 
 
 def utc_now() -> datetime:
-    """Reloj centralizado (facilita inyectar tiempo fijo en tests)."""
-    return datetime.now(timezone.utc)
+    """Reloj centralizado (facilita inyectar tiempo fijo en tests).
+    
+    Devuelve tiempo UTC sin microsegundos para comparaciones determinísticas
+    en tests de retención (evita problemas de boundary por microsegundos).
+    """
+    return datetime.now(timezone.utc).replace(microsecond=0)

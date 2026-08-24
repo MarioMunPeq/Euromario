@@ -195,3 +195,42 @@ class TestToDict:
 
     def test_summary_nulo_se_serializa_como_null(self):
         assert make_item(summary=None).to_dict()["summary"] is None
+
+
+class TestFromDict:
+    def test_desde_dict_valido_reconstruye_correctamente(self):
+        item = make_item(summary="Test summary")
+        data = item.to_dict()
+        restored = NewsItem.from_dict(data)
+
+        assert restored.title == item.title
+        assert restored.url == item.url
+        assert restored.source.name == item.source.name
+        assert restored.source.type == item.source.type
+        assert restored.game == item.game
+        assert restored.language == item.language
+        assert restored.published_at == item.published_at
+        assert restored.relevance == item.relevance
+        assert restored.category == item.category
+        assert restored.summary == item.summary
+        assert restored.id == item.id
+
+    def test_id_recalculado_coincide_con_guardado(self):
+        item = make_item()
+        data = item.to_dict()
+        restored = NewsItem.from_dict(data)
+        assert restored.id == item.id
+
+    def test_source_from_dict_reconstruye(self):
+        src = Source(name="IGN", type="media")
+        data = src.to_dict()
+        restored = Source.from_dict(data)
+        assert restored.name == src.name
+        assert restored.type == src.type
+        assert restored.subreddit is None
+
+    def test_source_reddit_from_dict_con_subreddit(self):
+        src = Source(name="Reddit", type="reddit", subreddit="gamingleaks")
+        data = src.to_dict()
+        restored = Source.from_dict(data)
+        assert restored.subreddit == "gamingleaks"

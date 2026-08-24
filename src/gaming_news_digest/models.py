@@ -136,6 +136,15 @@ class Source:
             "subreddit": self.subreddit,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "Source":
+        """Reconstruye Source desde dict (como viene del JSON)."""
+        return cls(
+            name=data["name"],
+            type=data["type"],
+            subreddit=data.get("subreddit"),
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class NewsItem:
@@ -201,6 +210,30 @@ class NewsItem:
             "relevance": self.relevance,
             "category": self.category.value,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "NewsItem":
+        """Reconstruye NewsItem desde dict (como viene del JSON).
+        
+        Reutiliza la validación de __post_init__ para garantizar integridad.
+        El id se recalcula desde la URL y debe coincidir con el guardado.
+        """
+        source = Source.from_dict(data["source"])
+        # Parsear datetime ISO con Z
+        published_at = datetime.fromisoformat(
+            data["published_at"].replace("Z", "+00:00")
+        )
+        return cls(
+            title=data["title"],
+            url=data["url"],
+            source=source,
+            game=data["game"],
+            language=data["language"],
+            published_at=published_at,
+            relevance=data["relevance"],
+            category=data["category"],
+            summary=data.get("summary"),
+        )
 
 
 @dataclass(frozen=True, slots=True)

@@ -129,6 +129,18 @@ Los feeds reales llegan con fechas ausentes, malformadas o de fuentes con el rel
 
 Por la misma regla de robustez: una fuente caída (HTTP ≠ 200, timeout, JSON inválido) eleva `FetchError`, el pipeline la registra y continúa con el resto. En Steam el fallo es por app: si fallan todas se eleva el error; si falla una, se sigue con las demás.
 
+---
+
+### Filtro de inclusión/exclusión: prioridad de exclusión ("poison pill")
+
+El matcher (`filtering/matcher.py`) aplica reglas estrictas para evitar ruido:
+
+1. **Exclusión = "poison pill" global.** Si **cualquier** juego de la lista de exclusión aparece **una sola vez** en el artículo (título o body), el artículo completo se descarta, **incluso si también menciona juegos de la lista de inclusión como tema principal**. Un falso negativo en exclusión (ver FIFA cuando no quieres verlo) es peor que perder una noticia válida que casualmente menciona un juego excluido.
+2. **Inclusión exige "tema principal".** Un juego de la lista de inclusión solo hace entrar el artículo si aparece en el **título** O se menciona **≥2 veces en el body**. Una sola mención en el body sin título no basta.
+3. **Normalización robusta:** NFKC + lowercase; límites de palabra (`\b`); aliases y variantes numéricas/romanas vienen de `config/games.yaml`.
+
+La decisión de que la exclusión "envenene" el artículo completo (en lugar de solo ignorar el juego excluido y aceptar por el incluido) es deliberada: la lista de inclusión es amplia y genera ruido cruzado; la exclusión es blacklist deliberada y debe ganar siempre.
+
 Detalles de CI: `concurrency.group: digest` para evitar solapes entre ejecuciones; el modelo de Ollama se instala en el runner en cada ejecución (`ollama pull "$OLLAMA_MODEL"`).
 
 ---

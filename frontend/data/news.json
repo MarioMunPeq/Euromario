@@ -1,7 +1,23 @@
 {
-  "generated_at": "2026-08-25T17:42:41.656225Z",
-  "total": 44,
+  "generated_at": "2026-08-25T18:54:34.293978Z",
+  "total": 47,
   "news": [
+    {
+      "id": "64863a3bc9facd6a",
+      "title": "'Anime GTA’ Game Ananta Gets Official Release Date Beyond GTA 6’s Blast Radius",
+      "summary": "NetEase Games anuncia fecha de lanzamiento oficial para el juego de mundo abierto anime-GTA Ananta en 2027.",
+      "url": "https://www.polygon.com/ananta-the-anime-gta-game-finally-has-a-release-date/",
+      "source": {
+        "name": "Polygon",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-25T18:47:51Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
     {
       "id": "e9ebef5a14fa0e57",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
@@ -35,6 +51,22 @@
       "category": "lanzamiento"
     },
     {
+      "id": "d8c2c2ca9d15b736",
+      "title": "Call of Duty: Modern Warfare 4 Beta Pushes Unplanned Update to Address Fan Feedback",
+      "summary": "Infinity Ward ha lanzado un update inesperado para el Call of Duty: Modern Warfare 4 beta para abordar comentarios de los fans.",
+      "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-beta-pushes-unplanned-update-to-address-fan-feedback",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Call of Duty",
+      "language": "en",
+      "published_at": "2026-08-25T16:47:20Z",
+      "relevance": 4,
+      "category": "actualizacion"
+    },
+    {
       "id": "589f3419476acbfb",
       "title": "'GTA 6' Hacker's New Leak Is Total Rage Bait For Rockstar",
       "summary": "Un hacker ha lanzado una nueva versión de GTA 6, criticando las decisiones de Rockstar sobre la venta del juego.",
@@ -53,7 +85,7 @@
     {
       "id": "29ccd2bed2a55c5d",
       "title": "GTA 6 leaker goes full cornball in newest videos, insists 'using crypto is the only way'",
-      "summary": "Un leaker de GTA 6 ha estado compartiendo contenido en sus canales de YouTube, lo que ha generado controversia entre los fans del juego. El leaker afirma que el uso de criptomonedas es la única forma de progresar en el juego.",
+      "summary": "Un leaker de GTA 6 ha estado compartiendo contenido en sus canales de YouTube, lo que ha generado controversia entre los fans del juego. El leaker afirma que utilizar criptomonedas es la única forma de jugar el juego.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/gta-6-leaker-goes-full-cornball-in-newest-videos-insists-using-crypto-is-the-only-way/",
       "source": {
         "name": "PC Gamer",
@@ -63,8 +95,24 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-25T16:14:17Z",
-      "relevance": 3,
+      "relevance": 4,
       "category": "rumor"
+    },
+    {
+      "id": "ca872b04f8a771ad",
+      "title": "NBA 2K27 Is Teasing a GTA 6-Themed Event in Collaboration with Rockstar Games",
+      "summary": "NBA 2K27 anuncia evento GTA 6 con Rockstar Games",
+      "url": "https://www.ign.com/articles/nba-2k27-is-teasing-a-gta-6-themed-event-in-collaboration-with-rockstar-games",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-25T16:07:15Z",
+      "relevance": 5,
+      "category": "lanzamiento"
     },
     {
       "id": "c15f1de8a3ca8421",
@@ -85,7 +133,7 @@
     {
       "id": "dcabc4f7bf42b0be",
       "title": "\"People wanted faster movement, but not this fast\" - Call of Duty: Modern Warfare 4 beta players aren't happy with slide spammers and the increased pace of the game",
-      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con la velocidad del juego, que algunos consideran demasiado rápida y otros no lo suficientemente rápida.",
+      "summary": null,
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-beta-player-reaction",
       "source": {
         "name": "Eurogamer",
@@ -95,8 +143,8 @@
       "game": "Call of Duty",
       "language": "en",
       "published_at": "2026-08-25T14:25:02Z",
-      "relevance": 4,
-      "category": "actualizacion"
+      "relevance": 1,
+      "category": "rumor"
     },
     {
       "id": "de40481e022d5d5d",
@@ -117,7 +165,7 @@
     {
       "id": "518535f827885de9",
       "title": "As Take-Two seeks IP addresses and phone numbers of thousands in GTA 6 subpoena, Discord says it's not been served the order just yet",
-      "summary": "Take-Two busca IP addresses y números de teléfono de miles de personas en GTA 6, pero Discord afirma que aún no ha sido servida la orden de subpoena.",
+      "summary": "Take-Two busca IP addresses y números de teléfono de miles de personas en GTA 6, pero Discord afirma no haber sido servido el orden yet.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/as-take-two-seeks-ip-addresses-and-phone-numbers-of-thousands-in-gta-6-subpoena-discord-says-its-not-been-served-the-order-just-yet/",
       "source": {
         "name": "PC Gamer",
@@ -128,7 +176,7 @@
       "language": "en",
       "published_at": "2026-08-25T11:25:21Z",
       "relevance": 3,
-      "category": "lanzamiento"
+      "category": "actualizacion"
     },
     {
       "id": "622c0dd8b1a54c76",
@@ -149,7 +197,7 @@
     {
       "id": "c80ee72a2ea34b35",
       "title": "[UPDATE] GTA 6 Leaker Releases Game Store, Nightclub and Beach Gameplay Videos, Defends Crypto Scheme",
-      "summary": "Un leaker de GTA 6 ha lanzado videos de gameplay de tienda de juego, club nocturno y playa, y defiende su esquema de criptomonedas",
+      "summary": "Un leaker de GTA 6 ha lanzado nuevos videos de gameplay, incluyendo una tienda de juegos, un club nocturno y una playa, y defiende su esquema de criptomonedas.",
       "url": "https://www.ign.com/articles/gta-6-leaker-releases-nightclub-gameplay-video-defends-crypto-scheme",
       "source": {
         "name": "IGN",
@@ -165,7 +213,7 @@
     {
       "id": "3087abf72d56a857",
       "title": "Discord have yet to receive a GTA 6 leak subpoena from Take-Two, says marketing director, but they will \"evaluate the validity and scope\" if they do",
-      "summary": "Discord afirma no haber recibido una subpoena de Take-Two para investigar las supuestas lecciones de GTA 6, pero se preparan para evaluar su validez y alcance.",
+      "summary": "Discord afirma no haber recibido una subpoena de Take-Two para investigar las supuestas lecciones de GTA 6, pero si reciben una, evaluarán su validez y alcance.",
       "url": "https://www.rockpapershotgun.com/discord-have-yet-to-receive-a-gta-6-leak-subpoena-from-take-two-says-marketing-director-but-they-will-evaluate-the-validity-and-scope-if-they-do",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -197,7 +245,7 @@
     {
       "id": "6cddca81472c1827",
       "title": "Discord is yet to be served Take-Two's GTA 6 leak subpoena, which is set to demand broad access to user data",
-      "summary": "Discord niega haber sido servido una orden de busca de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
+      "summary": "Discord nega haber sido servido una orden de busca de Take-Two relacionada con los estafas de GTA 6, aunque el desarrollador de juegos de Rockstar ha solicitado acceso a datos de usuarios de Discord y Microsoft.",
       "url": "https://www.eurogamer.net/take-two-rockstar-gta-6-leaks-subpoena-discord-response",
       "source": {
         "name": "Eurogamer",
@@ -373,7 +421,7 @@
     {
       "id": "8b8303066f661177",
       "title": "Call of Duty: Modern Warfare 4 Switch 2 physical version is seemingly a code-in-box",
-      "summary": "La versión física de Call of Duty: Modern Warfare 4 para Nintendo Switch 2 llega al mercado, aunque algunos detalles sugieren que podría ser una caja de código.",
+      "summary": "La versión física de Call of Duty: Modern Warfare 4 para Nintendo Switch 2 es posible que contenga un código de código en el cajón, lo que podría afectar la experiencia del jugador.",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-switch-2-code-in-box",
       "source": {
         "name": "Eurogamer",
@@ -581,7 +629,7 @@
     {
       "id": "3dc4a21cb6a3306c",
       "title": "Don't tell Nintendo, but I turned GTA 5 into Pokémon Go using a mod",
-      "summary": "Un modista ha creado una mod para GTA 5 que convierte el juego en Pokémon Go, permitiendo a los jugadores atrapar Pokémon en la ciudad de Los Santos.",
+      "summary": "Un modista ha creado una mod para GTA 5 que convierte el juego en Pokémon Go, permitiendo a los jugadores atrapar Pokémon en el mundo abierto.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228669484",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -677,7 +725,7 @@
     {
       "id": "e2dbd2bc385ba46b",
       "title": "Declare Your Allegiance and Determine Who Owns Los Santos in the Brand Wars Event",
-      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores deben proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar premios y recompensas.",
+      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores pueden proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183786534",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -693,7 +741,7 @@
     {
       "id": "a9e632cf5e66d08e",
       "title": "GTA roleplayers rejoice: Nopixel V's beta is coming, and the timing couldn't be better",
-      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado en colaboración con Rockstar, coincidiendo con el lanzamiento de GTA 6 y una nueva era de caos.",
+      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado en el momento perfecto para los jugadores, justo antes del lanzamiento de GTA 6.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PCGamesN/1840944183779680",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -703,7 +751,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-14T11:49:34Z",
-      "relevance": 5,
+      "relevance": 4,
       "category": "lanzamiento"
     }
   ]

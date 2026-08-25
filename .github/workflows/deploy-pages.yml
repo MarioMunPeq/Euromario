@@ -1,12 +1,13 @@
-name: Despliegue en GitHub Pages
+name: Deploy frontend to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths: ["frontend/**"]
   workflow_dispatch:
 
 permissions:
+  contents: read
   pages: write
   id-token: write
 

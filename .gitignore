@@ -31,7 +31,7 @@ package-lock.json
 Thumbs.db
 
 # Archivos temporales de debug (screenshots, etc.)
-test_*.png
+*.png
 
 # NOTA: frontend/data/*.json se versiona a propósito (lo genera el pipeline
 # en GitHub Actions y lo consume la GitHub Page). No ignorar.

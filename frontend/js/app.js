@@ -1,5 +1,5 @@
 /**
- * Gaming Digest — Frontend App
+ * EuroMario — Frontend App
  * Vanilla JS: fetch, filters, URL sync, rendering, error handling
  */
 
@@ -8,7 +8,7 @@
 // ============================================================
 
 const CONFIG = {
-  appTitle: 'Gaming Digest',
+  appTitle: 'EuroMario',
   dataUrl: 'data/news.json',
   cacheBustParam: 'v',
   dateFormat: { year: 'numeric', month: 'short', day: 'numeric' },

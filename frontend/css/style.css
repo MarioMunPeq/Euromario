@@ -1,5 +1,5 @@
 /* ============================================================
-   Gaming Digest — CSS Design System (Dark Mode First)
+   EuroMario — CSS Design System (Dark Mode First)
    ============================================================ */
 
 :root {
@@ -24,14 +24,15 @@
   --reddit-muted: #ff450022;
   --media: #00a8e8;
   --media-muted: #00a8e822;
-  --steam: #1b2838;
-  --steam-muted: #1b283822;
+  --steam: #66c0f4;
+  --steam-muted: #66c0f422;
   --success: #3fb950;
   --warning: #d29922;
   --error: #f85149;
 
   /* Typography */
   --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-display: 'Archivo Black', system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
   --text-xs: 0.7rem;
@@ -187,10 +188,11 @@ input, select, textarea {
 }
 
 .header__title {
+  font-family: var(--font-family-display);
   font-size: var(--text-xl);
-  font-weight: var(--font-weight-bold);
+  font-weight: 900;
   color: var(--text);
-  letter-spacing: -0.02em;
+  letter-spacing: 0.01em;
 }
 
 .header__meta {

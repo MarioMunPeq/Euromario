@@ -13,6 +13,10 @@ venv/
 .coverage
 htmlcov/
 
+# Node (solo para herramientas de desarrollo como Puppeteer)
+node_modules/
+package-lock.json
+
 # Entorno y secretos
 .env
 .env.*
@@ -25,6 +29,9 @@ htmlcov/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Archivos temporales de debug (screenshots, etc.)
+test_*.png
 
 # NOTA: frontend/data/*.json se versiona a propósito (lo genera el pipeline
 # en GitHub Actions y lo consume la GitHub Page). No ignorar.

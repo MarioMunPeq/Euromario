@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-25T22:38:15.075533Z",
+  "generated_at": "2026-08-25T23:33:23.725987Z",
   "total": 47,
   "news": [
     {
@@ -223,7 +223,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-25T10:03:28Z",
-      "relevance": 4,
+      "relevance": 3,
       "category": "lanzamiento"
     },
     {
@@ -245,7 +245,7 @@
     {
       "id": "6cddca81472c1827",
       "title": "Discord is yet to be served Take-Two's GTA 6 leak subpoena, which is set to demand broad access to user data",
-      "summary": "Discord nega haber sido servido una orden de busca por parte de Take-Two relacionada con los estafas de GTA 6, aunque el desarrollador de juegos de Rockstar parente ha solicitado acceso a datos de usuarios de Discord y Microsoft.",
+      "summary": "Discord nega haber sido servido una orden de subpoena de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
       "url": "https://www.eurogamer.net/take-two-rockstar-gta-6-leaks-subpoena-discord-response",
       "source": {
         "name": "Eurogamer",
@@ -405,7 +405,7 @@
     {
       "id": "8926b4fc8a8f746b",
       "title": "This week in PC games: Gamescom and GTA 6 fight for our attention, but don't forget Folk Emerging, MGS4 and the horror game about balancing a cake",
-      "summary": "La semana de los juegos de PC está llena de noticias, incluyendo el estreno de GTA 6 y Gamescom, así como la salida de Folk Emerging y MGS4.",
+      "summary": "La semana de los juegos PC está llena de noticias, incluyendo el estreno de GTA 6 y Gamescom, así como la salida de Folk Emerging y MGS4.",
       "url": "https://www.rockpapershotgun.com/this-week-in-pc-games-gamescom-and-gta-6-fight-for-attention-but-dont-forget-folk-emerging-mgs4-and-the-horror-game-about-balancing-a-cake",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -421,7 +421,7 @@
     {
       "id": "8b8303066f661177",
       "title": "Call of Duty: Modern Warfare 4 Switch 2 physical version is seemingly a code-in-box",
-      "summary": "La versión física de Call of Duty: Modern Warfare 4 para Nintendo Switch 2 es posible que contenga un código de código en el cajón, lo que podría afectar la experiencia del jugador.",
+      "summary": "La versión física de Call of Duty: Modern Warfare 4 para Nintendo Switch 2 es posible que contenga un código de código en el cajón",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-switch-2-code-in-box",
       "source": {
         "name": "Eurogamer",

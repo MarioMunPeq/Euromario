@@ -5,10 +5,10 @@
 
 medios:
   - nombre: IGN
-    feed: https://feeds.ign.com/ign/games-all
+    feed: http://feeds.feedburner.com/ign/news
     idioma: en
   - nombre: Eurogamer
-    feed: https://www.eurogamer.net/feed
+    feed: https://www.eurogamer.net/feed/news
     idioma: en
   - nombre: PC Gamer
     feed: https://www.pcgamer.com/rss/
@@ -40,3 +40,20 @@ reddit:
 limites:
   max_items_por_fuente: 20
   timeout_segundos: 15
+
+calidad:
+  excluir_titulos:
+    - "^I turned "
+    - "^I modded "
+    - "^I'm modding "
+    - "^Today in "
+    - "\\bHelp$"
+    - "\\bfull dong\\b"
+    - "\\bnudity-filled\\b"
+    - "\\bHe( facet )?s( )?\\b"
+  excluir_urls:
+    - "/hardware/"
+    - "/humor/"
+    - "/best-"
+    - "/where-to-find"
+    - "/how-to-"

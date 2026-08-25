@@ -1,6 +1,7 @@
 """Orquestador del pipeline con lógica de fallback Ollama→Groq."""
 
 import logging
+import re
 import time
 from collections.abc import Iterator
 
@@ -35,7 +36,14 @@ class Pipeline:
     def __init__(self, sources: SourcesConfig, games: GamesConfig, limits: Limits):
         self.sources = sources
         self.limits = limits
+        self.quality = sources.quality
         self.matcher = create_matcher(games.include, games.exclude)
+        self._title_re = [
+            re.compile(p, re.IGNORECASE) for p in self.quality.exclude_title_patterns
+        ]
+        self._url_re = [
+            re.compile(p, re.IGNORECASE) for p in self.quality.exclude_url_patterns
+        ]
         self.ollama = OllamaClient()
         self.groq = GroqClient()  # puede lanzar ValueError si no hay API key
         self.current_client: AIClient = self.ollama
@@ -78,6 +86,8 @@ class Pipeline:
     def _filter(self, items: list[FetchedItem]) -> list[FetchedItem]:
         kept = []
         for item in items:
+            if self._is_excluded(item):
+                continue
             accepted, game = self.matcher.match(item.title, item.body_text or "")
             if accepted:
                 # enriquece con el juego canónico que matcheó
@@ -92,6 +102,15 @@ class Pipeline:
                 )
                 kept.append(item)
         return kept
+
+    def _is_excluded(self, item: FetchedItem) -> bool:
+        for pat in self._title_re:
+            if pat.search(item.title):
+                return True
+        for pat in self._url_re:
+            if pat.search(item.url):
+                return True
+        return False
 
     def _enrich_with_ai(self, items: list[FetchedItem]) -> Iterator[NewsItem]:
         for i, item in enumerate(items):

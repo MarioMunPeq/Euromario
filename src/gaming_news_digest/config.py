@@ -93,6 +93,14 @@ class Limits:
 
 
 @dataclass(frozen=True, slots=True)
+class QualityConfig:
+    """Filtros de calidad editorial (exclusiones por título y URL)."""
+
+    exclude_title_patterns: tuple[str, ...] = ()
+    exclude_url_patterns: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class SourcesConfig:
     """Todas las fuentes declaradas, ya validadas."""
 
@@ -100,6 +108,7 @@ class SourcesConfig:
     steam: SteamConfig = SteamConfig()
     reddit: RedditConfig = RedditConfig()
     limits: Limits = Limits()
+    quality: QualityConfig = QualityConfig()
 
 
 def load_games(path: str | Path) -> GamesConfig:
@@ -124,6 +133,7 @@ def load_sources(path: str | Path) -> SourcesConfig:
         steam=_parse_steam(data.get("steam") or {}, path),
         reddit=_parse_reddit(data.get("reddit") or {}, path),
         limits=_parse_limits(data.get("limites") or {}, path),
+        quality=_parse_quality(data.get("calidad") or {}, path),
     )
 
 
@@ -303,3 +313,35 @@ def _positive_int(raw: dict, key: str, default: int, path: Path) -> int:
             f"{path}: 'limites.{key}' debe ser un entero positivo, no {value!r}"
         )
     return value
+
+
+def _parse_quality(raw: Any, path: Path) -> QualityConfig:
+    if not isinstance(raw, dict):
+        return QualityConfig()
+    title_patterns = _parse_string_list(raw.get("excluir_titulos"), "excluir_titulos", path)
+    url_patterns = _parse_string_list(raw.get("excluir_urls"), "excluir_urls", path)
+    import re
+    for pat in title_patterns + url_patterns:
+        try:
+            re.compile(pat)
+        except re.error as exc:
+            raise ConfigError(
+                f"{path}: patrón de exclusión inválido {pat!r}: {exc}"
+            ) from exc
+    return QualityConfig(
+        exclude_title_patterns=tuple(title_patterns),
+        exclude_url_patterns=tuple(url_patterns),
+    )
+
+
+def _parse_string_list(raw: Any, key: str, path: Path) -> list[str]:
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ConfigError(f"{path}: '{key}' debe ser una lista")
+    result = []
+    for item in raw:
+        if not isinstance(item, str) or not item.strip():
+            raise ConfigError(f"{path}: '{key}' contiene un elemento vacío o no textual")
+        result.append(item.strip())
+    return result

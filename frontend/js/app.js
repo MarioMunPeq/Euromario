@@ -117,7 +117,7 @@ function getCategoryBadge(category) {
 function getSourceBadge(source) {
   const labels = {
     media: { class: 'badge--media', label: source.name },
-    steam: { class: 'badge--steam', label: `Steam · ${source.name}` },
+    steam: { class: 'badge--steam', label: source.name },
     reddit: { class: 'badge--reddit', label: 'Reddit · no verificado' },
   };
   const config = labels[source.type] || { class: 'badge', label: source.name };

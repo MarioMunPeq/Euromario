@@ -32,12 +32,28 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Instalar e iniciar Ollama
+        id: ollama
+        continue-on-error: true
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve > /dev/null 2>&1 &
+          nohup ollama serve > /tmp/ollama.log 2>&1 &
+          echo "Ollama PID: $!"
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:11434/api/tags > /dev/null 2>&1; then
+              echo "Ollama listo tras ${i}s"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Ollama no arrancó en 30s"
+              cat /tmp/ollama.log
+              exit 1
+            fi
+            sleep 1
+          done
           ollama pull "$OLLAMA_MODEL"
 
       - name: Ejecutar pipeline
+        if: always() && steps.ollama.outcome != 'skipped'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python -m gaming_news_digest

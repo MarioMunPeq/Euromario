@@ -1,10 +1,14 @@
 """Cliente para Groq API (fallback cloud gratuito)."""
 
+import logging
 import os
+import time
 
 import requests
 
 from .base import AIClient, AIError, AISummary
+
+logger = logging.getLogger(__name__)
 
 
 class GroqClient(AIClient):
@@ -12,7 +16,7 @@ class GroqClient(AIClient):
 
     def __init__(
         self,
-        model: str = "llama-3.1-8b-instant",
+        model: str = "openai/gpt-oss-20b",
         api_key: str | None = None,
         base_url: str = "https://api.groq.com/openai/v1",
     ):
@@ -45,7 +49,6 @@ class GroqClient(AIClient):
                             {"role": "system", "content": self._system_prompt()},
                             {"role": "user", "content": self._user_prompt(title, body, game)},
                         ],
-                        "response_format": {"type": "json_object"},
                         "temperature": 0.1,
                         "max_tokens": 300,
                     },
@@ -60,7 +63,13 @@ class GroqClient(AIClient):
             except requests.ConnectionError as exc:
                 raise ConnectionError("Groq no disponible") from exc
             except requests.HTTPError as exc:
-                raise requests.HTTPError(f"Groq HTTP {exc.response.status_code}") from exc
+                status = exc.response.status_code if exc.response is not None else 0
+                if status == 429:
+                    wait = min(2 ** attempt * 5, 30)
+                    logger.warning("Groq 429 rate limited, esperando %ds", wait)
+                    time.sleep(wait)
+                    continue
+                raise requests.HTTPError(f"Groq HTTP {status}") from exc
             except AIError:
                 if attempt == self.MAX_RETRIES:
                     raise

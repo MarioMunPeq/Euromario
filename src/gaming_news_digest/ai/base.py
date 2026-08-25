@@ -59,9 +59,13 @@ class AIClient(ABC):
     def _validate_response(self, raw: str) -> "AISummary":
         """Parsea y valida la respuesta JSON cruda del modelo."""
         import json
+        import re
+
+        # Strip<think> blocks (Qwen thinking mode)
+        cleaned = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
 
         try:
-            data = json.loads(raw)
+            data = json.loads(cleaned)
         except json.JSONDecodeError as exc:
             raise AIError(f"JSON inválido: {exc}", raw_response=raw) from exc
 

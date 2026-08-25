@@ -1,6 +1,7 @@
 """Orquestador del pipeline con lógica de fallback Ollama→Groq."""
 
 import logging
+import time
 from collections.abc import Iterator
 
 import requests
@@ -93,7 +94,9 @@ class Pipeline:
         return kept
 
     def _enrich_with_ai(self, items: list[FetchedItem]) -> Iterator[NewsItem]:
-        for item in items:
+        for i, item in enumerate(items):
+            if self.current_client is self.groq and i > 0:
+                time.sleep(1)  # rate limit: 1 req/s para Groq free tier
             ai_data = self._summarize_with_fallback(item)
             if ai_data is None:  # fallback seguro
                 ai_data = _SAFE_FALLBACK

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-const FRONTEND_DIR = path.join(__dirname, 'frontend');
+const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
 const PORT = 8765;
 
 function startServer() {
@@ -25,7 +25,7 @@ function startServer() {
 }
 
 function saveScreenshot(page, name) {
-  return page.screenshot({ path: path.join(__dirname, `test_${name}.png`), fullPage: true });
+  return page.screenshot({ path: path.join(__dirname, '..', `test_${name}.png`), fullPage: true });
 }
 
 async function getStateDiagnostics(page) {
@@ -104,17 +104,21 @@ async function getStateDiagnostics(page) {
     await saveScreenshot(page1, 'content');
     await page1.close();
 
-    // === TEST 2: Error state (fetch fails) ===
+    // === TEST 2: Error state (404 on news.json) ===
     console.log('\n=== TEST 2: Error state ===');
-    const page2 = await browser.newPage();
+    const ctx2 = await browser.createBrowserContext();
+    const page2 = await ctx2.newPage();
     await page2.setViewport({ width: 1280, height: 900 });
-    // Directly trigger error state via JS
-    await page2.goto(`http://localhost:${PORT}`, { waitUntil: 'networkidle0' });
-    await new Promise(r => setTimeout(r, 500));
-    await page2.evaluate(() => {
-      setError('No se encontraron noticias.', 'No se pudieron cargar las noticias');
+    await page2.setRequestInterception(true);
+    page2.on('request', req => {
+      if (req.url().includes('news.json')) {
+        req.respond({ status: 404, body: 'Not found' });
+      } else {
+        req.continue();
+      }
     });
-    await new Promise(r => setTimeout(r, 300));
+    await page2.goto(`http://localhost:${PORT}`, { waitUntil: 'networkidle0' });
+    await new Promise(r => setTimeout(r, 1500));
     const errorState = await getStateDiagnostics(page2);
 
     check('error state visible (not hidden)', errorState['state-error'].hidden === false);
@@ -123,19 +127,24 @@ async function getStateDiagnostics(page) {
     check('loading hidden', errorState['state-loading'].hidden === true);
     check('empty hidden', errorState['state-empty'].hidden === true);
     await saveScreenshot(page2, 'error');
-    await page2.close();
+    await ctx2.close();
 
     // === TEST 3: Empty state (empty news array) ===
     console.log('\n=== TEST 3: Empty state ===');
-    const page3 = await browser.newPage();
+    const ctx3 = await browser.createBrowserContext();
+    const page3 = await ctx3.newPage();
     await page3.setViewport({ width: 1280, height: 900 });
-    await page3.goto(`http://localhost:${PORT}`, { waitUntil: 'networkidle0' });
-    await new Promise(r => setTimeout(r, 500));
-    // Directly trigger empty state via JS (avoids request interception issues)
-    await page3.evaluate(() => {
-      setState('empty');
+    const emptyNews = JSON.stringify({ generated_at: new Date().toISOString(), news: [] });
+    await page3.setRequestInterception(true);
+    page3.on('request', req => {
+      if (req.url().includes('news.json')) {
+        req.respond({ status: 200, contentType: 'application/json', body: emptyNews });
+      } else {
+        req.continue();
+      }
     });
-    await new Promise(r => setTimeout(r, 300));
+    await page3.goto(`http://localhost:${PORT}`, { waitUntil: 'networkidle0' });
+    await new Promise(r => setTimeout(r, 1500));
     const emptyDiag = await getStateDiagnostics(page3);
 
     check('empty state visible (not hidden)', emptyDiag['state-empty'].hidden === false);
@@ -144,19 +153,23 @@ async function getStateDiagnostics(page) {
     check('loading hidden', emptyDiag['state-loading'].hidden === true);
     check('error hidden', emptyDiag['state-error'].hidden === true);
     await saveScreenshot(page3, 'empty');
-    await page3.close();
+    await ctx3.close();
 
-    // === TEST 4: Loading state (throttled network) ===
+    // === TEST 4: Loading state (delayed response) ===
     console.log('\n=== TEST 4: Loading state ===');
-    const page4 = await browser.newPage();
+    const ctx4 = await browser.createBrowserContext();
+    const page4 = await ctx4.newPage();
     await page4.setViewport({ width: 1280, height: 900 });
-    // Trigger loading state directly via JS
-    await page4.goto(`http://localhost:${PORT}`, { waitUntil: 'domcontentloaded' });
-    await new Promise(r => setTimeout(r, 50));
-    await page4.evaluate(() => {
-      setLoading(true);
+    await page4.setRequestInterception(true);
+    page4.on('request', req => {
+      if (req.url().includes('news.json')) {
+        setTimeout(() => req.continue(), 8000);
+      } else {
+        req.continue();
+      }
     });
-    await new Promise(r => setTimeout(r, 100));
+    await page4.goto(`http://localhost:${PORT}`, { waitUntil: 'domcontentloaded' });
+    await new Promise(r => setTimeout(r, 500));
     const loadingDiag = await getStateDiagnostics(page4);
 
     check('loading state visible (not hidden)', loadingDiag['state-loading'].hidden === false);
@@ -165,7 +178,7 @@ async function getStateDiagnostics(page) {
     check('error hidden during loading', loadingDiag['state-error'].hidden === true);
     check('empty hidden during loading', loadingDiag['state-empty'].hidden === true);
     await saveScreenshot(page4, 'loading');
-    await page4.close();
+    await ctx4.close();
 
   } finally {
     await browser.close();

@@ -472,7 +472,7 @@ async function loadData() {
   }
 
   // Only set to content state on success
-  setLoading(false);
+  setState(state.filteredNews.length > 0 ? 'content' : 'empty');
 }
 
 // ============================================================

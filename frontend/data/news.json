@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-25T21:38:31.190633Z",
+  "generated_at": "2026-08-25T22:38:15.075533Z",
   "total": 47,
   "news": [
     {
@@ -21,7 +21,7 @@
     {
       "id": "e9ebef5a14fa0e57",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 intenta conducir como un conductor profesional, pero cada vehülo tiene cero fricción",
+      "summary": "Un jugador de GTA 5 intentó conducir como un conductor profesional, pero cada vehículo tenía cero fricción, lo que hizo que la experiencia fuera imposible.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/i-attempted-to-become-a-professional-driver-in-a-gta-5-where-every-car-had-no-friction/",
       "source": {
         "name": "PC Gamer",
@@ -32,12 +32,12 @@
       "language": "en",
       "published_at": "2026-08-25T17:00:00Z",
       "relevance": 3,
-      "category": "lanzamiento"
+      "category": "analisis"
     },
     {
       "id": "f4c84cee1bf73aec",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y colisiones",
+      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y colisiones.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228678941",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -53,7 +53,7 @@
     {
       "id": "d8c2c2ca9d15b736",
       "title": "Call of Duty: Modern Warfare 4 Beta Pushes Unplanned Update to Address Fan Feedback",
-      "summary": "Infinity Ward ha lanzado un update inesperado para el Call of Duty: Modern Warfare 4 beta para abordar la retroalimentación de los fans.",
+      "summary": "Infinity Ward empuja actualización no prevista para Call of Duty: Modern Warfare 4 beta para abordar comentarios de los fans.",
       "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-beta-pushes-unplanned-update-to-address-fan-feedback",
       "source": {
         "name": "IGN",
@@ -101,7 +101,7 @@
     {
       "id": "ca872b04f8a771ad",
       "title": "NBA 2K27 Is Teasing a GTA 6-Themed Event in Collaboration with Rockstar Games",
-      "summary": "NBA 2K27 anuncia evento GTA 6 con Rockstar Games",
+      "summary": "NBA 2K27 anuncia una colaboración con Rockstar Games para un evento GTA 6, generando especulación entre los fans.",
       "url": "https://www.ign.com/articles/nba-2k27-is-teasing-a-gta-6-themed-event-in-collaboration-with-rockstar-games",
       "source": {
         "name": "IGN",
@@ -133,7 +133,7 @@
     {
       "id": "dcabc4f7bf42b0be",
       "title": "\"People wanted faster movement, but not this fast\" - Call of Duty: Modern Warfare 4 beta players aren't happy with slide spammers and the increased pace of the game",
-      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con la velocidad del juego, que algunos consideran demasiado rápida y otros no lo suficientemente rápida.",
+      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego, que es más rápido de lo que esperaban.",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-beta-player-reaction",
       "source": {
         "name": "Eurogamer",
@@ -223,7 +223,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-25T10:03:28Z",
-      "relevance": 3,
+      "relevance": 4,
       "category": "lanzamiento"
     },
     {
@@ -245,7 +245,7 @@
     {
       "id": "6cddca81472c1827",
       "title": "Discord is yet to be served Take-Two's GTA 6 leak subpoena, which is set to demand broad access to user data",
-      "summary": "Discord nega haber sido servido una orden de subasta por parte de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
+      "summary": "Discord nega haber sido servido una orden de busca por parte de Take-Two relacionada con los estafas de GTA 6, aunque el desarrollador de juegos de Rockstar parente ha solicitado acceso a datos de usuarios de Discord y Microsoft.",
       "url": "https://www.eurogamer.net/take-two-rockstar-gta-6-leaks-subpoena-discord-response",
       "source": {
         "name": "Eurogamer",
@@ -421,7 +421,7 @@
     {
       "id": "8b8303066f661177",
       "title": "Call of Duty: Modern Warfare 4 Switch 2 physical version is seemingly a code-in-box",
-      "summary": "La versión física de Call of Duty: Modern Warfare 4 para Nintendo Switch 2 es posible que contenga un código de código en el cajón, lo que podría ser un problema para los jugadores.",
+      "summary": "La versión física de Call of Duty: Modern Warfare 4 para Nintendo Switch 2 es posible que contenga un código de código en el cajón, lo que podría afectar la experiencia del jugador.",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-switch-2-code-in-box",
       "source": {
         "name": "Eurogamer",
@@ -629,7 +629,7 @@
     {
       "id": "3dc4a21cb6a3306c",
       "title": "Don't tell Nintendo, but I turned GTA 5 into Pokémon Go using a mod",
-      "summary": "Un modder de GTA 5 creó un juego que combina elementos de GTA 5 y Pokémon Go",
+      "summary": "Un modista ha creado una mod para GTA 5 que convierte el juego en Pokémon Go, permitiendo a los jugadores atrapar Pokémon en la ciudad de Los Santos.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228669484",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -725,7 +725,7 @@
     {
       "id": "e2dbd2bc385ba46b",
       "title": "Declare Your Allegiance and Determine Who Owns Los Santos in the Brand Wars Event",
-      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores pueden proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
+      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores deben decidir quién es el dueño de Los Santos. El evento incluye incentivados Odd Jobs, Freemode Events y carreras de Hotring Circuit Series.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183786534",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -751,7 +751,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-14T11:49:34Z",
-      "relevance": 4,
+      "relevance": 5,
       "category": "lanzamiento"
     }
   ]

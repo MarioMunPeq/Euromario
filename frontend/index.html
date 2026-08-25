@@ -13,13 +13,15 @@
 </head>
 <body>
   <header class="header">
-    <div class="header__brand">
-      <h1 class="header__title" id="app-title">EuroMario</h1>
-    </div>
-    <div class="header__meta" id="header-meta" aria-live="polite">
-      <span class="header__meta-item" id="header-count">0 noticias</span>
-      <span class="header__meta-separator" aria-hidden="true">•</span>
-      <time class="header__meta-item" id="header-updated" datetime="">—</time>
+    <div class="header__top">
+      <div class="header__brand">
+        <h1 class="header__title" id="app-title">EuroMario</h1>
+      </div>
+      <div class="header__meta" id="header-meta" aria-live="polite">
+        <span class="header__meta-item" id="header-count">0 noticias</span>
+        <span class="header__meta-separator" aria-hidden="true">&middot;</span>
+        <time class="header__meta-item" id="header-updated" datetime="">&mdash;</time>
+      </div>
     </div>
     <div class="header__controls">
       <div class="search-box" role="search">
@@ -31,32 +33,29 @@
 
   <main class="main">
     <section class="filters" aria-label="Filtros">
-      <form class="filters__form" id="filters-form">
-        <div class="filters__group">
-          <label for="filter-game" class="visually-hidden">Juego</label>
-          <select id="filter-game" multiple aria-label="Filtrar por juego">
-            <option value="">Todos los juegos</option>
-          </select>
+      <div class="filters__section">
+        <span class="filters__label">Juego</span>
+        <div class="game-tiles" id="game-tiles" role="group" aria-label="Filtrar por juego"></div>
+      </div>
+      <div class="filters__section">
+        <span class="filters__label">Categor&iacute;a</span>
+        <div class="category-pills" id="category-pills" role="group" aria-label="Filtrar por categor&iacute;a">
+          <button type="button" class="category-pill" data-cat="lanzamiento">Lanzamiento</button>
+          <button type="button" class="category-pill" data-cat="actualizacion">Actualizaci&oacute;n</button>
+          <button type="button" class="category-pill" data-cat="rumor">Rumor</button>
+          <button type="button" class="category-pill" data-cat="analisis">An&aacute;lisis</button>
         </div>
-        <div class="filters__group">
-          <label for="filter-category" class="visually-hidden">Categoría</label>
-          <select id="filter-category" multiple aria-label="Filtrar por categoría">
-            <option value="">Todas las categorías</option>
-            <option value="lanzamiento">Lanzamiento</option>
-            <option value="actualizacion">Actualización</option>
-            <option value="rumor">Rumor</option>
-            <option value="analisis">Análisis</option>
-          </select>
-        </div>
-        <div class="filters__group filters__group--date">
+      </div>
+      <div class="filters__row">
+        <div class="filters__date-group">
           <label for="date-from" class="visually-hidden">Desde</label>
           <input type="date" id="date-from" aria-label="Fecha desde">
-          <span class="date-separator" aria-hidden="true">–</span>
+          <span class="date-separator" aria-hidden="true">&ndash;</span>
           <label for="date-to" class="visually-hidden">Hasta</label>
           <input type="date" id="date-to" aria-label="Fecha hasta">
         </div>
         <button type="button" class="btn btn--ghost" id="clear-filters" aria-label="Limpiar filtros">Limpiar</button>
-      </form>
+      </div>
     </section>
 
     <section class="news-grid" id="news-grid" aria-live="polite" aria-label="Noticias">
@@ -72,7 +71,7 @@
         </svg>
         <h2 id="error-title">Error al cargar</h2>
         <p id="error-message">No se pudieron cargar las noticias.</p>
-        <button type="button" class="btn" id="retry-btn">Reintentar</button>
+        <button type="button" class="btn btn--primary" id="retry-btn">Reintentar</button>
       </div>
       <div class="state state--empty" id="state-empty" hidden>
         <svg class="empty__icon" aria-hidden="true" viewBox="0 0 24 24" width="48" height="48">
@@ -87,11 +86,14 @@
   </main>
 
   <footer class="footer">
-    <p class="footer__stats" id="footer-stats">
-      <span id="stats-count">0</span> noticias •
-      <span id="stats-updated">—</span> •
-      <a href="https://github.com/tu-usuario/gaming-news-digest" target="_blank" rel="noopener" class="footer__link">v0.1.0</a>
-    </p>
+    <div class="footer__inner">
+      <span id="stats-count">0</span><span class="footer__separator">&middot;</span>
+      <span>Actualizado <span id="stats-updated">&mdash;</span></span>
+      <span class="footer__separator">&middot;</span>
+      <span class="footer__tech">Pipeline: Ollama &rarr; Groq</span>
+      <span class="footer__separator">&middot;</span>
+      <a href="https://github.com/MarioMunPeq/Euromario" target="_blank" rel="noopener" class="footer__link">v0.1.0</a>
+    </div>
   </footer>
 
   <script src="js/app.js"></script>

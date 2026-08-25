@@ -11,10 +11,15 @@ const CONFIG = {
   appTitle: 'EuroMario',
   dataUrl: 'data/news.json',
   cacheBustParam: 'v',
-  dateFormat: { year: 'numeric', month: 'short', day: 'numeric' },
-  relativeTimeLocale: 'es',
   itemsPerPage: 50,
   debounceMs: 150,
+};
+
+const CATEGORY_LABELS = {
+  lanzamiento: 'Lanzamiento',
+  actualizacion: 'Actualizaci\u00f3n',
+  rumor: 'Rumor',
+  analisis: 'An\u00e1lisis',
 };
 
 // ============================================================
@@ -53,8 +58,8 @@ const els = {
   newsList: document.getElementById('news-list'),
   retryBtn: document.getElementById('retry-btn'),
   search: document.getElementById('search'),
-  filterGame: document.getElementById('filter-game'),
-  filterCategory: document.getElementById('filter-category'),
+  gameTiles: document.getElementById('game-tiles'),
+  categoryPills: document.getElementById('category-pills'),
   dateFrom: document.getElementById('date-from'),
   dateTo: document.getElementById('date-to'),
   clearFilters: document.getElementById('clear-filters'),
@@ -74,7 +79,15 @@ function debounce(fn, ms) {
   };
 }
 
-function formatRelativeDate(date, locale = 'es') {
+function formatDate(date) {
+  return date.toLocaleDateString('es', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatRelativeDate(date) {
   const now = new Date();
   const diffMs = now - date;
   const diffSec = Math.floor(diffMs / 1000);
@@ -86,46 +99,7 @@ function formatRelativeDate(date, locale = 'es') {
   if (diffMin < 60) return `hace ${diffMin} min`;
   if (diffHour < 24) return `hace ${diffHour}h`;
   if (diffDay < 30) return `hace ${diffDay}d`;
-
-  return date.toLocaleDateString('es', { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function formatDate(date, locale = 'es') {
-  return date.toLocaleDateString(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function getRelevanceStars(relevance) {
-  const full = '★'.repeat(relevance);
-  const empty = '☆'.repeat(5 - relevance);
-  return `<span class="news-card__relevance" aria-label="Relevancia: ${relevance}/5">${full}${empty}</span>`;
-}
-
-function getCategoryBadge(category) {
-  const labels = {
-    lanzamiento: 'Lanzamiento',
-    actualizacion: 'Actualización',
-    rumor: 'Rumor',
-    analisis: 'Análisis',
-  };
-  return `<span class="badge badge--category">${labels[category] || category}</span>`;
-}
-
-function getSourceBadge(source) {
-  const labels = {
-    media: { class: 'badge--media', label: source.name },
-    steam: { class: 'badge--steam', label: source.name },
-    reddit: { class: 'badge--reddit', label: 'Reddit · no verificado' },
-  };
-  const config = labels[source.type] || { class: 'badge', label: source.name };
-  return `<span class="badge ${config.class}">${config.label}</span>`;
-}
-
-function getGameBadge(game) {
-  return `<span class="badge badge--category">${escapeHtml(game)}</span>`;
+  return formatDate(date);
 }
 
 function escapeHtml(text) {
@@ -134,48 +108,102 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// ============================================================
-// Reddit SVG Icon (inline, no external deps)
-// ============================================================
-
-const REDDIT_SVG = `
-<svg class="badge__icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
-  <path d="M12 2C6.48 2 2 6.48 2 12c0 5.52 4.48 10 10 10s10-4.48 10-10c0-5.52-4.48-10-10-10zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 11H7v2h2v1.88c-.7.21-1.19.83-1.19 1.64 0 1.06.72 1.87 1.66 1.97.26.03.5-.07.65-.26l1.31-1.5c.72 1.22 2.14 2 3.69 2h1v-2h-1c-.62 0-1.07-.57-1-1.16v-1.24l1.54-.3c.24-.58.95-1.15 1.72-1.15.87 0 1.64.77 1.64 1.83 0 1.14-.72 1.88-1.82 1.83-1.22 0-2.04-.92-1.88-1.92l-1.52-1.42c-.6-.6-.6-1.6 0-2.2l1.33-1.33c-.74-.42-1.32-1.14-1.58-2H10v2h2c.04 2.03 2.65 3.57 4.92 3.5 1.8-.04 3.32-1.15 3.86-2.78.29-.87.14-1.76-.4-2.5l-1.34-1.47c-.3-.3-.3-1.6 0-2.2l1.32-1.32c.73-.75 1.13-1.84 1.13-2.88 0-1.86-1.5-3.2-3.35-2.8-1.3.06-2.52.98-2.88 2.13l-1.51 1.32c-.46.4-.46 1.6 0 2l1.5 1.42c.3.3.3 1.6 0 2.2l-1.32 1.33c-.7.7-1.06 1.73-1.07 2.9 0 1.84 1.5 3.21 3.3 2.86 1.2-.07 2.45-.9 2.78-2.05l1.38-1.31c.43-.4.43-1.6 0-2.2L15.54 6.5c-.67-.67-1.8-1.07-2.9-1.07-.37 0-.73.05-1.06.14l-1.58 1.4c-.6.58-.6 1.6 0 2.2l1.51 1.43c-.3.3-.3.7-.3 1 0 1.3.86 2.44 2.15 2.8.36.1.73.1 1.09.1 2.03 0 3.53-1.76 3.5-3.85-.02-1.02-.64-1.88-1.5-2.38l-1.3-1.4c-.5-.5-.5-1.6 0-2.1l1.4-1.3c.32-.3.32-.75.02-1.07-.28-.3-.72-.38-1.1-.2-.52.18-.85.73-.85 1.35 0 .44.23.87.6 1.1l1.3 1.3c.67.7 1.07 1.8.7 2.9-.1.37-.3.73-.7.99l-1.34 1.3c-.83.84-1.9 1.4-3.1 1.4-.94 0-1.8-.55-2.22-1.33l-1.54-1.42c-.6-.6-.6-1.6 0-2.2l1.35-1.35c.5-.5.5-1.3.02-1.8-.3-.3-.7-.38-1.1-.2-.4.2-.65.68-.82 1.2 0 .35.18.7.5 1.07l1.4 1.3c.6.6 1 .6 1.6.2.2-.14.37-.3.5-.5l1.3-1.4c.6-.6.6-1.6 0-2.2l-1.5-1.4z"/>
-</svg>
-`;
+function getGameInitial(name) {
+  return name.charAt(0).toUpperCase();
+}
 
 // ============================================================
-// Data Fetching
+// Source Badge
 // ============================================================
 
-async function fetchNews() {
-  const url = `${CONFIG.dataUrl}?${CONFIG.cacheBustParam}=${Date.now()}`;
-  console.log('[DEBUG] fetchNews: START', { url: url, dataUrl: CONFIG.dataUrl, cacheBustParam: CONFIG.cacheBustParam });
-  try {
-    const response = await fetch(url, {
-      cache: 'no-store',
-      headers: { 'Accept': 'application/json' },
+function getSourceBadge(source) {
+  const labels = {
+    media: { class: 'badge--media', label: source.name },
+    steam: { class: 'badge--steam', label: source.name },
+    reddit: { class: 'badge--reddit', label: 'Reddit' },
+  };
+  const config = labels[source.type] || { class: 'badge', label: source.name };
+  return `<span class="badge ${config.class}">${escapeHtml(config.label)}</span>`;
+}
+
+function getCategoryBadge(category) {
+  return `<span class="badge badge--category">${CATEGORY_LABELS[category] || category}</span>`;
+}
+
+// ============================================================
+// Game Tiles (visual filter)
+// ============================================================
+
+function renderGameTiles(games) {
+  const allTile = `
+    <button type="button" class="game-tile active" data-game="" aria-pressed="true">
+      <div class="game-tile__icon">ALL</div>
+      <span class="game-tile__name">Todos</span>
+    </button>`;
+
+  const gameTiles = games.map(game => `
+    <button type="button" class="game-tile" data-game="${escapeHtml(game)}" aria-pressed="false">
+      <div class="game-tile__icon">${getGameInitial(game)}</div>
+      <span class="game-tile__name">${escapeHtml(game)}</span>
+    </button>`).join('');
+
+  els.gameTiles.innerHTML = allTile + gameTiles;
+
+  els.gameTiles.querySelectorAll('.game-tile').forEach(tile => {
+    tile.addEventListener('click', () => {
+      const game = tile.dataset.game;
+      if (game === '') {
+        state.filters.games = [];
+        els.gameTiles.querySelectorAll('.game-tile').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-pressed', 'false');
+        });
+        tile.classList.add('active');
+        tile.setAttribute('aria-pressed', 'true');
+      } else {
+        const allBtn = els.gameTiles.querySelector('[data-game=""]');
+        allBtn.classList.remove('active');
+        allBtn.setAttribute('aria-pressed', 'false');
+
+        if (state.filters.games.includes(game)) {
+          state.filters.games = state.filters.games.filter(g => g !== game);
+          tile.classList.remove('active');
+          tile.setAttribute('aria-pressed', 'false');
+          if (state.filters.games.length === 0) {
+            allBtn.classList.add('active');
+            allBtn.setAttribute('aria-pressed', 'true');
+          }
+        } else {
+          state.filters.games.push(game);
+          tile.classList.add('active');
+          tile.setAttribute('aria-pressed', 'true');
+        }
+      }
+      applyFilters();
+      pushUrl();
     });
-    console.log('[DEBUG] fetchNews: response received', { status: response.status, ok: response.ok, url: response.url });
+  });
+}
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+// ============================================================
+// Category Pills
+// ============================================================
 
-    const data = await response.json();
-    console.log('[DEBUG] fetchNews: JSON parsed', { hasData: !!data, hasNews: Array.isArray(data?.news), newsLength: data?.news?.length, keys: data ? Object.keys(data) : 'no data' });
-
-    // Validate structure
-    if (!data || !Array.isArray(data.news)) {
-      throw new Error('Formato de datos inválido');
-    }
-
-    console.log('[app] fetchNews: parsed', data.news.length, 'news items');
-    return data;
-  } catch (err) {
-    console.error('[ERROR] fetchNews failed:', err);
-    throw err;
-  }
+function initCategoryPills() {
+  els.categoryPills.querySelectorAll('.category-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const cat = pill.dataset.cat;
+      if (state.filters.categories.includes(cat)) {
+        state.filters.categories = state.filters.categories.filter(c => c !== cat);
+        pill.classList.remove('active');
+      } else {
+        state.filters.categories.push(cat);
+        pill.classList.add('active');
+      }
+      applyFilters();
+      pushUrl();
+    });
+  });
 }
 
 // ============================================================
@@ -183,18 +211,17 @@ async function fetchNews() {
 // ============================================================
 
 function renderNewsCard(item) {
-  const gameBadge = item.game ? getGameBadge(item.game) : '';
   const categoryBadge = item.category ? getCategoryBadge(item.category) : '';
   const sourceBadge = getSourceBadge(item.source);
-  const relevanceStars = getRelevanceStars(item.relevance);
-  const dateStr = formatRelativeDate(new Date(item.published_at));
-  const publishedDate = formatDate(new Date(item.published_at));
+  const dateObj = new Date(item.published_at);
+  const dateStr = formatDate(dateObj);
+  const relStr = formatRelativeDate(dateObj);
 
   return `
-    <article class="news-card" data-id="${item.id}">
+    <article class="news-card" data-id="${item.id}" data-category="${item.category || ''}">
       <header class="news-card__header">
         <div class="news-card__source">
-          ${getSourceBadge(item.source)}
+          ${sourceBadge}
         </div>
         <div class="news-card__title">
           <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
@@ -206,13 +233,13 @@ function renderNewsCard(item) {
       <footer class="news-card__meta">
         <div class="news-card__badges">
           ${item.game ? `<span class="badge badge--category">${escapeHtml(item.game)}</span>` : ''}
-          ${item.category ? getCategoryBadge(item.category) : ''}
+          ${categoryBadge}
         </div>
         <span class="news-card__relevance" aria-label="Relevancia: ${item.relevance}/5">
-          ${'★'.repeat(item.relevance)}${'☆'.repeat(5 - item.relevance)}
+          ${'\u2605'.repeat(item.relevance)}${'\u2606'.repeat(5 - item.relevance)}
         </span>
-        <time class="news-card__date" datetime="${new Date(item.published_at).toISOString()}">
-          ${formatRelativeDate(new Date(item.published_at))}
+        <time class="news-card__date" datetime="${dateObj.toISOString()}" title="${relStr}">
+          ${dateStr}
         </time>
       </footer>
     </article>
@@ -232,19 +259,22 @@ function renderNewsList(items) {
 
 function renderStats(data) {
   const count = data.total ?? data.news?.length ?? 0;
-  const generatedAt = data.generated_at ? new Date(data.generated_at) : new Date();
   const countStr = count.toLocaleString('es');
-  const updatedStr = `Actualizado: ${formatDate(new Date(data.generated_at))} ${formatRelativeDate(new Date(data.generated_at))}`;
+  const updatedStr = data.generated_at
+    ? formatDate(new Date(data.generated_at))
+    : '\u2014';
 
-  // Update footer stats
   if (els.statsCount) els.statsCount.textContent = countStr;
   if (els.statsUpdated) els.statsUpdated.textContent = updatedStr;
 
-  // Update header meta
   if (els.headerCount) els.headerCount.textContent = `${countStr} noticias`;
   if (els.headerUpdated) {
-    els.headerUpdated.textContent = `Actualizado ${formatRelativeDate(new Date(data.generated_at))}`;
-    els.headerUpdated.dateTime = new Date(data.generated_at).toISOString();
+    els.headerUpdated.textContent = data.generated_at
+      ? `Actualizado ${formatRelativeDate(new Date(data.generated_at))}`
+      : '\u2014';
+    els.headerUpdated.dateTime = data.generated_at
+      ? new Date(data.generated_at).toISOString()
+      : '';
   }
 }
 
@@ -260,24 +290,16 @@ function setAppTitle() {
 // ============================================================
 
 function setState(stateName) {
-  console.log('[DEBUG] setState:', stateName);
-  // Hide all states
-  console.log('[DEBUG] setState: hiding all states');
   els.stateLoading.hidden = true;
   els.stateError.hidden = true;
   els.stateEmpty.hidden = true;
   els.newsList.hidden = true;
-  
-  // Show requested state
+
   const stateEl = document.getElementById(`state-${stateName}`);
   if (stateEl) {
-    console.log('[DEBUG] setState: showing state element', stateName);
     stateEl.hidden = false;
   } else if (stateName === 'content') {
-    console.log('[DEBUG] setState: showing content (news-list)');
     els.newsList.hidden = false;
-  } else {
-    console.warn('[WARN] setState: unknown state', stateName);
   }
 }
 
@@ -293,17 +315,13 @@ function setLoading(loading) {
 function setError(message, title = 'Error al cargar') {
   state.ui.error = message;
   state.ui.loading = false;
-  els.stateError.querySelector('#error-title').textContent = title;
+  els.errorTitle.textContent = title;
   els.errorMessage.textContent = message;
   setState('error');
 }
 
 function clearError() {
   state.ui.error = null;
-}
-
-function showEmpty() {
-  setState('empty');
 }
 
 // ============================================================
@@ -314,28 +332,24 @@ function applyFilters() {
   const { games, categories, dateFrom, dateTo, search } = state.filters;
 
   state.filteredNews = state.allNews.filter(item => {
-    // Search
     if (search) {
       const query = search.toLowerCase();
       const haystack = `${item.title} ${item.summary || ''} ${item.game || ''}`.toLowerCase();
       if (!haystack.includes(query)) return false;
     }
 
-    // Game filter (OR)
-    if (state.filters.games.length > 0) {
-      if (!item.game || !state.filters.games.includes(item.game)) return false;
+    if (games.length > 0) {
+      if (!item.game || !games.includes(item.game)) return false;
     }
 
-    // Category filter (OR)
-    if (state.filters.categories.length > 0) {
-      if (!item.category || !state.filters.categories.includes(item.category)) return false;
+    if (categories.length > 0) {
+      if (!item.category || !categories.includes(item.category)) return false;
     }
 
-    // Date range
     const itemDate = new Date(item.published_at);
-    if (state.filters.dateFrom && itemDate < new Date(state.filters.dateFrom)) return false;
-    if (state.filters.dateTo) {
-      const toDate = new Date(state.filters.dateTo);
+    if (dateFrom && itemDate < new Date(dateFrom)) return false;
+    if (dateTo) {
+      const toDate = new Date(dateTo);
       toDate.setHours(23, 59, 59, 999);
       if (itemDate > toDate) return false;
     }
@@ -344,25 +358,22 @@ function applyFilters() {
   });
 
   renderNewsList(state.filteredNews);
-  
-  // Update footer stats (only count, not the full renderStats)
   if (els.statsCount) els.statsCount.textContent = state.filteredNews.length.toLocaleString('es');
 }
 
-function populateGameFilter(items) {
-  const games = [...new Set(items.map(i => i.game).filter(Boolean))].sort();
-  els.filterGame.innerHTML = '<option value="">Todos los juegos</option>' +
-    games.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
-}
+function syncFilterUIFromState() {
+  els.gameTiles.querySelectorAll('.game-tile').forEach(tile => {
+    const game = tile.dataset.game;
+    const isActive = game === '' ? state.filters.games.length === 0 : state.filters.games.includes(game);
+    tile.classList.toggle('active', isActive);
+    tile.setAttribute('aria-pressed', String(isActive));
+  });
 
-function updateFilterUI() {
-  // Sync select values
-  Array.from(els.filterGame.options).forEach(opt => {
-    opt.selected = state.filters.games.includes(opt.value);
+  els.categoryPills.querySelectorAll('.category-pill').forEach(pill => {
+    const cat = pill.dataset.cat;
+    pill.classList.toggle('active', state.filters.categories.includes(cat));
   });
-  Array.from(els.filterCategory.options).forEach(opt => {
-    opt.selected = state.filters.categories.includes(opt.value);
-  });
+
   els.dateFrom.value = state.filters.dateFrom || '';
   els.dateTo.value = state.filters.dateTo || '';
   els.search.value = state.filters.search || '';
@@ -402,8 +413,6 @@ function pushUrl() {
 // ============================================================
 
 function onFilterChange() {
-  state.filters.games = Array.from(els.filterGame.selectedOptions).map(o => o.value).filter(Boolean);
-  state.filters.categories = Array.from(els.filterCategory.selectedOptions).map(o => o.value).filter(Boolean);
   state.filters.dateFrom = els.dateFrom.value || null;
   state.filters.dateTo = els.dateTo.value || null;
   state.filters.search = els.search.value.trim();
@@ -420,7 +429,7 @@ function onClearFilters() {
     dateTo: null,
     search: '',
   };
-  updateFilterUI();
+  syncFilterUIFromState();
   applyFilters();
   pushUrl();
 }
@@ -431,47 +440,64 @@ function onRetry() {
 }
 
 // ============================================================
+// Data Fetching
+// ============================================================
+
+async function fetchNews() {
+  const url = `${CONFIG.dataUrl}?${CONFIG.cacheBustParam}=${Date.now()}`;
+  try {
+    const response = await fetch(url, {
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (!data || !Array.isArray(data.news)) {
+      throw new Error('Formato de datos inv\u00e1lido');
+    }
+
+    return data;
+  } catch (err) {
+    throw err;
+  }
+}
+
+// ============================================================
 // Data Loading
 // ============================================================
 
 async function loadData() {
-  console.log('[DEBUG] loadData: START');
   setLoading(true);
   clearError();
 
   try {
-    console.log('[DEBUG] loadData: calling fetchNews');
     const data = await fetchNews();
-    console.log('[DEBUG] loadData: fetchNews returned', { newsLength: data.news.length, total: data.total, generated_at: data.generated_at });
     state.allNews = data.news;
     state.filteredNews = data.news;
 
-    // Populate game filter from all news
-    populateGameFilter(data.news);
+    const games = [...new Set(data.news.map(i => i.game).filter(Boolean))].sort();
+    renderGameTiles(games);
+    initCategoryPills();
 
-    // Apply any URL-synced filters
     syncUrlToState();
-    updateFilterUI();
+    syncFilterUIFromState();
     applyFilters();
-
-    // Render
-    renderNewsList(state.filteredNews);
     renderStats(data);
     setAppTitle();
-    console.log('[DEBUG] loadData: COMPLETE, filteredNews=', state.filteredNews.length);
   } catch (err) {
-    console.error('[ERROR] loadData failed:', err);
     setError(
       err.message.includes('404') || err.message.includes('Failed to fetch')
-        ? 'No se encontraron noticias (primera ejecución pendiente).'
+        ? 'No se encontraron noticias (primera ejecuci\u00f3n pendiente).'
         : `Error de red: ${err.message}`,
       'No se pudieron cargar las noticias'
     );
-    // No finally block that overrides error state
     return;
   }
 
-  // Only set to content state on success
   setState(state.filteredNews.length > 0 ? 'content' : 'empty');
 }
 
@@ -480,29 +506,22 @@ async function loadData() {
 // ============================================================
 
 function init() {
-  console.log('[DEBUG] init: START');
   setAppTitle();
 
-  // Event listeners
   const debouncedFilterChange = debounce(onFilterChange, CONFIG.debounceMs);
 
   els.search.addEventListener('input', debouncedFilterChange);
-  els.filterGame.addEventListener('change', onFilterChange);
-  els.filterCategory.addEventListener('change', onFilterChange);
   els.dateFrom.addEventListener('change', onFilterChange);
   els.dateTo.addEventListener('change', onFilterChange);
   els.clearFilters.addEventListener('click', onClearFilters);
   els.retryBtn.addEventListener('click', onRetry);
 
-  // URL sync on popstate
   window.addEventListener('popstate', () => {
     syncUrlToState();
-    updateFilterUI();
+    syncFilterUIFromState();
     applyFilters();
   });
 
-  // Initial load
-  console.log('[DEBUG] init: calling loadData');
   loadData();
 }
 

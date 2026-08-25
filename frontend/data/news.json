@@ -1,9 +1,233 @@
 {
-  "generated_at": "2026-08-24T14:30:00Z",
-  "total": 10,
+  "generated_at": "2026-08-25T10:45:45.145694Z",
+  "total": 34,
   "news": [
     {
-      "id": "a1b2c3d4e5f60001",
+      "id": "3087abf72d56a857",
+      "title": "Discord have yet to receive a GTA 6 leak subpoena from Take-Two, says marketing director, but they will \"evaluate the validity and scope\" if they do",
+      "summary": "Discord afirma no haber recibido una subpoena de Take-Two para investigar las supuestas lecciones de GTA 6, pero si reciben una, evaluarán su validez y alcance.",
+      "url": "https://www.rockpapershotgun.com/discord-have-yet-to-receive-a-gta-6-leak-subpoena-from-take-two-says-marketing-director-but-they-will-evaluate-the-validity-and-scope-if-they-do",
+      "source": {
+        "name": "Rock Paper Shotgun",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-25T10:03:28Z",
+      "relevance": 3,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "fedeefc056e0516c",
+      "title": "GTA 6 Leak Subpoena: Discord Says It Will 'Evaluate the Validity and Scope Before Responding'",
+      "summary": "Discord niega haber sido servido una orden de busca relacionada con el leak de GTA 6, prometiéndole investigar la solicitud antes de responder.",
+      "url": "https://www.ign.com/articles/gta-6-leak-subpoena-discord-says-it-will-evaluate-the-validity-and-scope-before-responding",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-25T09:54:10Z",
+      "relevance": 4,
+      "category": "actualizacion"
+    },
+    {
+      "id": "6cddca81472c1827",
+      "title": "Discord is yet to be served Take-Two's GTA 6 leak subpoena, which is set to demand broad access to user data",
+      "summary": "Discord nega haber sido servido una orden de busca de Take-Two relacionada con los estafas de GTA 6, aunque el desarrollador de juegos de Rockstar ha solicitado acceso a datos de usuarios en una corte federal.",
+      "url": "https://www.eurogamer.net/take-two-rockstar-gta-6-leaks-subpoena-discord-response",
+      "source": {
+        "name": "Eurogamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-25T08:39:48Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "025923db788c2727",
+      "title": "Persona Comes to Beard Papa's With Special 30th Anniversary Collaboration",
+      "summary": "Beard Papa's colabora con Persona para celebrar el 30° aniversario de la serie RPG con cream puffs especiales",
+      "url": "https://www.ign.com/articles/persona-comes-to-beard-papas-with-special-30th-anniversary-collaboration",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Persona",
+      "language": "en",
+      "published_at": "2026-08-24T22:41:35Z",
+      "relevance": 5,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "f6a879d16dd93ec7",
+      "title": "Call of Duty: Modern Warfare 4 Devs Vow to Update Captain Price After Botched Haircut Goes Viral",
+      "summary": "Activision y Infinity Ward prometen actualizar el cabello de Captain Price en Call of Duty: Modern Warfare 4 después de que una imagen de su peinado defectuoso se volvió viral en internet.",
+      "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-devs-vow-to-update-captain-price-after-botched-haircut-goes-viral",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Call of Duty",
+      "language": "en",
+      "published_at": "2026-08-24T21:13:30Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "5fa09217df46c3b2",
+      "title": "Latest GTA 6 leak confirms full dong",
+      "summary": "Se ha confirmado un leak de GTA 6 que muestra el juego completo",
+      "url": "https://www.pcgamer.com/games/grand-theft-auto/latest-gta-6-leak-confirms-full-dong/",
+      "source": {
+        "name": "PC Gamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-24T20:22:51Z",
+      "relevance": 5,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "0ab0cdb9e89ba6fd",
+      "title": "This Legend of Zelda Brain Teaser Recreates One of the Best Side Quests From Tears of the Kingdom",
+      "summary": "Un brain teaser de The Legend of Zelda recrea uno de los mejores side quests de Tears of the Kingdom",
+      "url": "https://www.ign.com/articles/this-legend-of-zelda-brain-teaser-recreates-one-of-the-best-side-quests-from-tears-of-the-kingdom",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "The Legend of Zelda",
+      "language": "en",
+      "published_at": "2026-08-24T20:18:30Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "94aad741c8fa3b42",
+      "title": "Call of Duty: Modern Warfare 4 Adds New Dynamic Cosmetic Options for Certain Characters Like Ghost",
+      "summary": "Call of Duty: Modern Warfare 4 agrega opciones dinámicas de atuendo para ciertos personajes",
+      "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-adds-new-dynamic-cosmetic-options-for-certain-characters-like-ghost",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Call of Duty",
+      "language": "en",
+      "published_at": "2026-08-24T18:06:58Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "70330e017ba7b27b",
+      "title": "I turned car friction off in GTA 5. Help",
+      "summary": "Jugador de GTA 5 encuentra una forma de eliminar la fricción del vehículo, lo que permite acelerar a velocidades extremadamente altas.",
+      "url": "https://www.pcgamer.com/games/grand-theft-auto/i-turned-car-friction-off-in-gta-5-help/",
+      "source": {
+        "name": "PC Gamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-24T17:00:00Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "47607091f094c180",
+      "title": "I turned car friction off in GTA 5. Help",
+      "summary": "Un jugador de GTA 5 encuentra una forma de reducir la fricción del vehículo, lo que permite una mayor velocidad y maniobrabilidad.",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228676107",
+      "source": {
+        "name": "Steam · Grand Theft Auto",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-24T17:00:00Z",
+      "relevance": 3,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "c2708573eb7e370e",
+      "title": "Former Rockstar dev says the GTA 6 leaks are a 'nothing burger': 'There won't be much damage'",
+      "summary": "Un ex empleado de Rockstar afirma que las noticias de GTA 6 son un 'bocadillo', y que no habrá mucho daño.",
+      "url": "https://www.pcgamer.com/games/grand-theft-auto/former-rockstar-dev-says-the-gta-6-leaks-are-a-nothing-burger-there-wont-be-much-damage/",
+      "source": {
+        "name": "PC Gamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-24T16:52:01Z",
+      "relevance": 3,
+      "category": "analisis"
+    },
+    {
+      "id": "8004c8500812a248",
+      "title": "GTA 6 Leaker Drops New Nudity-Filled Gameplay, Polls People on Whether to Release Story Spoilers",
+      "summary": "Un leaker de GTA 6 ha compartido nuevo contenido con desnudez masiva, pidiendo a los fans que protesten en las oficinas de Rockstar y Take-Two Interactive",
+      "url": "https://www.ign.com/articles/gta-6-leaker-drops-new-nudity-filled-gameplay-polls-people-on-whether-to-release-story-spoilers",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-24T14:31:55Z",
+      "relevance": 5,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "8926b4fc8a8f746b",
+      "title": "This week in PC games: Gamescom and GTA 6 fight for our attention, but don't forget Folk Emerging, MGS4 and the horror game about balancing a cake",
+      "summary": "La semana de los juegos de PC está llena de noticias, incluyendo el lanzamiento de GTA 6 y Gamescom, así como la salida de Folk Emerging y MGS4.",
+      "url": "https://www.rockpapershotgun.com/this-week-in-pc-games-gamescom-and-gta-6-fight-for-attention-but-dont-forget-folk-emerging-mgs4-and-the-horror-game-about-balancing-a-cake",
+      "source": {
+        "name": "Rock Paper Shotgun",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-24T13:10:49Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "8b8303066f661177",
+      "title": "Call of Duty: Modern Warfare 4 Switch 2 physical version is seemingly a code-in-box",
+      "summary": "La versión física de Call of Duty: Modern Warfare 4 para Nintendo Switch 2 es posible que contenga un código de código en el cajón, lo que podría afectar la experiencia del jugador.",
+      "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-switch-2-code-in-box",
+      "source": {
+        "name": "Eurogamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Call of Duty",
+      "language": "en",
+      "published_at": "2026-08-24T11:41:32Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "3ad5a894b22fb394",
       "title": "Persona 6 anunciado oficialmente para 2027",
       "summary": "Atlus confirma el desarrollo de la próxima entrega principal de la saga Persona con tráiler cinematográfico.",
       "url": "https://www.ign.com/articles/persona-6-announced",
@@ -19,7 +243,7 @@
       "category": "lanzamiento"
     },
     {
-      "id": "b2c3d4e5f60002",
+      "id": "391cf49c65f41fd0",
       "title": "Elden Ring: Shadow of the Erdtree ya disponible",
       "summary": "La esperada expansión del GOTY 2022 llega con nuevas áreas, jefes y armas.",
       "url": "https://www.eurogamer.net/elden-ring-shadow-erdtree-released",
@@ -35,7 +259,23 @@
       "category": "lanzamiento"
     },
     {
-      "id": "c3d4e5f60003",
+      "id": "73cb3ba153a306da",
+      "title": "Call of Duty: Modern Warfare 4 beta's first weekend numbers are in, and they're good - just not as high as Modern Warfare 2",
+      "summary": "Los números del primer fin de semana de la beta de Call of Duty: Modern Warfare 4 son prometedores, aunque no alcanzan los niveles de la beta de Modern Warfare 2.",
+      "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-beta-weekend-one-steam-numbers",
+      "source": {
+        "name": "Eurogamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Call of Duty",
+      "language": "en",
+      "published_at": "2026-08-24T08:24:01Z",
+      "relevance": 3,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "23b0a0022e423954",
       "title": "Cyberpunk 2077: Parche 2.2 llega con metro y nuevo contenido",
       "summary": "CD Projekt RED lanza actualización masiva con sistema de metro, nuevos gigs y mejoras de rendimiento.",
       "url": "https://store.steampowered.com/news/app/1091500/view/12345",
@@ -51,7 +291,7 @@
       "category": "actualizacion"
     },
     {
-      "id": "d4e5f60004",
+      "id": "06198fd3916ba908",
       "title": "Supuesto leak de GTA 6 revela mapa y protagonistas",
       "summary": "Usuario de r/gamingleaks filtra detalles del mapa de Vice City y los dos protagonistas jugables.",
       "url": "https://www.reddit.com/r/gamingleaks/comments/abc123/gta6_leak",
@@ -67,7 +307,7 @@
       "category": "rumor"
     },
     {
-      "id": "e5f60005",
+      "id": "c52d741057e336a0",
       "title": "Starfield: Shattered Space ya tiene fecha de lanzamiento",
       "summary": "Bethesda confirma la primera gran expansión de Starfield para octubre con nueva historia y ubicaciones.",
       "url": "https://www.pcgamer.com/starfield-shattered-space-release-date",
@@ -83,7 +323,7 @@
       "category": "lanzamiento"
     },
     {
-      "id": "f60006",
+      "id": "4ec620b121222b99",
       "title": "Baldur's Gate 3: Parche 7 añade modo foto y cross-play",
       "summary": "Larian Studios lanza actualización masiva con cross-play entre PC/Mac/PS5 y modo foto completo.",
       "url": "https://store.steampowered.com/news/app/1086940/view/98765",
@@ -99,7 +339,7 @@
       "category": "actualizacion"
     },
     {
-      "id": "0007",
+      "id": "6a6ea4ec2771c8a0",
       "title": "Hollow Knight: Silksong - Nuevo tráiler en Gamescom",
       "summary": "Team Cherry muestra gameplay extendido de Silksong con nuevas habilidades y jefes.",
       "url": "https://www.rockpapershotgun.com/hollow-knight-silksong-gamescom-trailer",
@@ -115,7 +355,7 @@
       "category": "lanzamiento"
     },
     {
-      "id": "0008",
+      "id": "b55a2ae3f3ea27c7",
       "title": "Rumor: Nintendo Switch 2 se anunciaría en septiembre",
       "summary": "Insiders de r/NintendoLeaks afirman que el sucesor de Switch se revelaría en un Direct de septiembre.",
       "url": "https://www.reddit.com/r/NintendoLeaks/comments/def456/switch2_announcement",
@@ -131,7 +371,7 @@
       "category": "rumor"
     },
     {
-      "id": "0009",
+      "id": "094f41f5d575a1c3",
       "title": "Final Fantasy VII Rebirth: Análisis - Una secuela maestra",
       "summary": "Análisis profundo de la segunda parte del remake: combate, historia y mundo abierto.",
       "url": "https://www.eurogamer.net/final-fantasy-vii-rebirth-review",
@@ -147,7 +387,7 @@
       "category": "analisis"
     },
     {
-      "id": "0010",
+      "id": "70b1f65d8b02fa18",
       "title": "Helldivers 2: Parche 1.001.100 corrige matchmaking y balance",
       "summary": "Arrowhead lanza hotfix que soluciona problemas de emparejamiento y ajusta armas pesadas.",
       "url": "https://store.steampowered.com/news/app/553850/view/55555",
@@ -161,6 +401,150 @@
       "published_at": "2026-08-22T14:30:00Z",
       "relevance": 2,
       "category": "actualizacion"
+    },
+    {
+      "id": "ccf4edc2f8a6b8a5",
+      "title": "Is this the end of the GTA 6 leaks? Take-Two's legal crusade appears to shut down the hubs behind them",
+      "summary": "La campaña de legalidad de Take-Two parece haber detenido las fuentes de las noticias de GTA 6",
+      "url": "https://www.eurogamer.net/gta-6-cyberleek-website-down",
+      "source": {
+        "name": "Eurogamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-22T11:16:33Z",
+      "relevance": 4,
+      "category": "actualizacion"
+    },
+    {
+      "id": "3dc4a21cb6a3306c",
+      "title": "Don't tell Nintendo, but I turned GTA 5 into Pokémon Go using a mod",
+      "summary": "Un modista ha creado una mod para GTA 5 que convierte el juego en Pokémon Go, permitiendo a los jugadores atrapar Pokémon en la ciudad de Los Santos.",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228669484",
+      "source": {
+        "name": "Steam · Grand Theft Auto",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-21T17:00:00Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "50729d48df3f3219",
+      "title": "GTA 6 leaker hunt is on, as Rockstar owners Take-Two file subpoenas asking Microsoft and Discord for records",
+      "summary": "Take-Two, la empresa madre de Rockstar, busca identificar al o los hackers detrás del estallido de la leak de GTA 6, y ha solicitado a Microsoft y Discord que revelen registros de cuentas involucradas.",
+      "url": "https://www.rockpapershotgun.com/gta-6-leaker-hunt-is-on-as-rockstar-owners-take-two-file-subpoenas-asking-microsoft-and-discord-for-records",
+      "source": {
+        "name": "Rock Paper Shotgun",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-21T15:45:04Z",
+      "relevance": 5,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "e1fafad2a8c1e63b",
+      "title": "Today in GTA 5 mods: Turning Franklin into a walking car-cannon",
+      "summary": "Un mod de GTA 5 permite a Franklin convertirse en un cañón de coche, generando reacciones divertidas y sorprendidas entre los jugadores.",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228666298",
+      "source": {
+        "name": "Steam · Grand Theft Auto",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-20T17:00:00Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "e980ac53b1bfa59b",
+      "title": "I modded GTA 5's NPCs to be punishable for their crimes, and also much more polite",
+      "summary": "Un modder de GTA 5 ha creado NPCs que pueden ser castigados por sus delitos y también son más educados",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228663306",
+      "source": {
+        "name": "Steam · Grand Theft Auto",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-19T17:00:00Z",
+      "relevance": 4,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "2cd4b945598da5f1",
+      "title": "I modded GTA 5 into a life-sim RPG with mining, foraging, a mini-economy, and the ability to fall asleep in the middle of the road",
+      "summary": "Un modder de GTA 5 creó un juego de vida-sim RPG con minera, recolección, economía mini y capacidad de dormir en la carretera",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1840944183789401",
+      "source": {
+        "name": "Steam · Grand Theft Auto",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-18T17:00:00Z",
+      "relevance": 5,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "500d5bb5432e602d",
+      "title": "I'm modding GTA 5 every day until it becomes GTA 6 or breaks, starting with a new vehicle and enough missiles to level a city block",
+      "summary": "Un modder de GTA 5 anuncia su plan de crear un juego modificado que lo haga equivalente a GTA 6 o lo destruya, comenzando con un nuevo vehículo y suficientes misiles para destruir una ciudad.",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1840944183786681",
+      "source": {
+        "name": "Steam · Grand Theft Auto",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-17T17:00:00Z",
+      "relevance": 5,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "e2dbd2bc385ba46b",
+      "title": "Declare Your Allegiance and Determine Who Owns Los Santos in the Brand Wars Event",
+      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores pueden proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183786534",
+      "source": {
+        "name": "Steam · Grand Theft Auto",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-17T16:26:51Z",
+      "relevance": 5,
+      "category": "lanzamiento"
+    },
+    {
+      "id": "a9e632cf5e66d08e",
+      "title": "GTA roleplayers rejoice: Nopixel V's beta is coming, and the timing couldn't be better",
+      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado en el momento perfecto para los jugadores, justo antes del lanzamiento de GTA 6.",
+      "url": "https://steamstore-a.akamaihd.net/news/externalpost/PCGamesN/1840944183779680",
+      "source": {
+        "name": "Steam · Grand Theft Auto",
+        "type": "steam",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-14T11:49:34Z",
+      "relevance": 4,
+      "category": "lanzamiento"
     }
   ]
 }

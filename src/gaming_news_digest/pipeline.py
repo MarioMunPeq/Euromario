@@ -8,7 +8,11 @@ import requests
 from gaming_news_digest.ai.base import AIClient, AIError
 from gaming_news_digest.ai.groq_client import GroqClient
 from gaming_news_digest.ai.ollama_client import OllamaClient
-from gaming_news_digest.config import Limits, SourcesConfig
+from gaming_news_digest.config import GamesConfig, Limits, SourcesConfig
+from gaming_news_digest.fetchers.base import FetchError, build_session
+from gaming_news_digest.fetchers.reddit import fetch_subreddit
+from gaming_news_digest.fetchers.rss import fetch_media_feed
+from gaming_news_digest.fetchers.steam import fetch_steam_news
 from gaming_news_digest.filtering.matcher import create_matcher
 from gaming_news_digest.models import FetchedItem, NewsItem
 from gaming_news_digest.storage.json_store import save_digest
@@ -27,10 +31,10 @@ _SAFE_FALLBACK = {
 class Pipeline:
     """Orquesta fetch → filtro → IA → retención → guardado."""
 
-    def __init__(self, sources: SourcesConfig, limits: Limits):
+    def __init__(self, sources: SourcesConfig, games: GamesConfig, limits: Limits):
         self.sources = sources
         self.limits = limits
-        self.matcher = create_matcher(sources.games.include, sources.games.exclude)
+        self.matcher = create_matcher(games.include, games.exclude)
         self.ollama = OllamaClient()
         self.groq = GroqClient()  # puede lanzar ValueError si no hay API key
         self.current_client: AIClient = self.ollama
@@ -45,8 +49,30 @@ class Pipeline:
         save_digest(retained)
 
     def _fetch_all(self) -> list[FetchedItem]:
-        """Stub: en implementación real llama a fetchers."""
-        return []
+        """Recoge noticias de todas las fuentes configuradas."""
+        session = build_session()
+        items: list[FetchedItem] = []
+
+        for feed in self.sources.media:
+            try:
+                items.extend(fetch_media_feed(feed, self.sources.limits, session))
+            except FetchError as exc:
+                logger.warning("RSS %s: %s", feed.name, exc)
+
+        if self.sources.steam.enabled:
+            try:
+                items.extend(fetch_steam_news(self.sources.steam, self.sources.limits, session))
+            except FetchError as exc:
+                logger.warning("Steam: %s", exc)
+
+        for sub in self.sources.reddit.subreddits:
+            try:
+                items.extend(fetch_subreddit(sub, self.sources.limits, session))
+            except FetchError as exc:
+                logger.warning("Reddit r/%s: %s", sub.name, exc)
+
+        logger.info("Total fetched: %d items", len(items))
+        return items
 
     def _filter(self, items: list[FetchedItem]) -> list[FetchedItem]:
         kept = []
@@ -127,5 +153,5 @@ class Pipeline:
                     continue
                 logger.exception("Error inesperado en IA")
                 return None
-def create_pipeline(sources, limits) -> Pipeline:
-    return Pipeline(sources, limits)
+def create_pipeline(sources, games, limits) -> Pipeline:
+    return Pipeline(sources, games, limits)

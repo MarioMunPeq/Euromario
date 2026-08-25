@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-25T19:42:27.323935Z",
+  "generated_at": "2026-08-25T20:39:35.301807Z",
   "total": 47,
   "news": [
     {
@@ -21,7 +21,7 @@
     {
       "id": "e9ebef5a14fa0e57",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 intenta conducir como un conductor profesional, pero cada vehülo tiene cero fricción",
+      "summary": "Un jugador de GTA 5 intentó conducir como un conductor profesional, pero todos los vehículos tenían fricción cero, lo que hizo que la experiencia fuera imposible.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/i-attempted-to-become-a-professional-driver-in-a-gta-5-where-every-car-had-no-friction/",
       "source": {
         "name": "PC Gamer",
@@ -31,8 +31,8 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-25T17:00:00Z",
-      "relevance": 4,
-      "category": "lanzamiento"
+      "relevance": 3,
+      "category": "analisis"
     },
     {
       "id": "f4c84cee1bf73aec",
@@ -53,7 +53,7 @@
     {
       "id": "d8c2c2ca9d15b736",
       "title": "Call of Duty: Modern Warfare 4 Beta Pushes Unplanned Update to Address Fan Feedback",
-      "summary": "Infinity Ward ha lanzado un update inesperado para el Call of Duty: Modern Warfare 4 beta para abordar comentarios de los fans.",
+      "summary": "Infinity Ward ha lanzado un update inesperado para el Call of Duty: Modern Warfare 4 beta para abordar la retroalimentación de los fans.",
       "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-beta-pushes-unplanned-update-to-address-fan-feedback",
       "source": {
         "name": "IGN",
@@ -85,7 +85,7 @@
     {
       "id": "29ccd2bed2a55c5d",
       "title": "GTA 6 leaker goes full cornball in newest videos, insists 'using crypto is the only way'",
-      "summary": "Un leaker de GTA 6 ha estado divirtiéndose publicando videos en los que afirma que el uso de criptomonedas es la única forma de jugar al juego, lo que ha generado reacciones negativas de la comunidad.",
+      "summary": "Un leaker de GTA 6 ha estado compartiendo contenido en sus canales de YouTube, lo que ha generado controversia entre los fans del juego. El leaker afirma que el uso de criptomonedas es la única forma de progresar en el juego.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/gta-6-leaker-goes-full-cornball-in-newest-videos-insists-using-crypto-is-the-only-way/",
       "source": {
         "name": "PC Gamer",
@@ -95,7 +95,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-25T16:14:17Z",
-      "relevance": 3,
+      "relevance": 4,
       "category": "rumor"
     },
     {
@@ -144,7 +144,7 @@
       "language": "en",
       "published_at": "2026-08-25T14:25:02Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "actualizacion"
     },
     {
       "id": "de40481e022d5d5d",
@@ -181,7 +181,7 @@
     {
       "id": "622c0dd8b1a54c76",
       "title": "Grand Theft Auto 6: An Extended Look Global Release Times Confirmed",
-      "summary": "Se han confirmado las fechas de lanzamiento global para 'Grand Theft Auto 6: An Extended Look' en Netflix y YouTube.",
+      "summary": "Se han confirmado las fechas de lanzamiento global para Grand Theft Auto 6: An Extended Look en Netflix y YouTube",
       "url": "https://www.ign.com/articles/grand-theft-auto-6-an-extended-look-global-release-times-confirmed",
       "source": {
         "name": "IGN",
@@ -197,7 +197,7 @@
     {
       "id": "c80ee72a2ea34b35",
       "title": "[UPDATE] GTA 6 Leaker Releases Game Store, Nightclub and Beach Gameplay Videos, Defends Crypto Scheme",
-      "summary": "Un leaker de GTA 6 ha lanzado videos de gameplay de tienda de juego, club nocturno y playa, y defiende su esquema de criptomonedas.",
+      "summary": "Un leaker de GTA 6 ha lanzado videos de gameplay de tienda de juego, club nocturno y playa, y defiende su esquema de criptomonedas",
       "url": "https://www.ign.com/articles/gta-6-leaker-releases-nightclub-gameplay-video-defends-crypto-scheme",
       "source": {
         "name": "IGN",
@@ -229,7 +229,7 @@
     {
       "id": "fedeefc056e0516c",
       "title": "GTA 6 Leak Subpoena: Discord Says It Will 'Evaluate the Validity and Scope Before Responding'",
-      "summary": "Discord niega haber sido servido una orden de busca relacionada con el leak de GTA 6, prometiéndole investigar la solicitud antes de responder.",
+      "summary": "Discord niega haber sido servido una orden de busca relacionada con el leak de GTA 6, prometiéndole evaluar la validez y alcance antes de responder.",
       "url": "https://www.ign.com/articles/gta-6-leak-subpoena-discord-says-it-will-evaluate-the-validity-and-scope-before-responding",
       "source": {
         "name": "IGN",
@@ -239,13 +239,13 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-25T09:54:10Z",
-      "relevance": 4,
-      "category": "actualizacion"
+      "relevance": 3,
+      "category": "lanzamiento"
     },
     {
       "id": "6cddca81472c1827",
       "title": "Discord is yet to be served Take-Two's GTA 6 leak subpoena, which is set to demand broad access to user data",
-      "summary": "Discord nega haber sido servido una orden de subpoena de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
+      "summary": "Discord nega haber sido servido una orden de busca de Take-Two relacionada con los estafas de GTA 6, aunque el desarrollador de juegos de Rockstar ha solicitado acceso a datos de usuarios de Discord y Microsoft.",
       "url": "https://www.eurogamer.net/take-two-rockstar-gta-6-leaks-subpoena-discord-response",
       "source": {
         "name": "Eurogamer",
@@ -405,7 +405,7 @@
     {
       "id": "8926b4fc8a8f746b",
       "title": "This week in PC games: Gamescom and GTA 6 fight for our attention, but don't forget Folk Emerging, MGS4 and the horror game about balancing a cake",
-      "summary": "La semana de los juegos de PC está llena de noticias, incluyendo el estreno de GTA 6 y Gamescom, así como la salida de Folk Emerging y MGS4.",
+      "summary": "La semana de los juegos PC está llena de noticias, incluyendo el estreno de GTA 6 y Gamescom, así como la salida de Folk Emerging y MGS4.",
       "url": "https://www.rockpapershotgun.com/this-week-in-pc-games-gamescom-and-gta-6-fight-for-attention-but-dont-forget-folk-emerging-mgs4-and-the-horror-game-about-balancing-a-cake",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -629,7 +629,7 @@
     {
       "id": "3dc4a21cb6a3306c",
       "title": "Don't tell Nintendo, but I turned GTA 5 into Pokémon Go using a mod",
-      "summary": "Un modista ha creado una mod para GTA 5 que convierte el juego en Pokémon Go, permitiendo a los jugadores atrapar Pokémon en la ciudad de Los Santos.",
+      "summary": "Un modder ha creado una mod para GTA 5 que convierte el juego en Pokémon Go",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228669484",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -741,7 +741,7 @@
     {
       "id": "a9e632cf5e66d08e",
       "title": "GTA roleplayers rejoice: Nopixel V's beta is coming, and the timing couldn't be better",
-      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado en colaboración con Rockstar, coincidiendo con el lanzamiento de GTA 6 y una nueva era de caos.",
+      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado para GTA 6, coincidiendo con el lanzamiento del juego",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PCGamesN/1840944183779680",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -751,7 +751,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-14T11:49:34Z",
-      "relevance": 5,
+      "relevance": 4,
       "category": "lanzamiento"
     }
   ]

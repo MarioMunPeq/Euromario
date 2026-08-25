@@ -1,11 +1,27 @@
 {
-  "generated_at": "2026-08-25T15:00:56.467577Z",
-  "total": 39,
+  "generated_at": "2026-08-25T15:55:33.571296Z",
+  "total": 40,
   "news": [
+    {
+      "id": "c15f1de8a3ca8421",
+      "title": "GTA 6's Incredible Beach Leak Just Proved Rockstar's Doubters Wrong In Under Two Minutes",
+      "summary": "Se ha filtrado un tráiler de GTA 6 que muestra una gran densidad de NPCs, desafiando las dudas de los fans sobre la capacidad de Rockstar para cumplir con sus promesas.",
+      "url": "https://www.polygon.com/gta-6-beach-leak-reddit-cyberleek-memes-npc-density/",
+      "source": {
+        "name": "Polygon",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-25T15:16:01Z",
+      "relevance": 5,
+      "category": "lanzamiento"
+    },
     {
       "id": "dcabc4f7bf42b0be",
       "title": "\"People wanted faster movement, but not this fast\" - Call of Duty: Modern Warfare 4 beta players aren't happy with slide spammers and the increased pace of the game",
-      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego, que es más rápido de lo que esperaban.",
+      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego, que algunos consideran demasiado rápido, mientras que otros lo encuentran insuficiente.",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-beta-player-reaction",
       "source": {
         "name": "Eurogamer",
@@ -37,7 +53,7 @@
     {
       "id": "518535f827885de9",
       "title": "As Take-Two seeks IP addresses and phone numbers of thousands in GTA 6 subpoena, Discord says it's not been served the order just yet",
-      "summary": "Take-Two busca información personal de miles de usuarios de GTA 6 a través de un subpoena, pero Discord afirma que aún no ha sido notificado.",
+      "summary": "Take-Two busca IP addresses y números de teléfono de miles de personas en GTA 6, pero Discord afirma que aún no ha sido servida la orden de subpoena.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/as-take-two-seeks-ip-addresses-and-phone-numbers-of-thousands-in-gta-6-subpoena-discord-says-its-not-been-served-the-order-just-yet/",
       "source": {
         "name": "PC Gamer",
@@ -69,7 +85,7 @@
     {
       "id": "c80ee72a2ea34b35",
       "title": "[UPDATE] GTA 6 Leaker Releases Nightclub and Beach Gameplay Videos, Defends Crypto Scheme",
-      "summary": "Un leaker de GTA 6 ha lanzado videos de gameplay de un nightclub y una playa, mientras defiende su esquema de criptomonedas.",
+      "summary": "Un leaker de GTA 6 ha lanzado videos de gameplay de un club nocturno y una playa, mientras defiende su esquema de criptomonedas.",
       "url": "https://www.ign.com/articles/gta-6-leaker-releases-nightclub-gameplay-video-defends-crypto-scheme",
       "source": {
         "name": "IGN",
@@ -85,7 +101,7 @@
     {
       "id": "3087abf72d56a857",
       "title": "Discord have yet to receive a GTA 6 leak subpoena from Take-Two, says marketing director, but they will \"evaluate the validity and scope\" if they do",
-      "summary": "Discord afirma no haber recibido una subpoena de Take-Two para investigar las supuestas lecciones de GTA 6, pero se preparan para evaluar su validez y alcance.",
+      "summary": "Discord afirma no haber recibido una subpoena de Take-Two para investigar las supuestas lecciones de GTA 6, pero si reciben una, evaluarán su validez y alcance.",
       "url": "https://www.rockpapershotgun.com/discord-have-yet-to-receive-a-gta-6-leak-subpoena-from-take-two-says-marketing-director-but-they-will-evaluate-the-validity-and-scope-if-they-do",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -117,7 +133,7 @@
     {
       "id": "6cddca81472c1827",
       "title": "Discord is yet to be served Take-Two's GTA 6 leak subpoena, which is set to demand broad access to user data",
-      "summary": "Discord nega haber sido servido una orden de subasta por parte de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
+      "summary": "Discord nega haber sido servido una orden de busca de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
       "url": "https://www.eurogamer.net/take-two-rockstar-gta-6-leaks-subpoena-discord-response",
       "source": {
         "name": "Eurogamer",
@@ -133,7 +149,7 @@
     {
       "id": "025923db788c2727",
       "title": "Persona Comes to Beard Papa's With Special 30th Anniversary Collaboration",
-      "summary": "Beard Papa's colabora con Persona para celebrar el 30 aniversario de la serie RPG con cream puffs especiales.",
+      "summary": "Beard Papa's colabora con Persona para celebrar el 30° aniversario de la serie RPG con cream puffs especiales",
       "url": "https://www.ign.com/articles/persona-comes-to-beard-papas-with-special-30th-anniversary-collaboration",
       "source": {
         "name": "IGN",
@@ -143,13 +159,13 @@
       "game": "Persona",
       "language": "en",
       "published_at": "2026-08-24T22:41:35Z",
-      "relevance": 3,
+      "relevance": 5,
       "category": "lanzamiento"
     },
     {
       "id": "f6a879d16dd93ec7",
       "title": "Call of Duty: Modern Warfare 4 Devs Vow to Update Captain Price After Botched Haircut Goes Viral",
-      "summary": "Activision y Infinity Ward prometen actualizar el cabello de Captain Price en Call of Duty: Modern Warfare 4 después de que una imagen de su peinado defectuoso se volviera viral.",
+      "summary": "Activision y Infinity Ward prometen actualizar el cabello de Captain Price en Call of Duty: Modern Warfare 4 después de que una imagen de su peinado mal cortado se volviera viral.",
       "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-devs-vow-to-update-captain-price-after-botched-haircut-goes-viral",
       "source": {
         "name": "IGN",
@@ -245,7 +261,7 @@
     {
       "id": "c2708573eb7e370e",
       "title": "Former Rockstar dev says the GTA 6 leaks are a 'nothing burger': 'There won't be much damage'",
-      "summary": "Un ex empleado de Rockstar afirma que las noticias de GTA 6 son un 'bocadillo', y que no habrá mucho daño",
+      "summary": "Un ex empleado de Rockstar afirma que las noticias de GTA 6 son un 'bocadillo' y que no causarán mucho daño.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/former-rockstar-dev-says-the-gta-6-leaks-are-a-nothing-burger-there-wont-be-much-damage/",
       "source": {
         "name": "PC Gamer",
@@ -277,7 +293,7 @@
     {
       "id": "8926b4fc8a8f746b",
       "title": "This week in PC games: Gamescom and GTA 6 fight for our attention, but don't forget Folk Emerging, MGS4 and the horror game about balancing a cake",
-      "summary": "La semana de los juegos PC está llena de noticias, incluyendo el estreno de GTA 6 y Gamescom, así como la salida de Folk Emerging y MGS4.",
+      "summary": "La semana de los juegos de PC está llena de noticias, incluyendo el lanzamiento de GTA 6 y Gamescom, así como la salida de nuevos títulos de PC.",
       "url": "https://www.rockpapershotgun.com/this-week-in-pc-games-gamescom-and-gta-6-fight-for-attention-but-dont-forget-folk-emerging-mgs4-and-the-horror-game-about-balancing-a-cake",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -613,7 +629,7 @@
     {
       "id": "a9e632cf5e66d08e",
       "title": "GTA roleplayers rejoice: Nopixel V's beta is coming, and the timing couldn't be better",
-      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado en colaboración con Rockstar, coincidiendo con el lanzamiento de GTA 6 y una nueva era de caos.",
+      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado en colaboración con Rockstar para el lanzamiento de GTA 6, generando entusiasmo entre los roleplayers.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PCGamesN/1840944183779680",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -623,7 +639,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-14T11:49:34Z",
-      "relevance": 4,
+      "relevance": 5,
       "category": "lanzamiento"
     }
   ]

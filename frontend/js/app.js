@@ -87,8 +87,7 @@ const els = {
   search: document.getElementById('search'),
   filterPlatforms: document.getElementById('filter-platforms'),
   filterGames: document.getElementById('filter-games'),
-  segmentedControl: document.getElementById('segmented-control'),
-  segmentedIndicator: document.getElementById('segmented-indicator'),
+  headerNavButtons: document.querySelectorAll('.header__nav-btn'),
   clearFilters: document.getElementById('clear-filters'),
   statsCount: document.getElementById('stats-count'),
   statsUpdated: document.getElementById('stats-updated'),
@@ -300,55 +299,28 @@ function renderAllTiles(newsItems, games) {
 }
 
 // ============================================================
-// Category Pills
+// Header Category Navigation
 // ============================================================
 
-function positionIndicator(cat) {
-  const indicator = els.segmentedIndicator;
-  if (!cat) {
-    indicator.setAttribute('data-visible', 'false');
-    indicator.removeAttribute('data-cat');
-    return;
-  }
-  const activeBtn = els.segmentedControl.querySelector('.segmented-control__item[data-cat="' + cat + '"]');
-  if (!activeBtn) return;
-  const container = els.segmentedControl;
-  const cRect = container.getBoundingClientRect();
-  const bRect = activeBtn.getBoundingClientRect();
-  const x = bRect.left - cRect.left - 3;
-  indicator.style.width = bRect.width + 'px';
-  indicator.style.transform = 'translateX(' + x + 'px)';
-  indicator.setAttribute('data-cat', cat);
-  indicator.setAttribute('data-visible', 'true');
-}
-
-function initSegmentedControl() {
-  els.segmentedControl.querySelectorAll('.segmented-control__item').forEach(btn => {
+function initHeaderNav() {
+  els.headerNavButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const cat = btn.dataset.cat;
-      const wasActive = btn.classList.contains('active');
+      const wasActive = btn.getAttribute('aria-checked') === 'true';
 
-      els.segmentedControl.querySelectorAll('.segmented-control__item').forEach(b => {
-        b.classList.remove('active');
+      els.headerNavButtons.forEach(b => {
         b.setAttribute('aria-checked', 'false');
       });
 
       if (wasActive) {
         state.filters.category = null;
-        positionIndicator(null);
       } else {
         state.filters.category = cat;
-        btn.classList.add('active');
         btn.setAttribute('aria-checked', 'true');
-        positionIndicator(cat);
       }
       applyFilters();
       pushUrl();
     });
-  });
-
-  window.addEventListener('resize', () => {
-    if (state.filters.category) positionIndicator(state.filters.category);
   });
 }
 
@@ -543,13 +515,11 @@ function syncFilterUIFromState() {
     tile.setAttribute('aria-pressed', String(isActive));
   });
 
-  els.segmentedControl.querySelectorAll('.segmented-control__item').forEach(btn => {
+  els.headerNavButtons.forEach(btn => {
     const cat = btn.dataset.cat;
     const isActive = state.filters.category === cat;
-    btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-checked', String(isActive));
   });
-  positionIndicator(state.filters.category);
 
   els.search.value = state.filters.search || '';
 }
@@ -678,7 +648,7 @@ async function loadData() {
     const configNames = gameData.names || new Set();
     const games = [...configNames].sort();
     renderAllTiles(data.news, games);
-    initSegmentedControl();
+    initHeaderNav();
 
     syncUrlToState();
     syncFilterUIFromState();

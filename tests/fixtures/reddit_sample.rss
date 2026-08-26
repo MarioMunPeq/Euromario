@@ -7,10 +7,10 @@
   <entry>
     <author><name>/u/dataminer42</name></author>
     <category term="Rumor"/>
-    <content type="html">&amp;lt;p&amp;gt;Supuesto &amp;lt;b&amp;gt;leak&amp;lt;/b&amp;gt; de Persona 6&amp;lt;/p&amp;gt;</content>
+    <content type="html"><p>Supuesto <b>leak</b> de Persona 6</p></content>
     <media:thumbnail url="https://preview.redd.it/persona6_leak.jpg"/>
     <id>t3_abc123</id>
-    <link href="https://www.reddit.com/r/gamingleaks/comments/abc/supuesto_leak/"/>
+    <link href="https://www.reddit.com/r/gamingleaks/comments/abc123/supuesto_leak/"/>
     <published>2026-08-23T10:45:00+00:00</published>
     <updated>2026-08-23T10:45:00+00:00</updated>
     <title>[Rumor] Supuesto leak de Persona 6</title>
@@ -19,7 +19,7 @@
     <author><name>/u/anon</name></author>
     <content type="text">Texto sin tags</content>
     <id>t3_def456</id>
-    <link href="https://www.reddit.com/r/gamingleaks/comments/def/hilo_gamescom/"/>
+    <link href="https://www.reddit.com/r/gamingleaks/comments/def456/hilo_gamescom/"/>
     <updated>2026-08-23T09:00:00+00:00</updated>
     <title>Hilo: ¿qué anuncios esperáis de la Gamescom?</title>
   </entry>

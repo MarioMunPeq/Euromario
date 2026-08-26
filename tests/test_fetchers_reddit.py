@@ -66,6 +66,23 @@ class TestExtraccionDeImagen:
         assert items[1].image_url is None
 
 
+class TestExtraccionDeUrl:
+    def test_url_extraida_es_link_del_post_no_del_feed(self, items):
+        """La URL debe ser el link individual del post (con /comments/<id>/...), no la URL genérica del feed."""
+        assert items[0].url == "https://www.reddit.com/r/gamingleaks/comments/abc123/supuesto_leak/"
+        assert items[1].url == "https://www.reddit.com/r/gamingleaks/comments/def456/hilo_gamescom/"
+        # Verificar que NO es la URL del feed
+        assert not items[0].url.endswith("/.rss")
+        assert not items[0].url.endswith("/new/")
+        # Verificar que contiene el ID del post (mismo que en <id> t3_abc123 -> abc123)
+        assert "abc123" in items[0].url
+        assert "def456" in items[1].url
+
+    def test_descarta_entradas_sin_link_valido(self, items):
+        """La entrada sin link (solo id t3_ghi789) debe ser descartada."""
+        assert len(items) == 2  # solo 2 entradas tienen link válido
+
+
 class TestPeticionHttp:
     def test_url_correcta(self, fake_session, items):
         esperada = "https://www.reddit.com/r/gamingleaks/new/.rss"

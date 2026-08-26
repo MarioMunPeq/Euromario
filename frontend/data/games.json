@@ -1,0 +1,235 @@
+{
+  "games": [
+    {
+      "name": "Grand Theft Auto",
+      "logo": "gta.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Call of Duty",
+      "logo": "call-of-duty.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Persona",
+      "logo": "persona.svg",
+      "platform": [
+        "playstation",
+        "pc"
+      ]
+    },
+    {
+      "name": "The Legend of Zelda",
+      "logo": "zelda.svg",
+      "platform": [
+        "nintendo"
+      ]
+    },
+    {
+      "name": "Apex Legends",
+      "logo": "apex-legends.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Assassin's Creed",
+      "logo": "assasins-creed.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Baldur's Gate",
+      "logo": "baldurs-gate.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Battlefield",
+      "logo": "battlefield.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Counter-Strike",
+      "logo": "counter-strike.svg",
+      "platform": [
+        "pc"
+      ]
+    },
+    {
+      "name": "Deadlock",
+      "logo": "deadlock.svg",
+      "platform": [
+        "pc"
+      ]
+    },
+    {
+      "name": "Elden Ring",
+      "logo": "elden-ring.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Fortnite",
+      "logo": "fortnite.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox",
+        "nintendo"
+      ]
+    },
+    {
+      "name": "God of War",
+      "logo": "god-of-war.svg",
+      "platform": [
+        "playstation",
+        "pc"
+      ]
+    },
+    {
+      "name": "Halo",
+      "logo": "halo.svg",
+      "platform": [
+        "xbox",
+        "pc"
+      ]
+    },
+    {
+      "name": "Hollow Knight",
+      "logo": "hollow-knight.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox",
+        "nintendo"
+      ]
+    },
+    {
+      "name": "League of Legends",
+      "logo": "league-of-legends.svg",
+      "platform": [
+        "pc"
+      ]
+    },
+    {
+      "name": "Marvel Rivals",
+      "logo": "marvel-rivals.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Minecraft",
+      "logo": "minecraft.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox",
+        "nintendo"
+      ]
+    },
+    {
+      "name": "Overwatch",
+      "logo": "overwatch.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Pokemon",
+      "logo": "pokemon.svg",
+      "platform": [
+        "nintendo"
+      ]
+    },
+    {
+      "name": "PUBG",
+      "logo": "pubg.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Rainbow Six",
+      "logo": "rainbow-six.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Roblox",
+      "logo": "roblox.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox",
+        "nintendo"
+      ]
+    },
+    {
+      "name": "Rocket League",
+      "logo": "rocket-league.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox",
+        "nintendo"
+      ]
+    },
+    {
+      "name": "Smite",
+      "logo": "smite.svg",
+      "platform": [
+        "pc",
+        "playstation",
+        "xbox"
+      ]
+    },
+    {
+      "name": "Super Mario",
+      "logo": "super-mario.svg",
+      "platform": [
+        "nintendo"
+      ]
+    },
+    {
+      "name": "Valorant",
+      "logo": "valorant.svg",
+      "platform": [
+        "pc"
+      ]
+    }
+  ]
+}

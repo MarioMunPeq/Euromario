@@ -1,7 +1,41 @@
 {
-  "generated_at": "2026-08-26T07:59:15.049362Z",
-  "total": 47,
+  "generated_at": "2026-08-26T08:28:13.244916Z",
+  "total": 55,
   "news": [
+    {
+      "id": "2a708bf5c02253d8",
+      "title": "Rainbow Six Tactics Features Optional Permadeath, Ironman Mode",
+      "summary": "Ubisoft anuncia Rainbow Six Tactics, un juego de estrategia en tiempo real con modos de juego desafiantes, incluyendo la muerte permanente y el modo Ironman.",
+      "url": "https://www.ign.com/articles/rainbow-six-tactics-interview-optional-permadeath-ironman-mode",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Rainbow Six",
+      "language": "en",
+      "published_at": "2026-08-25T19:15:00Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": null
+    },
+    {
+      "id": "2db099c235bcc745",
+      "title": "Battle royale goes grunge: there's a new PUBG game and it's set in the '90s",
+      "summary": "PUBG lanzó un nuevo juego llamado Ded.net, que combina gameplay de disparos con progresión roguelita en un entorno grunge de los '90s.",
+      "url": "https://www.pcgamer.com/games/battle-royale/battle-royale-goes-grunge-theres-a-new-pubg-game-and-its-set-in-the-90s/",
+      "source": {
+        "name": "PC Gamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "PUBG",
+      "language": "en",
+      "published_at": "2026-08-25T19:07:49Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": null
+    },
     {
       "id": "64863a3bc9facd6a",
       "title": "'Anime GTA’ Game Ananta Gets Official Release Date Beyond GTA 6’s Blast Radius",
@@ -16,7 +50,59 @@
       "language": "en",
       "published_at": "2026-08-25T18:47:51Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
+    },
+    {
+      "id": "b828b56ea4dc7efa",
+      "title": "The next game from Hoyoverse sure looks like someone put Elden Ring's clothes on Monster Hunter",
+      "summary": "Hoyoverse anuncia su próximo juego, que recuerda a Elden Ring con su estilo de combate y armaduras, pero con un toque de Monster Hunter.",
+      "url": "https://www.pcgamer.com/games/action/the-next-game-from-hoyoverse-sure-looks-like-someone-put-elden-rings-clothes-on-monster-hunter/",
+      "source": {
+        "name": "PC Gamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Elden Ring",
+      "language": "en",
+      "published_at": "2026-08-25T18:46:38Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": null
+    },
+    {
+      "id": "f91c21304a134762",
+      "title": "Rainbow Six Tactics transforms the demolition-driven Siege into a turn-based game while keeping the destructible environments, operators, and reconnaissance drones",
+      "summary": "Ubisoft lanza Rainbow Six Tactics, una versión de Rainbow Six con un enfoque en turn-based, manteniendo los entornos destructibles, operadores y drones de reconocimiento.",
+      "url": "https://www.rockpapershotgun.com/rainbow-six-tactics-transforms-the-demolition-driven-siege-into-a-turn-based-game-while-keeping-the-destructible-environments-operators-and-reconnaissance-drones",
+      "source": {
+        "name": "Rock Paper Shotgun",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Rainbow Six",
+      "language": "en",
+      "published_at": "2026-08-25T18:15:17Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": null
+    },
+    {
+      "id": "4b818d2c40378769",
+      "title": "Rainbow Six Tactics Announced, First Single-Player Rainbow Six Game Since Vegas 2 in 2008",
+      "summary": "Ubisoft anuncia Rainbow Six Tactics, un juego de estrategia en tiempo real con operadores de Rainbow Six Siege, que se lanzará en 2027 para PC, PS5 y Xbox Series X|S.",
+      "url": "https://www.ign.com/articles/rainbow-six-tactics-announced-pc-ps5-xbox-series-2027",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Rainbow Six",
+      "language": "en",
+      "published_at": "2026-08-25T18:15:00Z",
+      "relevance": 5,
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "e9ebef5a14fa0e57",
@@ -32,12 +118,13 @@
       "language": "en",
       "published_at": "2026-08-25T17:00:00Z",
       "relevance": 3,
-      "category": "analisis"
+      "category": "analisis",
+      "image_url": null
     },
     {
       "id": "f4c84cee1bf73aec",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y colisiones.",
+      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y explosiones.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228678941",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -48,7 +135,8 @@
       "language": "en",
       "published_at": "2026-08-25T17:00:00Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "d8c2c2ca9d15b736",
@@ -64,7 +152,8 @@
       "language": "en",
       "published_at": "2026-08-25T16:47:20Z",
       "relevance": 4,
-      "category": "actualizacion"
+      "category": "actualizacion",
+      "image_url": null
     },
     {
       "id": "589f3419476acbfb",
@@ -80,7 +169,25 @@
       "language": "en",
       "published_at": "2026-08-25T16:20:32Z",
       "relevance": 5,
-      "category": "rumor"
+      "category": "rumor",
+      "image_url": null
+    },
+    {
+      "id": "92a57a55939b1889",
+      "title": "Roblox put a stop to games that include rewards for endless, TikTok-style scrolling, if you're under the age of 16 anyway",
+      "summary": "Roblox elimina juegos que ofrecen recompensas por scrollar infinitamente en TikTok, incluso para jugadores menores de 16 años",
+      "url": "https://www.rockpapershotgun.com/roblox-put-a-stop-to-games-that-include-rewards-for-endless-tiktok-style-scrolling-if-youre-under-the-age-of-16-anyway",
+      "source": {
+        "name": "Rock Paper Shotgun",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Roblox",
+      "language": "en",
+      "published_at": "2026-08-25T16:15:06Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "29ccd2bed2a55c5d",
@@ -96,7 +203,8 @@
       "language": "en",
       "published_at": "2026-08-25T16:14:17Z",
       "relevance": 4,
-      "category": "rumor"
+      "category": "rumor",
+      "image_url": null
     },
     {
       "id": "ca872b04f8a771ad",
@@ -112,7 +220,25 @@
       "language": "en",
       "published_at": "2026-08-25T16:07:15Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
+    },
+    {
+      "id": "3e3ca1002786c59d",
+      "title": "Nvidia tech behind PUBG's genAI team mates will let folks chat to creature-collecting RPG Aniimo's not-Pokemon next year",
+      "summary": "Nvidia anuncia su tecnología ACE para Aniimo, un juego de RPG de captura de criaturas que permitirá a los jugadores interactuar con sus criaturas.",
+      "url": "https://www.rockpapershotgun.com/nvidia-tech-behind-pubgs-genai-team-mates-will-let-folks-chat-to-creature-collecting-rpg-aniimos-not-pokemon-next-year",
+      "source": {
+        "name": "Rock Paper Shotgun",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Pokemon",
+      "language": "en",
+      "published_at": "2026-08-25T15:30:00Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "c15f1de8a3ca8421",
@@ -128,12 +254,13 @@
       "language": "en",
       "published_at": "2026-08-25T15:16:01Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "dcabc4f7bf42b0be",
       "title": "\"People wanted faster movement, but not this fast\" - Call of Duty: Modern Warfare 4 beta players aren't happy with slide spammers and the increased pace of the game",
-      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego, que es más rápido de lo que esperaban.",
+      "summary": "Los jugadores de la beta de Call of Duty: Modern Warfare 4 expresan su insatisfacción con el ritmo del juego, que es más rápido de lo que esperaban.",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-beta-player-reaction",
       "source": {
         "name": "Eurogamer",
@@ -144,7 +271,8 @@
       "language": "en",
       "published_at": "2026-08-25T14:25:02Z",
       "relevance": 4,
-      "category": "actualizacion"
+      "category": "actualizacion",
+      "image_url": null
     },
     {
       "id": "de40481e022d5d5d",
@@ -160,7 +288,25 @@
       "language": "en",
       "published_at": "2026-08-25T13:37:21Z",
       "relevance": 4,
-      "category": "actualizacion"
+      "category": "actualizacion",
+      "image_url": null
+    },
+    {
+      "id": "18c3698901de299b",
+      "title": "Despite being a Switch 2 exclusive, The Duskbloods closed network test had more applications than Elden Ring Nightreign",
+      "summary": "El juego The Duskbloods, exclusivo de Switch 2, atrajo más solicitudes de jugadores que Elden Ring Nightreign, a pesar de estar disponible solo en una plataforma.",
+      "url": "https://www.eurogamer.net/the-duskbloods-closed-network-test-more-applications-nightreign",
+      "source": {
+        "name": "Eurogamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Elden Ring",
+      "language": "en",
+      "published_at": "2026-08-25T11:31:43Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "518535f827885de9",
@@ -176,7 +322,8 @@
       "language": "en",
       "published_at": "2026-08-25T11:25:21Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "622c0dd8b1a54c76",
@@ -192,7 +339,8 @@
       "language": "en",
       "published_at": "2026-08-25T11:10:02Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "c80ee72a2ea34b35",
@@ -208,12 +356,13 @@
       "language": "en",
       "published_at": "2026-08-25T10:52:58Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "3087abf72d56a857",
       "title": "Discord have yet to receive a GTA 6 leak subpoena from Take-Two, says marketing director, but they will \"evaluate the validity and scope\" if they do",
-      "summary": "Discord afirma no haber recibido una subpoena de Take-Two para investigar las lecciones de GTA 6, pero si evaluarán su validez y alcance.",
+      "summary": "Discord afirma no haber recibido una subpoena de Take-Two para investigar las supuestas lecciones de GTA 6, pero si reciben una, evaluarán su validez y alcance.",
       "url": "https://www.rockpapershotgun.com/discord-have-yet-to-receive-a-gta-6-leak-subpoena-from-take-two-says-marketing-director-but-they-will-evaluate-the-validity-and-scope-if-they-do",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -224,7 +373,8 @@
       "language": "en",
       "published_at": "2026-08-25T10:03:28Z",
       "relevance": 3,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "fedeefc056e0516c",
@@ -240,12 +390,13 @@
       "language": "en",
       "published_at": "2026-08-25T09:54:10Z",
       "relevance": 3,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "6cddca81472c1827",
       "title": "Discord is yet to be served Take-Two's GTA 6 leak subpoena, which is set to demand broad access to user data",
-      "summary": "Discord nega haber sido servido una orden de subpoena de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
+      "summary": "Discord niega haber sido servido una orden de busca de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
       "url": "https://www.eurogamer.net/take-two-rockstar-gta-6-leaks-subpoena-discord-response",
       "source": {
         "name": "Eurogamer",
@@ -256,7 +407,8 @@
       "language": "en",
       "published_at": "2026-08-25T08:39:48Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "025923db788c2727",
@@ -272,7 +424,8 @@
       "language": "en",
       "published_at": "2026-08-24T22:41:35Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "f6a879d16dd93ec7",
@@ -288,7 +441,8 @@
       "language": "en",
       "published_at": "2026-08-24T21:13:30Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "5fa09217df46c3b2",
@@ -304,7 +458,8 @@
       "language": "en",
       "published_at": "2026-08-24T20:22:51Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "0ab0cdb9e89ba6fd",
@@ -320,7 +475,8 @@
       "language": "en",
       "published_at": "2026-08-24T20:18:30Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "94aad741c8fa3b42",
@@ -336,7 +492,8 @@
       "language": "en",
       "published_at": "2026-08-24T18:06:58Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "70330e017ba7b27b",
@@ -352,7 +509,8 @@
       "language": "en",
       "published_at": "2026-08-24T17:00:00Z",
       "relevance": 3,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "47607091f094c180",
@@ -368,7 +526,8 @@
       "language": "en",
       "published_at": "2026-08-24T17:00:00Z",
       "relevance": 3,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "c2708573eb7e370e",
@@ -384,7 +543,8 @@
       "language": "en",
       "published_at": "2026-08-24T16:52:01Z",
       "relevance": 3,
-      "category": "analisis"
+      "category": "analisis",
+      "image_url": null
     },
     {
       "id": "8004c8500812a248",
@@ -400,12 +560,13 @@
       "language": "en",
       "published_at": "2026-08-24T14:31:55Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "8926b4fc8a8f746b",
       "title": "This week in PC games: Gamescom and GTA 6 fight for our attention, but don't forget Folk Emerging, MGS4 and the horror game about balancing a cake",
-      "summary": "La semana de los juegos de PC está llena de noticias, incluyendo el lanzamiento de GTA 6 y Gamescom, así como la salida de Folk Emerging y MGS4.",
+      "summary": "La semana de PC juegos está llena de noticias, incluyendo el lanzamiento de GTA 6 y Gamescom, así como nuevos juegos de PC.",
       "url": "https://www.rockpapershotgun.com/this-week-in-pc-games-gamescom-and-gta-6-fight-for-attention-but-dont-forget-folk-emerging-mgs4-and-the-horror-game-about-balancing-a-cake",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -416,7 +577,8 @@
       "language": "en",
       "published_at": "2026-08-24T13:10:49Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "8b8303066f661177",
@@ -432,7 +594,8 @@
       "language": "en",
       "published_at": "2026-08-24T11:41:32Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "3ad5a894b22fb394",
@@ -448,7 +611,8 @@
       "language": "en",
       "published_at": "2026-08-24T10:00:00Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "391cf49c65f41fd0",
@@ -464,7 +628,8 @@
       "language": "en",
       "published_at": "2026-08-24T08:30:00Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "73cb3ba153a306da",
@@ -480,7 +645,8 @@
       "language": "en",
       "published_at": "2026-08-24T08:24:01Z",
       "relevance": 3,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "23b0a0022e423954",
@@ -496,7 +662,8 @@
       "language": "en",
       "published_at": "2026-08-24T06:45:00Z",
       "relevance": 4,
-      "category": "actualizacion"
+      "category": "actualizacion",
+      "image_url": null
     },
     {
       "id": "06198fd3916ba908",
@@ -512,7 +679,8 @@
       "language": "en",
       "published_at": "2026-08-24T04:20:00Z",
       "relevance": 3,
-      "category": "rumor"
+      "category": "rumor",
+      "image_url": null
     },
     {
       "id": "c52d741057e336a0",
@@ -528,7 +696,8 @@
       "language": "en",
       "published_at": "2026-08-23T22:15:00Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "4ec620b121222b99",
@@ -544,7 +713,8 @@
       "language": "en",
       "published_at": "2026-08-23T20:30:00Z",
       "relevance": 4,
-      "category": "actualizacion"
+      "category": "actualizacion",
+      "image_url": null
     },
     {
       "id": "6a6ea4ec2771c8a0",
@@ -560,7 +730,8 @@
       "language": "en",
       "published_at": "2026-08-23T14:00:00Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "b55a2ae3f3ea27c7",
@@ -576,7 +747,8 @@
       "language": "en",
       "published_at": "2026-08-23T10:00:00Z",
       "relevance": 2,
-      "category": "rumor"
+      "category": "rumor",
+      "image_url": null
     },
     {
       "id": "094f41f5d575a1c3",
@@ -592,7 +764,8 @@
       "language": "en",
       "published_at": "2026-08-22T18:00:00Z",
       "relevance": 5,
-      "category": "analisis"
+      "category": "analisis",
+      "image_url": null
     },
     {
       "id": "70b1f65d8b02fa18",
@@ -608,7 +781,8 @@
       "language": "en",
       "published_at": "2026-08-22T14:30:00Z",
       "relevance": 2,
-      "category": "actualizacion"
+      "category": "actualizacion",
+      "image_url": null
     },
     {
       "id": "ccf4edc2f8a6b8a5",
@@ -624,12 +798,13 @@
       "language": "en",
       "published_at": "2026-08-22T11:16:33Z",
       "relevance": 4,
-      "category": "actualizacion"
+      "category": "actualizacion",
+      "image_url": null
     },
     {
       "id": "3dc4a21cb6a3306c",
       "title": "Don't tell Nintendo, but I turned GTA 5 into Pokémon Go using a mod",
-      "summary": "Un modista ha creado una mod para GTA 5 que convierte el juego en Pokémon Go, permitiendo a los jugadores atrapar Pokémon en la ciudad de Los Santos.",
+      "summary": "Un modder de GTA 5 creó una versión de Pokémon Go, sin el consentimiento de Nintendo.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228669484",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -640,7 +815,8 @@
       "language": "en",
       "published_at": "2026-08-21T17:00:00Z",
       "relevance": 4,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "50729d48df3f3219",
@@ -656,7 +832,8 @@
       "language": "en",
       "published_at": "2026-08-21T15:45:04Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "e1fafad2a8c1e63b",
@@ -672,7 +849,8 @@
       "language": "en",
       "published_at": "2026-08-20T17:00:00Z",
       "relevance": 3,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "e980ac53b1bfa59b",
@@ -688,7 +866,8 @@
       "language": "en",
       "published_at": "2026-08-19T17:00:00Z",
       "relevance": 4,
-      "category": "analisis"
+      "category": "analisis",
+      "image_url": null
     },
     {
       "id": "2cd4b945598da5f1",
@@ -704,7 +883,8 @@
       "language": "en",
       "published_at": "2026-08-18T17:00:00Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "500d5bb5432e602d",
@@ -720,12 +900,13 @@
       "language": "en",
       "published_at": "2026-08-17T17:00:00Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "e2dbd2bc385ba46b",
       "title": "Declare Your Allegiance and Determine Who Owns Los Santos in the Brand Wars Event",
-      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores deben proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
+      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores pueden proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183786534",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -736,12 +917,13 @@
       "language": "en",
       "published_at": "2026-08-17T16:26:51Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": null
     },
     {
       "id": "a9e632cf5e66d08e",
       "title": "GTA roleplayers rejoice: Nopixel V's beta is coming, and the timing couldn't be better",
-      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado para GTA 6, coincidiendo con la llegada del juego",
+      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado para GTA 6, coincidiendo con el lanzamiento del juego",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PCGamesN/1840944183779680",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -751,8 +933,9 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-14T11:49:34Z",
-      "relevance": 4,
-      "category": "lanzamiento"
+      "relevance": 5,
+      "category": "lanzamiento",
+      "image_url": null
     }
   ]
 }

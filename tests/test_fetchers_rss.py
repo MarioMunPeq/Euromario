@@ -36,6 +36,7 @@ class TestParseoDelFeed:
             "Persona 6 muestra su primer tráiler",
             "Parche de Cyberpunk 2077",
             "Anuncio en la Gamescom",
+            "Noticia sin imagen",
         ]
 
     def test_fuente_de_tipo_medio_con_idioma_del_feed(self, items):
@@ -84,6 +85,29 @@ class TestPeticionHttp:
 
         with pytest.raises(FetchError, match="IGN"):
             fetch_media_feed(FEED, LIMITS, session=fake_session, now=NOW)
+
+
+class TestExtraccionDeImagen:
+    @pytest.fixture
+    def items(self, fake_session):
+        fake_session.route("ign.com", FakeResponse(load_fixture("rss_sample.xml")))
+        return fetch_media_feed(FEED, LIMITS, session=fake_session, now=NOW)
+
+    def test_enclosure_extrae_imagen(self, items):
+        by_title = {i.title: i for i in items}
+        assert by_title["Persona 6 muestra su primer tráiler"].image_url == "https://cdn.ign.com/persona6.jpg"
+
+    def test_media_content_extrae_imagen(self, items):
+        by_title = {i.title: i for i in items}
+        assert by_title["Parche de Cyberpunk 2077"].image_url == "https://cdn.ign.com/cyberpunk.jpg"
+
+    def test_primera_img_del_body_extrae_imagen(self, items):
+        by_title = {i.title: i for i in items}
+        assert by_title["Anuncio en la Gamescom"].image_url == "https://cdn.ign.com/gamescom.jpg"
+
+    def test_sin_imagen_devuelve_none(self, items):
+        by_title = {i.title: i for i in items}
+        assert by_title["Noticia sin imagen"].image_url is None
 
 
 class TestCadenaDeFechas:

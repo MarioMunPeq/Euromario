@@ -17,7 +17,7 @@ from gaming_news_digest.fetchers.rss import fetch_media_feed
 from gaming_news_digest.fetchers.steam import fetch_steam_news
 from gaming_news_digest.filtering.matcher import create_matcher
 from gaming_news_digest.models import FetchedItem, NewsItem
-from gaming_news_digest.storage.json_store import save_digest
+from gaming_news_digest.storage.json_store import save_digest, save_games_config
 from gaming_news_digest.storage.retention import apply_retention
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ class Pipeline:
         self.limits = limits
         self.quality = sources.quality
         self.matcher = create_matcher(games.include, games.exclude)
+        self._games = games
         self._title_re = [
             re.compile(p, re.IGNORECASE) for p in self.quality.exclude_title_patterns
         ]
@@ -56,6 +57,7 @@ class Pipeline:
         enriched = list(self._enrich_with_ai(filtered))
         retained = apply_retention(enriched, max_age_days=14, max_total=200)
         save_digest(retained)
+        self._save_games_config()
 
     def _fetch_all(self) -> list[FetchedItem]:
         """Recoge noticias de todas las fuentes configuradas."""
@@ -129,6 +131,7 @@ class Pipeline:
                 relevance=ai_data["relevance"],
                 category=ai_data["category"],
                 summary=ai_data["summary"],
+                image_url=item.image_url,
             )
 
     def _summarize_with_fallback(self, item) -> dict | None:
@@ -175,5 +178,15 @@ class Pipeline:
                     continue
                 logger.exception("Error inesperado en IA")
                 return None
+
+    def _save_games_config(self) -> None:
+        """Guarda el mapeo nombre→logo para el frontend."""
+        games_data = []
+        for rule in self._games.include:
+            entry = {"name": rule.name, "logo": rule.logo}
+            games_data.append(entry)
+        save_games_config(games_data)
+
+
 def create_pipeline(sources, games, limits) -> Pipeline:
     return Pipeline(sources, games, limits)

@@ -35,6 +35,28 @@ class TestLoadGames:
         assert [rule.name for rule in config.exclude] == ["EA Sports FC"]
         assert config.exclude[0].aliases == ("FIFA",)
 
+    def test_logo_opcional_se_carga(self, tmp_path):
+        content = (
+            "incluir:\n"
+            "  - nombre: GTA\n"
+            "    logo: gta.svg\n"
+        )
+        path = write_yaml(tmp_path, content)
+        config = load_games(path)
+        assert config.include[0].logo == "gta.svg"
+
+    def test_logo_ausente_es_none(self, tmp_path):
+        content = "incluir:\n  - nombre: Persona\n"
+        path = write_yaml(tmp_path, content)
+        config = load_games(path)
+        assert config.include[0].logo is None
+
+    def test_logo_vacio_rechazado(self, tmp_path):
+        content = "incluir:\n  - nombre: GTA\n    logo: ''\n"
+        path = write_yaml(tmp_path, content)
+        with pytest.raises(ConfigError, match="logo"):
+            load_games(path)
+
     def test_excluir_faltante_es_valido(self, tmp_path):
         path = write_yaml(tmp_path, "incluir:\n  - nombre: Persona\n")
 

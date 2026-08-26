@@ -164,6 +164,7 @@ class NewsItem:
     relevance: int
     category: Category
     summary: str | None = None
+    image_url: str | None = None
     id: str = field(init=False)
 
     def __post_init__(self):
@@ -184,6 +185,12 @@ class NewsItem:
         self._validate_relevance()
         object.__setattr__(self, "published_at", _ensure_utc(self.published_at))
         object.__setattr__(self, "summary", _optional_text(self.summary, "el resumen"))
+        image = self.image_url
+        if image is not None:
+            image = image.strip()
+            if not _HTTP_PREFIX.match(image):
+                image = None
+        object.__setattr__(self, "image_url", image or None)
         digest = hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()
         object.__setattr__(self, "id", digest[:16])
 
@@ -209,6 +216,7 @@ class NewsItem:
             "published_at": self.published_at.isoformat().replace("+00:00", "Z"),
             "relevance": self.relevance,
             "category": self.category.value,
+            "image_url": self.image_url,
         }
 
     @classmethod
@@ -233,6 +241,7 @@ class NewsItem:
             relevance=data["relevance"],
             category=data["category"],
             summary=data.get("summary"),
+            image_url=data.get("image_url"),
         )
 
 
@@ -252,6 +261,7 @@ class FetchedItem:
     body_text: str | None = None
     language: Language | None = None
     game: str | None = None
+    image_url: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.source, Source):
@@ -270,3 +280,9 @@ class FetchedItem:
         if language is not None:
             language = _coerce_enum(language, Language, "el idioma")
         object.__setattr__(self, "language", language)
+        image = self.image_url
+        if image is not None:
+            image = image.strip()
+            if not _HTTP_PREFIX.match(image):
+                image = None
+        object.__setattr__(self, "image_url", image or None)

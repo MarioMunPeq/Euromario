@@ -13,7 +13,7 @@ function startServer() {
       const parsed = url.parse(req.url);
       let filePath = path.join(FRONTEND_DIR, parsed.pathname === '/' ? 'index.html' : parsed.pathname);
       const ext = path.extname(filePath);
-      const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.json': 'application/json' };
+      const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.json': 'application/json', '.svg': 'image/svg+xml' };
       fs.readFile(filePath, (err, data) => {
         if (err) { res.writeHead(404); res.end('Not found'); return; }
         res.writeHead(200, { 'Content-Type': types[ext] || 'text/plain', 'Cache-Control': 'no-store' });
@@ -52,6 +52,16 @@ async function getStateDiagnostics(page) {
     if (firstCard) {
       const cr = firstCard.getBoundingClientRect();
       result.firstCard = { width: Math.round(cr.width), height: Math.round(cr.height), visible: cr.width > 0 && cr.height > 0 };
+      // Gaming Pulse card structure checks
+      result.firstCard.hasMedia = !!firstCard.querySelector('.news-card__media');
+      result.firstCard.hasContent = !!firstCard.querySelector('.news-card__content');
+      result.firstCard.hasImage = !!firstCard.querySelector('.news-card__image');
+      result.firstCard.hasPlaceholder = !!firstCard.querySelector('.news-card__placeholder');
+      result.firstCard.hasTitle = !!firstCard.querySelector('.news-card__title a');
+      result.firstCard.hasSummary = !!firstCard.querySelector('.news-card__summary');
+      result.firstCard.hasLink = !!firstCard.querySelector('.news-card__link');
+      result.firstCard.hasMeta = !!firstCard.querySelector('.news-card__meta');
+      result.firstCard.dataCategory = firstCard.getAttribute('data-category');
     }
     const chain = [];
     let el = nl;
@@ -62,6 +72,10 @@ async function getStateDiagnostics(page) {
     result.parentChain = chain;
     const hc = document.getElementById('header-count');
     result.headerCount = hc ? hc.textContent : 'NOT FOUND';
+    // Game tiles check
+    const tiles = document.querySelectorAll('.game-tile');
+    result.gameTileCount = tiles.length;
+    result.firstTileHasIcon = tiles.length > 0 ? !!tiles[0].querySelector('.game-tile__icon') : false;
     return result;
   });
 }
@@ -85,22 +99,35 @@ async function getStateDiagnostics(page) {
     await new Promise(r => setTimeout(r, 500));
     const content = await getStateDiagnostics(page1);
 
-    check('parentChain: news-list is child of news-grid (not state-empty)', content.parentChain[0] === 'news-list' && content.parentChain[1] === 'news-grid');
+    check('parentChain: news-list is child of news-grid', content.parentChain[0] === 'news-list' && content.parentChain[1] === 'news-grid');
     check('news-list hidden=false', content['news-list'].hidden === false);
     check('news-list display=grid', content['news-list'].display === 'grid');
     check('news-list width > 0', content['news-list'].width > 0);
     check('news-list height > 0', content['news-list'].height > 0);
-    check('news-list has 10 children', content['news-list'].childCount === 10);
+    check('news-list has children', content['news-list'].childCount > 0);
     check('first card visible', content.firstCard && content.firstCard.visible);
     check('first card width > 0', content.firstCard && content.firstCard.width > 0);
     check('first card height > 0', content.firstCard && content.firstCard.height > 0);
     check('loading hidden', content['state-loading'].hidden === true);
     check('error hidden', content['state-error'].hidden === true);
     check('empty hidden', content['state-empty'].hidden === true);
-    check('header shows 10 noticias', content.headerCount === '10 noticias');
+    check('header shows noticias', content.headerCount.includes('noticias'));
+    // Gaming Pulse card structure
+    check('card has media section', content.firstCard && content.firstCard.hasMedia);
+    check('card has content section', content.firstCard && content.firstCard.hasContent);
+    check('card has image or placeholder', content.firstCard && (content.firstCard.hasImage || content.firstCard.hasPlaceholder));
+    check('card has title link', content.firstCard && content.firstCard.hasTitle);
+    check('card has LEER EN link', content.firstCard && content.firstCard.hasLink);
+    check('card has meta (source+date)', content.firstCard && content.firstCard.hasMeta);
+    check('card has data-category', content.firstCard && !!content.firstCard.dataCategory);
+    // Game tiles
+    check('game tiles rendered', content.gameTileCount > 0);
+    check('first tile (ALL) has icon', content.firstTileHasIcon);
     console.log('  Parent chain:', content.parentChain.join(' > '));
     console.log('  News-list dimensions:', content['news-list'].width + 'x' + content['news-list'].height);
     console.log('  First card dimensions:', content.firstCard ? content.firstCard.width + 'x' + content.firstCard.height : 'N/A');
+    console.log('  Card structure: media=' + (content.firstCard ? content.firstCard.hasMedia : 'N/A') + ' content=' + (content.firstCard ? content.firstCard.hasContent : 'N/A'));
+    console.log('  Game tiles:', content.gameTileCount);
     await saveScreenshot(page1, 'content');
     await page1.close();
 

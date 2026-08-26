@@ -89,7 +89,8 @@ Es el único archivo que consumen frontend y backend en común. Cambiar su schem
       "language": "en",
       "published_at": "2026-08-23T09:15:00Z",
       "relevance": 5,
-      "category": "lanzamiento"
+      "category": "lanzamiento",
+      "image_url": "https://cdn.example.com/persona6.jpg"
     }
   ]
 }
@@ -103,6 +104,7 @@ Invariantes:
 - `category`: `"lanzamiento"` | `"actualizacion"` | `"rumor"` | `"analisis"`.
 - `relevance`: entero 1–5 asignado por la IA (5 = anuncio mayor de una saga seguida; 1 = mención menor).
 - `language`: `"es"` o `"en"`; `summary` va en ese mismo idioma.
+- `image_url`: URL http(s) válida o `null` (cuando no se encontró imagen destacada en el feed).
 - Todos los timestamps en UTC ISO-8601 con sufijo `Z`.
 - `news` ordenada por `published_at` descendente. `total == len(news)`.
 

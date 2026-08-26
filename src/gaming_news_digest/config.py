@@ -29,6 +29,7 @@ class GameRule:
 
     name: str
     aliases: tuple[str, ...] = ()
+    logo: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,7 +169,13 @@ def _parse_game_rules(raw: Any, section: str, path: Path) -> tuple[GameRule, ...
         if not isinstance(name, str) or not name.strip():
             raise ConfigError(f"{path}: {ctx} tiene un 'nombre' vacío o no textual")
         aliases = _parse_aliases(entry.get("aliases") or [], ctx, path)
-        rules.append(GameRule(name=name.strip(), aliases=aliases))
+        logo_raw = entry.get("logo")
+        logo = None
+        if logo_raw is not None:
+            if not isinstance(logo_raw, str) or not logo_raw.strip():
+                raise ConfigError(f"{path}: {ctx} tiene un 'logo' vacío o no textual")
+            logo = logo_raw.strip()
+        rules.append(GameRule(name=name.strip(), aliases=aliases, logo=logo))
     return tuple(rules)
 
 

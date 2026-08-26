@@ -15,6 +15,7 @@ from ..models import FetchedItem, Source, SourceType
 from .base import (
     FetchError,
     build_session,
+    extract_first_image_url,
     http_get,
     resolve_date,
     strip_html,
@@ -89,11 +90,13 @@ def _build_item(entry: dict, game: SteamGame, now: datetime) -> FetchedItem | No
     moment = None
     if isinstance(raw_date, int) and not isinstance(raw_date, bool) and raw_date > 0:
         moment = datetime.fromtimestamp(raw_date, tz=timezone.utc)
+    contents = str(entry.get("contents") or "")
     return FetchedItem(
         title=title,
         url=url,
         source=Source(name=f"Steam · {game.nombre}", type=SourceType.STEAM),
         published_at=resolve_date(moment, None, now),
-        body_text=strip_html(str(entry.get("contents") or "")),
+        body_text=strip_html(contents),
         language=None,
+        image_url=extract_first_image_url(contents),
     )

@@ -87,3 +87,17 @@ def save_digest(items: list[NewsItem]) -> None:
     os.replace(tmp_path, DATA_PATH)
 
     logger.info("Digest guardado: %d items (generado %s)", len(merged), utc_now_iso())
+
+
+GAMES_CONFIG_PATH = Path("frontend/data/games.json")
+
+
+def save_games_config(games: list[dict]) -> None:
+    """Guarda la config de juegos (nombre→logo) para el frontend."""
+    GAMES_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = GAMES_CONFIG_PATH.with_suffix(".tmp")
+    data = {"games": games}
+    json_str = json.dumps(data, ensure_ascii=False, indent=2)
+    tmp_path.write_text(json_str, encoding="utf-8")
+    os.replace(tmp_path, GAMES_CONFIG_PATH)
+    logger.info("Games config guardado: %d juegos", len(games))

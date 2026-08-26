@@ -58,6 +58,14 @@ class TestParseoDelAtom:
         )
 
 
+class TestExtraccionDeImagen:
+    def test_media_thumbnail_extrae_imagen(self, items):
+        assert items[0].image_url == "https://preview.redd.it/persona6_leak.jpg"
+
+    def test_sin_media_thumbnail_devuelve_none(self, items):
+        assert items[1].image_url is None
+
+
 class TestPeticionHttp:
     def test_url_correcta(self, fake_session, items):
         esperada = "https://www.reddit.com/r/gamingleaks/new/.rss"

@@ -1,6 +1,7 @@
 /**
  * EuroMario — Frontend App
  * Vanilla JS: fetch, filters, URL sync, rendering, error handling
+ * Gaming Pulse editorial card design with cover images
  */
 
 // ============================================================
@@ -10,6 +11,7 @@
 const CONFIG = {
   appTitle: 'EuroMario',
   dataUrl: 'data/news.json',
+  gamesUrl: 'data/games.json',
   cacheBustParam: 'v',
   itemsPerPage: 50,
   debounceMs: 150,
@@ -22,6 +24,46 @@ const CATEGORY_LABELS = {
   analisis: 'An\u00e1lisis',
 };
 
+const CATEGORY_GLYPHS = {
+  lanzamiento: '\ud83d\ude80',
+  actualizacion: '\ud83d\udd04',
+  rumor: '\ud83d\udcac',
+  analisis: '\ud83d\udcca',
+};
+
+const CATEGORY_COLORS = {
+  lanzamiento: 'var(--cat-lanzamiento)',
+  actualizacion: 'var(--cat-actualizacion)',
+  rumor: 'var(--cat-rumor)',
+  analisis: 'var(--cat-analisis)',
+};
+
+const TILE_COLORS = [
+  '#3FB950', '#0080D6', '#D29922', '#A371F7',
+  '#F97583', '#56D4DD', '#DB6D28', '#79C0FF',
+  '#7EE787', '#D2A8FF', '#FFA657', '#FF7B72',
+];
+
+const PLATFORM_MAP = {
+  'assets/platforms/xbox.svg': {
+    label: 'Xbox',
+    games: ['Halo', 'Forza', 'Gears'],
+  },
+  'assets/platforms/nintendo.svg': {
+    label: 'Nintendo',
+    games: ['Pokemon', 'The Legend of Zelda', 'Super Mario'],
+  },
+  'assets/platforms/playstation.svg': {
+    label: 'PlayStation',
+    games: ['God of War', 'Persona'],
+  },
+};
+
+const STEAM_PLATFORM = {
+  src: 'assets/platforms/steam.svg',
+  label: 'Steam',
+};
+
 // ============================================================
 // State
 // ============================================================
@@ -29,6 +71,7 @@ const CATEGORY_LABELS = {
 const state = {
   allNews: [],
   filteredNews: [],
+  gameLogos: {},
   filters: {
     games: [],
     categories: [],
@@ -59,6 +102,8 @@ const els = {
   retryBtn: document.getElementById('retry-btn'),
   search: document.getElementById('search'),
   gameTiles: document.getElementById('game-tiles'),
+  platformTiles: document.getElementById('platform-tiles'),
+  platformSection: document.getElementById('platform-section'),
   categoryPills: document.getElementById('category-pills'),
   dateFrom: document.getElementById('date-from'),
   dateTo: document.getElementById('date-to'),
@@ -112,6 +157,35 @@ function getGameInitial(name) {
   return name.charAt(0).toUpperCase();
 }
 
+function hashGameName(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % TILE_COLORS.length;
+}
+
+function getGameColor(name) {
+  return TILE_COLORS[hashGameName(name)];
+}
+
+function getCategoryGlyph(category) {
+  return CATEGORY_GLYPHS[category] || '\ud83c\udfae';
+}
+
+function getSourceInitials(name) {
+  if (!name) return '?';
+  const cleaned = name.replace(/\s*·\s*.+$/, '').trim();
+  const words = cleaned.split(/\s+/);
+  if (words.length === 1) return words[0].substring(0, 3).toUpperCase();
+  if (words.length === 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return words.slice(0, 3).map(w => w[0]).join('').toUpperCase();
+}
+
+function getCategoryColor(category) {
+  return CATEGORY_COLORS[category] || 'var(--accent)';
+}
+
 // ============================================================
 // Source Badge
 // ============================================================
@@ -126,26 +200,37 @@ function getSourceBadge(source) {
   return `<span class="badge ${config.class}">${escapeHtml(config.label)}</span>`;
 }
 
-function getCategoryBadge(category) {
-  return `<span class="badge badge--category">${CATEGORY_LABELS[category] || category}</span>`;
-}
-
 // ============================================================
-// Game Tiles (visual filter)
+// Game Tiles (visual filter with logo support)
 // ============================================================
 
 function renderGameTiles(games) {
   const allTile = `
     <button type="button" class="game-tile active" data-game="" aria-pressed="true">
-      <div class="game-tile__icon">ALL</div>
+      <div class="game-tile__icon" style="background: var(--accent); border-color: var(--accent)">ALL</div>
       <span class="game-tile__name">Todos</span>
     </button>`;
 
-  const gameTiles = games.map(game => `
-    <button type="button" class="game-tile" data-game="${escapeHtml(game)}" aria-pressed="false">
-      <div class="game-tile__icon">${getGameInitial(game)}</div>
-      <span class="game-tile__name">${escapeHtml(game)}</span>
-    </button>`).join('');
+  const gameTiles = games.map(game => {
+    const logo = state.gameLogos[game];
+    const color = getGameColor(game);
+    if (logo) {
+      return `
+        <button type="button" class="game-tile" data-game="${escapeHtml(game)}" aria-pressed="false">
+          <div class="game-tile__image">
+            <img src="${escapeHtml(logo)}" alt="${escapeHtml(game)}" loading="lazy"/>
+          </div>
+          <span class="game-tile__name">${escapeHtml(game)}</span>
+        </button>`;
+    }
+    return `
+      <button type="button" class="game-tile" data-game="${escapeHtml(game)}" aria-pressed="false">
+        <div class="game-tile__icon" style="background:${color}; border-color:${color}">
+          ${getGameInitial(game)}
+        </div>
+        <span class="game-tile__name">${escapeHtml(game)}</span>
+      </button>`;
+  }).join('');
 
   els.gameTiles.innerHTML = allTile + gameTiles;
 
@@ -185,6 +270,31 @@ function renderGameTiles(games) {
   });
 }
 
+function renderPlatformTiles(games, newsItems) {
+  const hasSteam = newsItems.some(i => i.source && i.source.type === 'steam');
+
+  const matchingPlatforms = Object.entries(PLATFORM_MAP)
+    .filter(([, cfg]) => cfg.games.some(g => games.includes(g)));
+
+  if (hasSteam) {
+    matchingPlatforms.unshift([STEAM_PLATFORM.src, { label: STEAM_PLATFORM.label }]);
+  }
+
+  if (matchingPlatforms.length === 0) {
+    els.platformSection.hidden = true;
+    return;
+  }
+
+  els.platformSection.hidden = false;
+  els.platformTiles.innerHTML = matchingPlatforms.map(([src, cfg]) => `
+    <div class="platform-tile" title="${escapeHtml(cfg.label)}">
+      <div class="game-tile__image">
+        <img src="${escapeHtml(src)}" alt="${escapeHtml(cfg.label)}" loading="lazy"/>
+      </div>
+      <span class="game-tile__name">${escapeHtml(cfg.label)}</span>
+    </div>`).join('');
+}
+
 // ============================================================
 // Category Pills
 // ============================================================
@@ -207,41 +317,50 @@ function initCategoryPills() {
 }
 
 // ============================================================
-// Rendering
+// Rendering — Gaming Pulse Card Design
 // ============================================================
 
 function renderNewsCard(item) {
-  const categoryBadge = item.category ? getCategoryBadge(item.category) : '';
+  const category = item.category || '';
+  const catColor = getCategoryColor(category);
+
+  // Media section: cover image or category placeholder
+  let mediaHtml;
+  if (item.image_url) {
+    mediaHtml = `<img src="${escapeHtml(item.image_url)}" alt="" class="news-card__image" loading="lazy"/>`;
+  } else {
+    const initials = getSourceInitials(item.source?.name);
+    mediaHtml = `
+      <div class="news-card__placeholder" style="--cat-color: ${catColor}">
+        <span class="news-card__placeholder-initials">${escapeHtml(initials)}</span>
+      </div>`;
+  }
+
   const sourceBadge = getSourceBadge(item.source);
   const dateObj = new Date(item.published_at);
   const dateStr = formatDate(dateObj);
   const relStr = formatRelativeDate(dateObj);
 
   return `
-    <article class="news-card" data-id="${item.id}" data-category="${item.category || ''}">
-      <header class="news-card__header">
-        <div class="news-card__source">
+    <article class="news-card" data-id="${item.id}" data-category="${category}">
+      <div class="news-card__media">
+        ${mediaHtml}
+      </div>
+      <div class="news-card__content">
+        <div class="news-card__meta">
           ${sourceBadge}
+          <time datetime="${dateObj.toISOString()}" title="${relStr}">${dateStr}</time>
         </div>
-        <div class="news-card__title">
+        <h3 class="news-card__title">
           <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
             ${escapeHtml(item.title)}
           </a>
-        </div>
-      </header>
-      ${item.summary ? `<p class="news-card__summary">${escapeHtml(item.summary)}</p>` : ''}
-      <footer class="news-card__meta">
-        <div class="news-card__badges">
-          ${item.game ? `<span class="badge badge--category">${escapeHtml(item.game)}</span>` : ''}
-          ${categoryBadge}
-        </div>
-        <span class="news-card__relevance" aria-label="Relevancia: ${item.relevance}/5">
-          ${'\u2605'.repeat(item.relevance)}${'\u2606'.repeat(5 - item.relevance)}
-        </span>
-        <time class="news-card__date" datetime="${dateObj.toISOString()}" title="${relStr}">
-          ${dateStr}
-        </time>
-      </footer>
+        </h3>
+        ${item.summary ? `<p class="news-card__summary">${escapeHtml(item.summary)}</p>` : ''}
+        <a href="${escapeHtml(item.url)}" class="news-card__link" target="_blank" rel="noopener noreferrer">
+          LEER EN ${escapeHtml(item.source.name)} <span aria-hidden="true">\u2197</span>
+        </a>
+      </div>
     </article>
   `;
 }
@@ -466,6 +585,23 @@ async function fetchNews() {
   }
 }
 
+async function fetchGameLogos() {
+  const url = `${CONFIG.gamesUrl}?${CONFIG.cacheBustParam}=${Date.now()}`;
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) return {};
+    const data = await response.json();
+    if (!data || !Array.isArray(data.games)) return {};
+    const logos = {};
+    for (const g of data.games) {
+      if (g.name && g.logo) logos[g.name] = `assets/games/${g.logo}`;
+    }
+    return logos;
+  } catch {
+    return {};
+  }
+}
+
 // ============================================================
 // Data Loading
 // ============================================================
@@ -475,12 +611,14 @@ async function loadData() {
   clearError();
 
   try {
-    const data = await fetchNews();
+    const [data, logos] = await Promise.all([fetchNews(), fetchGameLogos()]);
     state.allNews = data.news;
     state.filteredNews = data.news;
+    state.gameLogos = logos;
 
     const games = [...new Set(data.news.map(i => i.game).filter(Boolean))].sort();
     renderGameTiles(games);
+    renderPlatformTiles(games, data.news);
     initCategoryPills();
 
     syncUrlToState();

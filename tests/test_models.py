@@ -166,9 +166,42 @@ class TestSummary:
         assert make_item(summary=" hola ").summary == "hola"
 
 
+class TestImageUrl:
+    def test_none_es_valido(self):
+        assert make_item(image_url=None).image_url is None
+
+    def test_url_valida_se_guarda(self):
+        item = make_item(image_url="https://cdn.example.com/img.jpg")
+        assert item.image_url == "https://cdn.example.com/img.jpg"
+
+    def test_url_http_valida(self):
+        item = make_item(image_url="http://cdn.example.com/img.jpg")
+        assert item.image_url == "http://cdn.example.com/img.jpg"
+
+    def test_url_invalida_se_descarta(self):
+        assert make_item(image_url="ftp://example.com/img.jpg").image_url is None
+
+    def test_url_relativa_se_descarta(self):
+        assert make_item(image_url="/images/img.jpg").image_url is None
+
+    def test_url_se_recorta(self):
+        item = make_item(image_url="  https://cdn.example.com/img.jpg  ")
+        assert item.image_url == "https://cdn.example.com/img.jpg"
+
+    def test_cadena_vacia_se_descarta(self):
+        assert make_item(image_url="").image_url is None
+
+    def test_serializa_null(self):
+        assert make_item(image_url=None).to_dict()["image_url"] is None
+
+    def test_serializa_url(self):
+        url = "https://cdn.example.com/img.jpg"
+        assert make_item(image_url=url).to_dict()["image_url"] == url
+
+
 class TestToDict:
     def test_claves_exactas_del_contrato(self):
-        item = make_item(summary="Resumen breve.")
+        item = make_item(summary="Resumen breve.", image_url="https://cdn.example.com/img.jpg")
         data = item.to_dict()
         assert set(data) == {
             "id",
@@ -181,6 +214,7 @@ class TestToDict:
             "published_at",
             "relevance",
             "category",
+            "image_url",
         }
 
     def test_valores_serializados(self):
@@ -199,7 +233,7 @@ class TestToDict:
 
 class TestFromDict:
     def test_desde_dict_valido_reconstruye_correctamente(self):
-        item = make_item(summary="Test summary")
+        item = make_item(summary="Test summary", image_url="https://cdn.example.com/img.jpg")
         data = item.to_dict()
         restored = NewsItem.from_dict(data)
 
@@ -213,6 +247,7 @@ class TestFromDict:
         assert restored.relevance == item.relevance
         assert restored.category == item.category
         assert restored.summary == item.summary
+        assert restored.image_url == item.image_url
         assert restored.id == item.id
 
     def test_id_recalculado_coincide_con_guardado(self):
@@ -220,6 +255,13 @@ class TestFromDict:
         data = item.to_dict()
         restored = NewsItem.from_dict(data)
         assert restored.id == item.id
+
+    def test_image_url_ausente_en_dict_compatibilidad(self):
+        item = make_item()
+        data = item.to_dict()
+        del data["image_url"]
+        restored = NewsItem.from_dict(data)
+        assert restored.image_url is None
 
     def test_source_from_dict_reconstruye(self):
         src = Source(name="IGN", type="media")

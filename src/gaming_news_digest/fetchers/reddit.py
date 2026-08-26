@@ -16,6 +16,7 @@ from ..models import FetchedItem, Source, SourceType
 from .base import (
     FetchError,
     build_session,
+    extract_first_image_url,
     http_get,
     resolve_date,
     strip_html,
@@ -77,4 +78,18 @@ def _build_item(entry, source: Source, now: datetime) -> FetchedItem | None:
         published_at=resolve_date(published, updated, now),
         body_text=strip_html(summary),
         language=None,
+        image_url=_extract_image(entry, summary),
     )
+
+
+def _extract_image(entry, raw_summary: str) -> str | None:
+    """Extrae imagen destacada: media:thumbnail → media:content → <img>."""
+    for thumb in getattr(entry, "media_thumbnail", []):
+        url = thumb.get("url", "")
+        if url.startswith(("http://", "https://")):
+            return url
+    for media in getattr(entry, "media_content", []):
+        url = media.get("url", "")
+        if url.startswith(("http://", "https://")):
+            return url
+    return extract_first_image_url(raw_summary)

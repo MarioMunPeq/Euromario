@@ -33,7 +33,11 @@
 
   <main class="main">
     <section class="filters" aria-label="Filtros">
-      <div class="filters__section">
+      <div class="filters__section filters__section--platforms" id="platform-section" hidden>
+        <span class="filters__label">Plataformas</span>
+        <div class="platform-tiles" id="platform-tiles" role="group" aria-label="Plataformas"></div>
+      </div>
+      <div class="filters__section filters__section--games">
         <span class="filters__label">Juego</span>
         <div class="game-tiles" id="game-tiles" role="group" aria-label="Filtrar por juego"></div>
       </div>

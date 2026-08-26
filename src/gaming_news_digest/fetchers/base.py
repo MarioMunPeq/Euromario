@@ -96,3 +96,16 @@ def utc_now() -> datetime:
     en tests de retención (evita problemas de boundary por microsegundos).
     """
     return datetime.now(timezone.utc).replace(microsecond=0)
+
+
+_IMG_SRC = re.compile(r'<img[^>]+src=["\']([^"\']+)["\']', re.IGNORECASE)
+
+
+def extract_first_image_url(html: str) -> str | None:
+    """Extrae la primera URL de imagen válida de un fragmento HTML."""
+    match = _IMG_SRC.search(html)
+    if match:
+        url = match.group(1).strip()
+        if url.startswith(("http://", "https://")):
+            return url
+    return None

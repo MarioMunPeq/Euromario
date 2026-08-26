@@ -15,6 +15,7 @@ from ..models import FetchedItem, Source, SourceType
 from .base import (
     FetchError,
     build_session,
+    extract_first_image_url,
     http_get,
     resolve_date,
     strip_html,
@@ -71,4 +72,19 @@ def _build_item(
         published_at=resolve_date(published, updated, now),
         body_text=strip_html(str(entry.get("summary") or "")),
         language=language,
+        image_url=_extract_image(entry),
     )
+
+
+def _extract_image(entry) -> str | None:
+    """Extrae imagen destacada: enclosure → media_content → <img> del HTML."""
+    for enc in getattr(entry, "enclosures", []):
+        if enc.get("type", "").startswith("image/"):
+            url = enc.get("url", "")
+            if url.startswith(("http://", "https://")):
+                return url
+    for media in getattr(entry, "media_content", []):
+        url = media.get("url", "")
+        if url.startswith(("http://", "https://")):
+            return url
+    return extract_first_image_url(str(entry.get("summary") or ""))

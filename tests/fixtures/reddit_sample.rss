@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
   <category term="r/gamingleaks"/>
   <title>r/gamingleaks · new</title>
   <id>https://www.reddit.com/r/gamingleaks/.rss</id>
@@ -8,6 +8,7 @@
     <author><name>/u/dataminer42</name></author>
     <category term="Rumor"/>
     <content type="html">&amp;lt;p&amp;gt;Supuesto &amp;lt;b&amp;gt;leak&amp;lt;/b&amp;gt; de Persona 6&amp;lt;/p&amp;gt;</content>
+    <media:thumbnail url="https://preview.redd.it/persona6_leak.jpg"/>
     <id>t3_abc123</id>
     <link href="https://www.reddit.com/r/gamingleaks/comments/abc/supuesto_leak/"/>
     <published>2026-08-23T10:45:00+00:00</published>

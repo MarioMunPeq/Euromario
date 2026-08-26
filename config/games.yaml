@@ -7,21 +7,95 @@
 # (abreviaturas, secuelas, nombres alternativos). El matcher usa límites
 # de palabra, por lo que los aliases cortos (ej. "GTA") son seguros.
 #
+# Campo opcional "logo": slug del SVG en frontend/assets/games/.
+# Si un juego no tiene logo, el frontend muestra un tile con la inicial
+# sobre fondo de color determinístico por hash del nombre.
+#
 # Para editar: modifica este archivo y haz commit; la siguiente ejecución
 # horaria del pipeline ya lo aplica. No hace falta tocar código.
-#
-# Lista completa definitiva pendiente (especificación, sección 10).
 
 incluir:
   - nombre: Grand Theft Auto
     aliases: [GTA]
+    logo: gta.svg
   - nombre: Call of Duty
     aliases: [CoD]
+    logo: call-of-duty.svg
   - nombre: Persona
     aliases: []
+    logo: persona.svg
   - nombre: The Legend of Zelda
     aliases: [Zelda]
-  # ... ampliar aquí
+    logo: zelda.svg
+  - nombre: Apex Legends
+    aliases: [Apex]
+    logo: apex-legends.svg
+  - nombre: Assassin's Creed
+    aliases: [AC]
+    logo: assasins-creed.svg
+  - nombre: Baldur's Gate
+    aliases: [BG3]
+    logo: baldurs-gate.svg
+  - nombre: Battlefield
+    aliases: [BF]
+    logo: battlefield.svg
+  - nombre: Counter-Strike
+    aliases: [CS2, CS]
+    logo: counter-strike.svg
+  - nombre: Deadlock
+    aliases: []
+    logo: deadlock.svg
+  - nombre: Elden Ring
+    aliases: [ER]
+    logo: elden-ring.svg
+  - nombre: Fortnite
+    aliases: []
+    logo: fortnite.svg
+  - nombre: God of War
+    aliases: [GoW]
+    logo: god-of-war.svg
+  - nombre: Halo
+    aliases: []
+    logo: halo.svg
+  - nombre: Hollow Knight
+    aliases: [HK]
+    logo: hollow-knight.svg
+  - nombre: League of Legends
+    aliases: [LoL]
+    logo: league-of-legends.svg
+  - nombre: Marvel Rivals
+    aliases: []
+    logo: marvel-rivals.svg
+  - nombre: Minecraft
+    aliases: []
+    logo: minecraft.svg
+  - nombre: Overwatch
+    aliases: [OW]
+    logo: overwatch.svg
+  - nombre: Pokemon
+    aliases: []
+    logo: pokemon.svg
+  - nombre: PUBG
+    aliases: []
+    logo: pubg.svg
+  - nombre: Rainbow Six
+    aliases: [R6]
+    logo: rainbow-six.svg
+  - nombre: Roblox
+    aliases: []
+    logo: roblox.svg
+  - nombre: Rocket League
+    aliases: [RL]
+    logo: rocket-league.svg
+  - nombre: Smite
+    aliases: []
+    logo: smite.svg
+  - nombre: Super Mario
+    aliases: [Mario]
+    logo: super-mario.svg
+  - nombre: Valorant
+    aliases: [Val]
+    logo: valorant.svg
 
 excluir:
   - nombre: EA Sports FC

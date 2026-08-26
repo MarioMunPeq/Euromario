@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
     <title>IGN</title>
     <link>https://www.ign.com</link>
@@ -7,12 +7,14 @@
     <item>
       <title>Persona 6 muestra su primer tráiler</title>
       <link>https://www.ign.com/articles/persona-6-trailer</link>
+      <enclosure url="https://cdn.ign.com/persona6.jpg" type="image/jpeg"/>
       <pubDate>Sat, 22 Aug 2026 09:15:00 GMT</pubDate>
       <description><![CDATA[<p>Atlus confirma <b>novedades</b> para 2027.</p>]]></description>
     </item>
     <item>
       <title>Parche de Cyberpunk 2077</title>
       <link>https://www.ign.com/articles/cyberpunk-patch</link>
+      <media:content url="https://cdn.ign.com/cyberpunk.jpg"/>
       <pubDate>Fri, 21 Aug 2026 18:30:00 GMT</pubDate>
       <description>CD Projekt detalla todos los cambios.</description>
     </item>
@@ -24,7 +26,13 @@
       <title>Anuncio en la Gamescom</title>
       <link>https://www.ign.com/articles/gamescom-anuncio</link>
       <pubDate>Thu, 20 Aug 2026 12:00:00 GMT</pubDate>
-      <description><![CDATA[Con <i>tráiler</i> incluido]]></description>
+      <description><![CDATA[Con <img src="https://cdn.ign.com/gamescom.jpg" alt=""/> tráiler incluido]]></description>
+    </item>
+    <item>
+      <title>Noticia sin imagen</title>
+      <link>https://www.ign.com/articles/sin-imagen</link>
+      <pubDate>Wed, 19 Aug 2026 10:00:00 GMT</pubDate>
+      <description><![CDATA[<p>Contenido sin imagen destacada.</p>]]></description>
     </item>
   </channel>
 </rss>

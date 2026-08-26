@@ -31,6 +31,14 @@ PERSONA_JSON = (
     b'"contents":"<i>Oferta</i> del 50%","date":1776000000}]}}'
 )
 
+PERSONA_JSON_CON_IMAGEN = (
+    b'{"appnews":{"appid":1687950,"newsitems":[{"gid":"10",'
+    b'"title":"Nuevo trailer de Persona 6",'
+    b'"url":"https://store.steampowered.com/news/app/1687950/view/10",'
+    b'"contents":"<p>Trailer increible</p><img src=\\"https://cdn.akamai.steamstatic.com/persona6_trailer.jpg\\" alt=\\"Trailer\\"/>",'
+    b'"date":1776000001}]}}'
+)
+
 
 def load_fixture(name: str) -> bytes:
     return (FIXTURES / name).read_bytes()
@@ -82,6 +90,31 @@ class TestParseoDeLaRespuesta:
         gta = by_url["https://store.steampowered.com/news/app/271590/view/1"]
 
         assert gta.body_text == "Novedades del parche."
+
+
+class TestExtraccionDeImagen:
+    def test_contenido_con_img_extrae_imagen(self, fake_session):
+        fake_session.route("appid=271590", FakeResponse(load_fixture("steam_news.json")))
+        fake_session.route("appid=1687950", FakeResponse(PERSONA_JSON))
+        items = fetch_steam_news(STEAM, LIMITS, session=fake_session, now=NOW)
+        by_url = {i.url: i for i in items}
+        gta = by_url["https://store.steampowered.com/news/app/271590/view/1"]
+        assert gta.image_url == "https://cdn.akamai.steamstatic.com/gta5_cover.jpg"
+
+    def test_contenido_sin_img_devuelve_none(self, fake_session):
+        fake_session.route("appid=271590", FakeResponse(load_fixture("steam_news.json")))
+        fake_session.route("appid=1687950", FakeResponse(PERSONA_JSON))
+        items = fetch_steam_news(STEAM, LIMITS, session=fake_session, now=NOW)
+        by_url = {i.url: i for i in items}
+        evento = by_url["https://store.steampowered.com/news/app/271590/view/2"]
+        assert evento.image_url is None
+
+    def test_steam_con_imagen_en_contenido(self, fake_session):
+        fake_session.route("appid=271590", FakeResponse(b'{"appnews":{"appid":271590,"newsitems":[]}}'))
+        fake_session.route("appid=1687950", FakeResponse(PERSONA_JSON_CON_IMAGEN))
+        items = fetch_steam_news(STEAM, LIMITS, session=fake_session, now=NOW)
+        by_url = {i.url: i for i in items}
+        assert by_url["https://store.steampowered.com/news/app/1687950/view/10"].image_url == "https://cdn.akamai.steamstatic.com/persona6_trailer.jpg"
 
 
 class TestPeticionHttp:

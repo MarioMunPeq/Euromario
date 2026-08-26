@@ -386,26 +386,6 @@ input, select, textarea {
   white-space: nowrap;
 }
 
-.platform-tile {
-  cursor: default;
-  opacity: 0.6;
-  border-style: dashed;
-}
-
-.platform-tile .game-tile__image img {
-  filter: grayscale(0.4);
-}
-
-.platform-tile:hover {
-  border-color: var(--border);
-  background: var(--bg-secondary);
-  opacity: 0.9;
-}
-
-.platform-tile:hover .game-tile__image img {
-  filter: none;
-}
-
 /* Category Pills */
 .category-pills {
   display: flex;

@@ -44,24 +44,18 @@ const TILE_COLORS = [
   '#7EE787', '#D2A8FF', '#FFA657', '#FF7B72',
 ];
 
-const PLATFORM_MAP = {
-  'assets/platforms/xbox.svg': {
-    label: 'Xbox',
-    games: ['Halo', 'Forza', 'Gears'],
-  },
-  'assets/platforms/nintendo.svg': {
-    label: 'Nintendo',
-    games: ['Pokemon', 'The Legend of Zelda', 'Super Mario'],
-  },
-  'assets/platforms/playstation.svg': {
-    label: 'PlayStation',
-    games: ['God of War', 'Persona'],
-  },
+const PLATFORM_ICONS = {
+  pc: 'assets/platforms/steam.svg',
+  playstation: 'assets/platforms/playstation.svg',
+  xbox: 'assets/platforms/xbox.svg',
+  nintendo: 'assets/platforms/nintendo.svg',
 };
 
-const STEAM_PLATFORM = {
-  src: 'assets/platforms/steam.svg',
-  label: 'Steam',
+const PLATFORM_LABELS = {
+  pc: 'PC',
+  playstation: 'PlayStation',
+  xbox: 'Xbox',
+  nintendo: 'Nintendo',
 };
 
 // ============================================================
@@ -72,8 +66,11 @@ const state = {
   allNews: [],
   filteredNews: [],
   gameLogos: {},
+  gamePlatforms: {},
+  platformGames: {},
   filters: {
     games: [],
+    platforms: [],
     categories: [],
     dateFrom: null,
     dateTo: null,
@@ -175,7 +172,7 @@ function getCategoryGlyph(category) {
 
 function getSourceInitials(name) {
   if (!name) return '?';
-  const cleaned = name.replace(/\s*·\s*.+$/, '').trim();
+  const cleaned = name.replace(/\s*\u00b7\s*.+$/, '').trim();
   const words = cleaned.split(/\s+/);
   if (words.length === 1) return words[0].substring(0, 3).toUpperCase();
   if (words.length === 2) return (words[0][0] + words[1][0]).toUpperCase();
@@ -270,29 +267,65 @@ function renderGameTiles(games) {
   });
 }
 
-function renderPlatformTiles(games, newsItems) {
+// ============================================================
+// Platform Tiles (data-driven, clickable filter)
+// ============================================================
+
+function buildPlatformData(gamePlatforms) {
+  const platformGames = {};
+  for (const [game, platforms] of Object.entries(gamePlatforms)) {
+    for (const p of platforms) {
+      if (!platformGames[p]) platformGames[p] = [];
+      platformGames[p].push(game);
+    }
+  }
+  return platformGames;
+}
+
+function renderPlatformTiles(newsItems) {
   const hasSteam = newsItems.some(i => i.source && i.source.type === 'steam');
+  const availablePlatforms = Object.keys(state.platformGames)
+    .filter(p => state.platformGames[p].length > 0)
+    .sort();
 
-  const matchingPlatforms = Object.entries(PLATFORM_MAP)
-    .filter(([, cfg]) => cfg.games.some(g => games.includes(g)));
-
+  const tiles = [];
   if (hasSteam) {
-    matchingPlatforms.unshift([STEAM_PLATFORM.src, { label: STEAM_PLATFORM.label }]);
+    tiles.push({ id: 'steam', src: 'assets/platforms/steam.svg', label: 'Steam' });
+  }
+  for (const p of availablePlatforms) {
+    tiles.push({ id: p, src: PLATFORM_ICONS[p], label: PLATFORM_LABELS[p] });
   }
 
-  if (matchingPlatforms.length === 0) {
+  if (tiles.length === 0) {
     els.platformSection.hidden = true;
     return;
   }
 
   els.platformSection.hidden = false;
-  els.platformTiles.innerHTML = matchingPlatforms.map(([src, cfg]) => `
-    <div class="platform-tile" title="${escapeHtml(cfg.label)}">
+  els.platformTiles.innerHTML = tiles.map(t => `
+    <button type="button" class="game-tile" data-platform="${escapeHtml(t.id)}" aria-pressed="false">
       <div class="game-tile__image">
-        <img src="${escapeHtml(src)}" alt="${escapeHtml(cfg.label)}" loading="lazy"/>
+        <img src="${escapeHtml(t.src)}" alt="${escapeHtml(t.label)}" loading="lazy"/>
       </div>
-      <span class="game-tile__name">${escapeHtml(cfg.label)}</span>
-    </div>`).join('');
+      <span class="game-tile__name">${escapeHtml(t.label)}</span>
+    </button>`).join('');
+
+  els.platformTiles.querySelectorAll('.game-tile').forEach(tile => {
+    tile.addEventListener('click', () => {
+      const platform = tile.dataset.platform;
+      if (state.filters.platforms.includes(platform)) {
+        state.filters.platforms = state.filters.platforms.filter(p => p !== platform);
+        tile.classList.remove('active');
+        tile.setAttribute('aria-pressed', 'false');
+      } else {
+        state.filters.platforms.push(platform);
+        tile.classList.add('active');
+        tile.setAttribute('aria-pressed', 'true');
+      }
+      applyFilters();
+      pushUrl();
+    });
+  });
 }
 
 // ============================================================
@@ -324,7 +357,6 @@ function renderNewsCard(item) {
   const category = item.category || '';
   const catColor = getCategoryColor(category);
 
-  // Media section: cover image or category placeholder
   let mediaHtml;
   if (item.image_url) {
     mediaHtml = `<img src="${escapeHtml(item.image_url)}" alt="" class="news-card__image" loading="lazy"/>`;
@@ -448,7 +480,7 @@ function clearError() {
 // ============================================================
 
 function applyFilters() {
-  const { games, categories, dateFrom, dateTo, search } = state.filters;
+  const { games, platforms, categories, dateFrom, dateTo, search } = state.filters;
 
   state.filteredNews = state.allNews.filter(item => {
     if (search) {
@@ -459,6 +491,33 @@ function applyFilters() {
 
     if (games.length > 0) {
       if (!item.game || !games.includes(item.game)) return false;
+    }
+
+    if (platforms.length > 0) {
+      const hasSteamFilter = platforms.includes('steam');
+      const otherPlatforms = platforms.filter(p => p !== 'steam');
+
+      let platformPass = false;
+
+      if (hasSteamFilter && item.source && item.source.type === 'steam') {
+        platformPass = true;
+      }
+
+      if (otherPlatforms.length > 0 && item.game) {
+        const gamePlats = state.gamePlatforms[item.game] || [];
+        if (otherPlatforms.some(p => gamePlats.includes(p))) {
+          platformPass = true;
+        }
+      }
+
+      if (hasSteamFilter && otherPlatforms.length > 0) {
+        const gamePlats = item.game ? (state.gamePlatforms[item.game] || []) : [];
+        const steamMatch = item.source && item.source.type === 'steam';
+        const platMatch = otherPlatforms.some(p => gamePlats.includes(p));
+        platformPass = steamMatch && platMatch;
+      }
+
+      if (!platformPass) return false;
     }
 
     if (categories.length > 0) {
@@ -488,6 +547,13 @@ function syncFilterUIFromState() {
     tile.setAttribute('aria-pressed', String(isActive));
   });
 
+  els.platformTiles.querySelectorAll('.game-tile').forEach(tile => {
+    const platform = tile.dataset.platform;
+    const isActive = state.filters.platforms.includes(platform);
+    tile.classList.toggle('active', isActive);
+    tile.setAttribute('aria-pressed', String(isActive));
+  });
+
   els.categoryPills.querySelectorAll('.category-pill').forEach(pill => {
     const cat = pill.dataset.cat;
     pill.classList.toggle('active', state.filters.categories.includes(cat));
@@ -505,6 +571,7 @@ function syncFilterUIFromState() {
 function filtersToUrlParams() {
   const params = new URLSearchParams();
   if (state.filters.games.length) params.set('game', state.filters.games.join(','));
+  if (state.filters.platforms.length) params.set('platforms', state.filters.platforms.join(','));
   if (state.filters.categories.length) params.set('category', state.filters.categories.join(','));
   if (state.filters.dateFrom) params.set('date_from', state.filters.dateFrom);
   if (state.filters.dateTo) params.set('date_to', state.filters.dateTo);
@@ -515,6 +582,7 @@ function filtersToUrlParams() {
 function syncUrlToState() {
   const params = new URLSearchParams(window.location.search);
   state.filters.games = params.get('game')?.split(',').filter(Boolean) || [];
+  state.filters.platforms = params.get('platforms')?.split(',').filter(Boolean) || [];
   state.filters.categories = params.get('category')?.split(',').filter(Boolean) || [];
   state.filters.dateFrom = params.get('date_from') || null;
   state.filters.dateTo = params.get('date_to') || null;
@@ -543,6 +611,7 @@ function onFilterChange() {
 function onClearFilters() {
   state.filters = {
     games: [],
+    platforms: [],
     categories: [],
     dateFrom: null,
     dateTo: null,
@@ -585,20 +654,22 @@ async function fetchNews() {
   }
 }
 
-async function fetchGameLogos() {
+async function fetchGameData() {
   const url = `${CONFIG.gamesUrl}?${CONFIG.cacheBustParam}=${Date.now()}`;
   try {
     const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) return {};
+    if (!response.ok) return { logos: {}, platforms: {} };
     const data = await response.json();
-    if (!data || !Array.isArray(data.games)) return {};
+    if (!data || !Array.isArray(data.games)) return { logos: {}, platforms: {} };
     const logos = {};
+    const platforms = {};
     for (const g of data.games) {
       if (g.name && g.logo) logos[g.name] = `assets/games/${g.logo}`;
+      if (g.name && Array.isArray(g.platform)) platforms[g.name] = g.platform;
     }
-    return logos;
+    return { logos, platforms };
   } catch {
-    return {};
+    return { logos: {}, platforms: {} };
   }
 }
 
@@ -611,14 +682,16 @@ async function loadData() {
   clearError();
 
   try {
-    const [data, logos] = await Promise.all([fetchNews(), fetchGameLogos()]);
+    const [data, gameData] = await Promise.all([fetchNews(), fetchGameData()]);
     state.allNews = data.news;
     state.filteredNews = data.news;
-    state.gameLogos = logos;
+    state.gameLogos = gameData.logos;
+    state.gamePlatforms = gameData.platforms;
+    state.platformGames = buildPlatformData(gameData.platforms);
 
     const games = [...new Set(data.news.map(i => i.game).filter(Boolean))].sort();
     renderGameTiles(games);
-    renderPlatformTiles(games, data.news);
+    renderPlatformTiles(data.news);
     initCategoryPills();
 
     syncUrlToState();

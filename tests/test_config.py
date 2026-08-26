@@ -57,6 +57,30 @@ class TestLoadGames:
         with pytest.raises(ConfigError, match="logo"):
             load_games(path)
 
+    def test_platform_se_carga(self, tmp_path):
+        content = "incluir:\n  - nombre: GTA\n    platform: [pc, playstation]\n"
+        path = write_yaml(tmp_path, content)
+        config = load_games(path)
+        assert config.include[0].platform == ("pc", "playstation")
+
+    def test_platform_ausente_es_tupla_vacia(self, tmp_path):
+        content = "incluir:\n  - nombre: Persona\n"
+        path = write_yaml(tmp_path, content)
+        config = load_games(path)
+        assert config.include[0].platform == ()
+
+    def test_platform_invalido_rechazado(self, tmp_path):
+        content = "incluir:\n  - nombre: GTA\n    platform: [atari]\n"
+        path = write_yaml(tmp_path, content)
+        with pytest.raises(ConfigError, match="platform.*inv"):
+            load_games(path)
+
+    def test_platform_no_lista_rechazado(self, tmp_path):
+        content = "incluir:\n  - nombre: GTA\n    platform: pc\n"
+        path = write_yaml(tmp_path, content)
+        with pytest.raises(ConfigError, match="platform.*no es una lista"):
+            load_games(path)
+
     def test_excluir_faltante_es_valido(self, tmp_path):
         path = write_yaml(tmp_path, "incluir:\n  - nombre: Persona\n")
 

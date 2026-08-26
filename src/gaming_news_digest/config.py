@@ -23,6 +23,9 @@ class ConfigError(Exception):
     """La configuración es inválida o no se pudo cargar."""
 
 
+VALID_PLATFORMS = frozenset({"pc", "playstation", "xbox", "nintendo"})
+
+
 @dataclass(frozen=True, slots=True)
 class GameRule:
     """Juego o saga seguido, con sus aliases para el matcher."""
@@ -30,6 +33,7 @@ class GameRule:
     name: str
     aliases: tuple[str, ...] = ()
     logo: str | None = None
+    platform: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,7 +179,8 @@ def _parse_game_rules(raw: Any, section: str, path: Path) -> tuple[GameRule, ...
             if not isinstance(logo_raw, str) or not logo_raw.strip():
                 raise ConfigError(f"{path}: {ctx} tiene un 'logo' vacío o no textual")
             logo = logo_raw.strip()
-        rules.append(GameRule(name=name.strip(), aliases=aliases, logo=logo))
+        rules.append(GameRule(name=name.strip(), aliases=aliases, logo=logo,
+                             platform=_parse_platform(entry, ctx, path)))
     return tuple(rules)
 
 
@@ -188,6 +193,26 @@ def _parse_aliases(raw: Any, ctx: str, path: Path) -> tuple[str, ...]:
             raise ConfigError(f"{path}: {ctx} tiene un alias vacío o no textual")
         aliases.append(alias.strip())
     return tuple(aliases)
+
+
+def _parse_platform(entry: dict, ctx: str, path: Path) -> tuple[str, ...]:
+    raw = entry.get("platform")
+    if raw is None:
+        return ()
+    if not isinstance(raw, list):
+        raise ConfigError(f"{path}: {ctx} tiene 'platform' que no es una lista")
+    platforms = []
+    for p in raw:
+        if not isinstance(p, str) or not p.strip():
+            raise ConfigError(f"{path}: {ctx} tiene un valor de 'platform' vacío")
+        val = p.strip().lower()
+        if val not in VALID_PLATFORMS:
+            raise ConfigError(
+                f"{path}: {ctx} tiene 'platform' inválido: {p!r} "
+                f"(válidos: {', '.join(sorted(VALID_PLATFORMS))})"
+            )
+        platforms.append(val)
+    return tuple(platforms)
 
 
 def _reject_overlap(include: tuple, exclude: tuple, path: Path):

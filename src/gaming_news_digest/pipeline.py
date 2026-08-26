@@ -180,10 +180,12 @@ class Pipeline:
                 return None
 
     def _save_games_config(self) -> None:
-        """Guarda el mapeo nombre→logo para el frontend."""
+        """Guarda el mapeo nombre→logo→platform para el frontend."""
         games_data = []
         for rule in self._games.include:
-            entry = {"name": rule.name, "logo": rule.logo}
+            entry: dict = {"name": rule.name, "logo": rule.logo}
+            if rule.platform:
+                entry["platform"] = list(rule.platform)
             games_data.append(entry)
         save_games_config(games_data)
 

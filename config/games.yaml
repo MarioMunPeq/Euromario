@@ -7,9 +7,10 @@
 # (abreviaturas, secuelas, nombres alternativos). El matcher usa límites
 # de palabra, por lo que los aliases cortos (ej. "GTA") son seguros.
 #
-# Campo opcional "logo": slug del SVG en frontend/assets/games/.
-# Si un juego no tiene logo, el frontend muestra un tile con la inicial
-# sobre fondo de color determinístico por hash del nombre.
+# Campos opcionales:
+#   logo: slug del SVG en frontend/assets/games/
+#   platform: lista de plataformas (pc, playstation, xbox, nintendo)
+#             Steam NO va aquí — se deriva de source.type == "steam"
 #
 # Para editar: modifica este archivo y haz commit; la siguiente ejecución
 # horaria del pipeline ya lo aplica. No hace falta tocar código.
@@ -18,84 +19,111 @@ incluir:
   - nombre: Grand Theft Auto
     aliases: [GTA]
     logo: gta.svg
+    platform: [pc, playstation, xbox]
   - nombre: Call of Duty
     aliases: [CoD]
     logo: call-of-duty.svg
+    platform: [pc, playstation, xbox]
   - nombre: Persona
     aliases: []
     logo: persona.svg
+    platform: [playstation, pc]
   - nombre: The Legend of Zelda
     aliases: [Zelda]
     logo: zelda.svg
+    platform: [nintendo]
   - nombre: Apex Legends
     aliases: [Apex]
     logo: apex-legends.svg
+    platform: [pc, playstation, xbox]
   - nombre: Assassin's Creed
     aliases: [AC]
     logo: assasins-creed.svg
+    platform: [pc, playstation, xbox]
   - nombre: Baldur's Gate
     aliases: [BG3]
     logo: baldurs-gate.svg
+    platform: [pc, playstation, xbox]
   - nombre: Battlefield
     aliases: [BF]
     logo: battlefield.svg
+    platform: [pc, playstation, xbox]
   - nombre: Counter-Strike
     aliases: [CS2, CS]
     logo: counter-strike.svg
+    platform: [pc]
   - nombre: Deadlock
     aliases: []
     logo: deadlock.svg
+    platform: [pc]
   - nombre: Elden Ring
     aliases: [ER]
     logo: elden-ring.svg
+    platform: [pc, playstation, xbox]
   - nombre: Fortnite
     aliases: []
     logo: fortnite.svg
+    platform: [pc, playstation, xbox, nintendo]
   - nombre: God of War
     aliases: [GoW]
     logo: god-of-war.svg
+    platform: [playstation, pc]
   - nombre: Halo
     aliases: []
     logo: halo.svg
+    platform: [xbox, pc]
   - nombre: Hollow Knight
     aliases: [HK]
     logo: hollow-knight.svg
+    platform: [pc, playstation, xbox, nintendo]
   - nombre: League of Legends
     aliases: [LoL]
     logo: league-of-legends.svg
+    platform: [pc]
   - nombre: Marvel Rivals
     aliases: []
     logo: marvel-rivals.svg
+    platform: [pc, playstation, xbox]
   - nombre: Minecraft
     aliases: []
     logo: minecraft.svg
+    platform: [pc, playstation, xbox, nintendo]
   - nombre: Overwatch
     aliases: [OW]
     logo: overwatch.svg
+    platform: [pc, playstation, xbox]
   - nombre: Pokemon
     aliases: []
     logo: pokemon.svg
+    platform: [nintendo]
   - nombre: PUBG
     aliases: []
     logo: pubg.svg
+    platform: [pc, playstation, xbox]
   - nombre: Rainbow Six
     aliases: [R6]
     logo: rainbow-six.svg
+    platform: [pc, playstation, xbox]
   - nombre: Roblox
     aliases: []
     logo: roblox.svg
+    platform: [pc, playstation, xbox, nintendo]
   - nombre: Rocket League
     aliases: [RL]
     logo: rocket-league.svg
+    platform: [pc, playstation, xbox, nintendo]
   - nombre: Smite
     aliases: []
     logo: smite.svg
+    platform: [pc, playstation, xbox]
   - nombre: Super Mario
     aliases: [Mario]
     logo: super-mario.svg
+    platform: [nintendo]
   - nombre: Valorant
     aliases: [Val]
     logo: valorant.svg
+    platform: [pc]
 
 excluir:
   - nombre: EA Sports FC

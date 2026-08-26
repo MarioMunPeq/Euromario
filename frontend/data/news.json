@@ -1,7 +1,58 @@
 {
-  "generated_at": "2026-08-26T11:41:03.680728Z",
-  "total": 56,
+  "generated_at": "2026-08-26T13:10:05.787872Z",
+  "total": 59,
   "news": [
+    {
+      "id": "46b36c2371cf9dd9",
+      "title": "Rockstar finally break silence on \"heartbreaking\" GTA 6 leak, say it's \"unfortunate that the intended game experience may now be impacted by some spoilers\"",
+      "summary": "Rockstar Games ha hablado por primera vez públicamente sobre los leaks de GTA 6, expresando su decepción por la posible influencia de spoilers en la experiencia del juego.",
+      "url": "https://www.rockpapershotgun.com/rockstar-finally-break-silence-on-heartbreaking-gta-6-leak-say-its-unfortunate-that-the-intended-game-experience-may-now-be-impacted-by-some-spoilers",
+      "source": {
+        "name": "Rock Paper Shotgun",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-26T12:21:00Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": "https://assetsio.gnwcdn.com/gta-6-leak-rockstar-statement-01.jpg?width=690&quality=85&format=jpg&auto=webp"
+    },
+    {
+      "id": "567a01bb8fc4d78f",
+      "title": "Rockstar Games Releases Official Response to 'Heartbreaking' GTA 6 Leaks",
+      "summary": "Rockstar Games responde públicamente a las 'desafortunadas' revelaciones de GTA 6",
+      "url": "https://www.polygon.com/rockstar-games-officially-responds-to-gta-6-leaks/",
+      "source": {
+        "name": "Polygon",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-26T12:14:07Z",
+      "relevance": 5,
+      "category": "lanzamiento",
+      "image_url": "https://static0.polygonimages.com/wordpress/wp-content/uploads/2025/09/jason.JPG"
+    },
+    {
+      "id": "4d5c5167f4b5e362",
+      "title": "Rockstar issues statement on GTA 6 gameplay leaks, calling them \"heartbreaking\" and warning they may include some spoilers",
+      "summary": "Rockstar critica las noticias de GTA 6 por ser 'heartbreaking' y advierte sobre posibles spoilers",
+      "url": "https://www.eurogamer.net/gta-6-leaks-rockstar-statement-spoilers",
+      "source": {
+        "name": "Eurogamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-26T11:54:55Z",
+      "relevance": 4,
+      "category": "actualizacion",
+      "image_url": "https://assetsio.gnwcdn.com/gta-6-vintage-pack-crop-1.jpg?width=690&quality=85&format=jpg&auto=webp"
+    },
     {
       "id": "2a708bf5c02253d8",
       "title": "Rainbow Six Tactics Features Optional Permadeath, Ironman Mode",
@@ -39,7 +90,7 @@
     {
       "id": "771dab836c64869e",
       "title": "Cyberpunk 2077 Commodore Computer Premieres at Gamescom, and It's Up for Preorder Now",
-      "summary": "La Commodore 64 es un juego de Cyberpunk 2077 que se estrenará en Gamescom, disponible para preordenar ahora",
+      "summary": "La Commodore 64 se ha lanzado como parte del juego Cyberpunk 2077 en Gamescom, y está disponible para preordenar ahora",
       "url": "https://www.ign.com/articles/cyberpunk-2077-commodore-computer-reveal-gamescom-2026",
       "source": {
         "name": "IGN",
@@ -49,7 +100,7 @@
       "game": "Cyberpunk 2077",
       "language": "en",
       "published_at": "2026-08-25T19:00:00Z",
-      "relevance": 5,
+      "relevance": 4,
       "category": "lanzamiento",
       "image_url": "https://assets-prd.ignimgs.com/2026/08/25/commodore-77-01-1787668050455.png"
     },
@@ -141,7 +192,7 @@
     {
       "id": "f4c84cee1bf73aec",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y estabilidad.",
+      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y colisiones.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228678941",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -243,7 +294,7 @@
     {
       "id": "3e3ca1002786c59d",
       "title": "Nvidia tech behind PUBG's genAI team mates will let folks chat to creature-collecting RPG Aniimo's not-Pokemon next year",
-      "summary": "Nvidia anuncia su tecnología ACE para Aniimo, un juego de RPG de captura de criaturas que permitirá a los jugadores interactuar con sus criaturas.",
+      "summary": "Nvidia anuncia su tecnología ACE para Aniimo, un juego de RPG de captura de criaturas que se lanzará en 2024 con chat con criaturas",
       "url": "https://www.rockpapershotgun.com/nvidia-tech-behind-pubgs-genai-team-mates-will-let-folks-chat-to-creature-collecting-rpg-aniimos-not-pokemon-next-year",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -288,7 +339,7 @@
       "language": "en",
       "published_at": "2026-08-25T14:25:02Z",
       "relevance": 4,
-      "category": "actualizacion",
+      "category": "lanzamiento",
       "image_url": "https://assetsio.gnwcdn.com/modern-warfare-4-slide-crop-1.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
@@ -923,7 +974,7 @@
     {
       "id": "e2dbd2bc385ba46b",
       "title": "Declare Your Allegiance and Determine Who Owns Los Santos in the Brand Wars Event",
-      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores pueden proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
+      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores deben decidir quién es el dueño de Los Santos. El evento incluye incentivados Odd Jobs, Freemode Events y carreras de Hotring Circuit Series.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183786534",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -940,7 +991,7 @@
     {
       "id": "a9e632cf5e66d08e",
       "title": "GTA roleplayers rejoice: Nopixel V's beta is coming, and the timing couldn't be better",
-      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado en colaboración con Rockstar, coincidiendo con el lanzamiento de GTA 6 y una nueva era de caos.",
+      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado para GTA 6, coincidiendo con el lanzamiento del juego",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PCGamesN/1840944183779680",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -950,7 +1001,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-14T11:49:34Z",
-      "relevance": 5,
+      "relevance": 4,
       "category": "lanzamiento",
       "image_url": null
     }

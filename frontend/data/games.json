@@ -34,53 +34,12 @@
       ]
     },
     {
-      "name": "Apex Legends",
-      "logo": "apex-legends.svg",
-      "platform": [
-        "pc",
-        "playstation",
-        "xbox"
-      ]
-    },
-    {
-      "name": "Assassin's Creed",
-      "logo": "assasins-creed.svg",
-      "platform": [
-        "pc",
-        "playstation",
-        "xbox"
-      ]
-    },
-    {
-      "name": "Baldur's Gate",
+      "name": "Baldur's Gate 3",
       "logo": "baldurs-gate.svg",
       "platform": [
         "pc",
         "playstation",
         "xbox"
-      ]
-    },
-    {
-      "name": "Battlefield",
-      "logo": "battlefield.svg",
-      "platform": [
-        "pc",
-        "playstation",
-        "xbox"
-      ]
-    },
-    {
-      "name": "Counter-Strike",
-      "logo": "counter-strike.svg",
-      "platform": [
-        "pc"
-      ]
-    },
-    {
-      "name": "Deadlock",
-      "logo": "deadlock.svg",
-      "platform": [
-        "pc"
       ]
     },
     {
@@ -93,32 +52,6 @@
       ]
     },
     {
-      "name": "Fortnite",
-      "logo": "fortnite.svg",
-      "platform": [
-        "pc",
-        "playstation",
-        "xbox",
-        "nintendo"
-      ]
-    },
-    {
-      "name": "God of War",
-      "logo": "god-of-war.svg",
-      "platform": [
-        "playstation",
-        "pc"
-      ]
-    },
-    {
-      "name": "Halo",
-      "logo": "halo.svg",
-      "platform": [
-        "xbox",
-        "pc"
-      ]
-    },
-    {
       "name": "Hollow Knight",
       "logo": "hollow-knight.svg",
       "platform": [
@@ -126,41 +59,6 @@
         "playstation",
         "xbox",
         "nintendo"
-      ]
-    },
-    {
-      "name": "League of Legends",
-      "logo": "league-of-legends.svg",
-      "platform": [
-        "pc"
-      ]
-    },
-    {
-      "name": "Marvel Rivals",
-      "logo": "marvel-rivals.svg",
-      "platform": [
-        "pc",
-        "playstation",
-        "xbox"
-      ]
-    },
-    {
-      "name": "Minecraft",
-      "logo": "minecraft.svg",
-      "platform": [
-        "pc",
-        "playstation",
-        "xbox",
-        "nintendo"
-      ]
-    },
-    {
-      "name": "Overwatch",
-      "logo": "overwatch.svg",
-      "platform": [
-        "pc",
-        "playstation",
-        "xbox"
       ]
     },
     {
@@ -199,18 +97,8 @@
       ]
     },
     {
-      "name": "Rocket League",
-      "logo": "rocket-league.svg",
-      "platform": [
-        "pc",
-        "playstation",
-        "xbox",
-        "nintendo"
-      ]
-    },
-    {
-      "name": "Smite",
-      "logo": "smite.svg",
+      "name": "Cyberpunk 2077",
+      "logo": null,
       "platform": [
         "pc",
         "playstation",
@@ -218,17 +106,34 @@
       ]
     },
     {
-      "name": "Super Mario",
-      "logo": "super-mario.svg",
+      "name": "Final Fantasy VII",
+      "logo": null,
+      "platform": [
+        "playstation",
+        "pc"
+      ]
+    },
+    {
+      "name": "Helldivers 2",
+      "logo": null,
+      "platform": [
+        "pc",
+        "playstation"
+      ]
+    },
+    {
+      "name": "Nintendo Switch 2",
+      "logo": null,
       "platform": [
         "nintendo"
       ]
     },
     {
-      "name": "Valorant",
-      "logo": "valorant.svg",
+      "name": "Starfield",
+      "logo": null,
       "platform": [
-        "pc"
+        "pc",
+        "xbox"
       ]
     }
   ]

@@ -24,12 +24,7 @@ const CATEGORY_LABELS = {
   analisis: 'An\u00e1lisis',
 };
 
-const CATEGORY_GLYPHS = {
-  lanzamiento: '\ud83d\ude80',
-  actualizacion: '\ud83d\udd04',
-  rumor: '\ud83d\udcac',
-  analisis: '\ud83d\udcca',
-};
+
 
 const CATEGORY_COLORS = {
   lanzamiento: 'var(--cat-lanzamiento)',
@@ -99,7 +94,8 @@ const els = {
   gameTiles: document.getElementById('game-tiles'),
   platformTiles: document.getElementById('platform-tiles'),
   platformSection: document.getElementById('platform-section'),
-  categoryPills: document.getElementById('category-pills'),
+  segmentedControl: document.getElementById('segmented-control'),
+  segmentedIndicator: document.getElementById('segmented-indicator'),
   clearFilters: document.getElementById('clear-filters'),
   statsCount: document.getElementById('stats-count'),
   statsUpdated: document.getElementById('stats-updated'),
@@ -162,9 +158,6 @@ function getGameColor(name) {
   return TILE_COLORS[hashGameName(name)];
 }
 
-function getCategoryGlyph(category) {
-  return CATEGORY_GLYPHS[category] || '\ud83c\udfae';
-}
 
 function getSourceInitials(name) {
   if (!name) return '?';
@@ -200,7 +193,7 @@ function getSourceBadge(source) {
 const DARK_BG_SVGS = new Set([
   'baldurs-gate', 'call-of-duty', 'elden-ring', 'god-of-war',
   'hollow-knight', 'minecraft', 'persona', 'pokemon',
-  'super-mario', 'zelda',
+  'pubg', 'rainbow-six', 'roblox', 'super-mario', 'zelda',
 ]);
 
 function renderGameTiles(games) {
@@ -330,25 +323,52 @@ function renderPlatformTiles(newsItems) {
 // Category Pills
 // ============================================================
 
-function initCategoryPills() {
-  els.categoryPills.querySelectorAll('.category-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      const cat = pill.dataset.cat;
-      const wasActive = pill.classList.contains('active');
+function positionIndicator(cat) {
+  const indicator = els.segmentedIndicator;
+  if (!cat) {
+    indicator.setAttribute('data-visible', 'false');
+    indicator.removeAttribute('data-cat');
+    return;
+  }
+  const activeBtn = els.segmentedControl.querySelector('.segmented-control__item[data-cat="' + cat + '"]');
+  if (!activeBtn) return;
+  const container = els.segmentedControl;
+  const cRect = container.getBoundingClientRect();
+  const bRect = activeBtn.getBoundingClientRect();
+  const x = bRect.left - cRect.left - 3;
+  indicator.style.width = bRect.width + 'px';
+  indicator.style.transform = 'translateX(' + x + 'px)';
+  indicator.setAttribute('data-cat', cat);
+  indicator.setAttribute('data-visible', 'true');
+}
 
-      els.categoryPills.querySelectorAll('.category-pill').forEach(p => {
-        p.classList.remove('active');
+function initSegmentedControl() {
+  els.segmentedControl.querySelectorAll('.segmented-control__item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.dataset.cat;
+      const wasActive = btn.classList.contains('active');
+
+      els.segmentedControl.querySelectorAll('.segmented-control__item').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-checked', 'false');
       });
 
       if (wasActive) {
         state.filters.category = null;
+        positionIndicator(null);
       } else {
         state.filters.category = cat;
-        pill.classList.add('active');
+        btn.classList.add('active');
+        btn.setAttribute('aria-checked', 'true');
+        positionIndicator(cat);
       }
       applyFilters();
       pushUrl();
     });
+  });
+
+  window.addEventListener('resize', () => {
+    if (state.filters.category) positionIndicator(state.filters.category);
   });
 }
 
@@ -543,10 +563,13 @@ function syncFilterUIFromState() {
     tile.setAttribute('aria-pressed', String(isActive));
   });
 
-  els.categoryPills.querySelectorAll('.category-pill').forEach(pill => {
-    const cat = pill.dataset.cat;
-    pill.classList.toggle('active', state.filters.category === cat);
+  els.segmentedControl.querySelectorAll('.segmented-control__item').forEach(btn => {
+    const cat = btn.dataset.cat;
+    const isActive = state.filters.category === cat;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-checked', String(isActive));
   });
+  positionIndicator(state.filters.category);
 
   els.search.value = state.filters.search || '';
 }
@@ -676,7 +699,7 @@ async function loadData() {
     const games = [...configNames].sort();
     renderGameTiles(games);
     renderPlatformTiles(data.news);
-    initCategoryPills();
+    initSegmentedControl();
 
     syncUrlToState();
     syncFilterUIFromState();

@@ -283,7 +283,7 @@ input, select, textarea {
   margin-bottom: var(--space-3);
 }
 
-/* ── Category Pills (primary filter) ─────────────────────── */
+/* ── Segmented Control (category filter) ─────────────────── */
 
 .filters__section--categories {
   padding-bottom: var(--space-4);
@@ -291,56 +291,85 @@ input, select, textarea {
   border-bottom: 1px solid var(--border);
 }
 
-.category-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
+.segmented-control {
+  position: relative;
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
 }
 
-.category-pill {
+.segmented-control__indicator {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  height: calc(100% - 6px);
+  border-radius: 8px;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.25s ease,
+              opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+}
+
+.segmented-control__indicator[data-visible="true"] {
+  opacity: 1;
+}
+
+.segmented-control__item {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-4);
-  font-size: var(--text-sm);
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
   font-weight: var(--font-weight-semibold);
-  border-radius: var(--radius-full);
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: color 0.2s ease, background 0.2s ease;
   user-select: none;
-  border: 1px solid transparent;
+  white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
-.category-pill[data-cat="lanzamiento"] {
-  background: var(--success-muted);
-  color: var(--cat-lanzamiento);
-  border-color: var(--cat-lanzamiento);
-}
-.category-pill[data-cat="actualizacion"] {
-  background: var(--accent-muted);
-  color: var(--cat-actualizacion);
-  border-color: var(--cat-actualizacion);
-}
-.category-pill[data-cat="rumor"] {
-  background: var(--warning-muted);
-  color: var(--cat-rumor);
-  border-color: var(--cat-rumor);
-}
-.category-pill[data-cat="analisis"] {
-  background: #A371F718;
-  color: var(--cat-analisis);
-  border-color: var(--cat-analisis);
+.segmented-control__item svg {
+  flex-shrink: 0;
 }
 
-.category-pill:hover {
-  filter: brightness(1.2);
+.segmented-control__item:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover);
 }
 
-.category-pill.active {
-  filter: brightness(1.3);
-  box-shadow: 0 0 8px currentColor;
+.segmented-control__item[data-cat="lanzamiento"].active { color: #fff; }
+.segmented-control__item[data-cat="actualizacion"].active { color: #fff; }
+.segmented-control__item[data-cat="rumor"].active { color: #fff; }
+.segmented-control__item[data-cat="analisis"].active { color: #fff; }
+
+/* Category colors for the indicator */
+.segmented-control__indicator[data-cat="lanzamiento"] { background: var(--cat-lanzamiento); }
+.segmented-control__indicator[data-cat="actualizacion"] { background: var(--cat-actualizacion); }
+.segmented-control__indicator[data-cat="rumor"] { background: var(--cat-rumor); }
+.segmented-control__indicator[data-cat="analisis"] { background: var(--cat-analisis); }
+
+@media (max-width: 600px) {
+  .segmented-control__item {
+    padding: 5px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+  .segmented-control__item svg {
+    width: 12px;
+    height: 12px;
+  }
 }
 
 .game-tile {
@@ -391,6 +420,10 @@ input, select, textarea {
 }
 
 .game-tile__image.img--dark img {
+  filter: brightness(0) invert(1);
+}
+
+#platform-tiles .game-tile__image img {
   filter: brightness(0) invert(1);
 }
 

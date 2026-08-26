@@ -34,12 +34,24 @@
   <main class="main">
     <section class="filters" aria-label="Filtros">
       <div class="filters__section filters__section--categories">
-        <span class="filters__label filters__label--primary">Categor&iacute;a</span>
-        <div class="category-pills" id="category-pills" role="group" aria-label="Filtrar por categor&iacute;a">
-          <button type="button" class="category-pill" data-cat="lanzamiento">Lanzamiento</button>
-          <button type="button" class="category-pill" data-cat="actualizacion">Actualizaci&oacute;n</button>
-          <button type="button" class="category-pill" data-cat="rumor">Rumor</button>
-          <button type="button" class="category-pill" data-cat="analisis">An&aacute;lisis</button>
+        <div class="segmented-control" id="segmented-control" role="radiogroup" aria-label="Filtrar por categor&iacute;a">
+          <div class="segmented-control__indicator" id="segmented-indicator"></div>
+          <button type="button" class="segmented-control__item" data-cat="lanzamiento" role="radio" aria-checked="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+            <span>Lanzamiento</span>
+          </button>
+          <button type="button" class="segmented-control__item" data-cat="actualizacion" role="radio" aria-checked="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            <span>Actualizaci&oacute;n</span>
+          </button>
+          <button type="button" class="segmented-control__item" data-cat="rumor" role="radio" aria-checked="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+            <span>Rumor</span>
+          </button>
+          <button type="button" class="segmented-control__item" data-cat="analisis" role="radio" aria-checked="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            <span>An&aacute;lisis</span>
+          </button>
         </div>
       </div>
       <div class="filters__secondary">

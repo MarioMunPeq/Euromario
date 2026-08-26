@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-26T19:15:50.555463Z",
-  "total": 71,
+  "generated_at": "2026-08-26T21:52:05.211655Z",
+  "total": 73,
   "news": [
     {
       "id": "e15f1ed4ba09da66",
@@ -22,7 +22,7 @@
     {
       "id": "af190f7c7cdfced7",
       "title": "BG3 Fans, We've Been Pronouncing Astarion's Name Wrong",
-      "summary": "Fans de Baldur's Gate 3 descubren que han estado pronunciando incorrectamente el nombre de Astarion",
+      "summary": "Fans de Baldur's Gate 3 descubren que han estado pronunciando incorrectamente el nombre del personaje Astarion",
       "url": "https://www.polygon.com/baldurs-gate-3-bg3-astarion-surname-pronunciation-audiobook-ancunin/",
       "source": {
         "name": "Polygon",
@@ -54,9 +54,43 @@
       "image_url": "https://static0.polygonimages.com/wordpress/wp-content/uploads/2026/08/untitled-design-9.jpg"
     },
     {
+      "id": "2902055049e144df",
+      "title": "Rockstar Games Doubled in Size for GTA 6, Hired Real World Professionals for Fashion, Vehicles, and More",
+      "summary": "Rockstar Games ha duplicado su personal para Grand Theft Auto 6 y ha contratado profesionales del mundo real para la moda, vehículos y más.",
+      "url": "https://www.ign.com/articles/rockstar-games-doubled-in-size-for-gta-6-hired-real-world-professionals-for-fashion-vehicles-and-more",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-26T18:42:05Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": "https://assets-prd.ignimgs.com/2026/08/25/vintage-vice-city-pack-exclusive-looks-01-1787655039708.jpg"
+    },
+    {
+      "id": "0c4dfe415aed0a8e",
+      "title": "Final Fantasy VII Revelation Gets Pending Mature 17+ Rating, and Fan Theories Are Already Going Wild",
+      "summary": "Final Fantasy VII Revelation obtiene una calificación de 17+ y los fanáticos ya están especulando sobre el contenido",
+      "url": "https://www.ign.com/articles/final-fantasy-vii-revelation-gets-pending-mature-17-rating-and-fan-theories-are-already-going-wild",
+      "source": {
+        "name": "IGN",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Final Fantasy VII",
+      "language": "en",
+      "published_at": "2026-08-26T18:22:05Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": "https://assets-prd.ignimgs.com/2026/08/26/final-fantasy-vii-revelation-mature-rating-pending-1787768114918.jpg"
+    },
+    {
       "id": "f74514f876aff637",
       "title": "GTA 6 leaker escalates spoilers, releases 4 minutes of Lucia's prologue",
-      "summary": "Un leaker de GTA 6 ha lanzado 4 minutos de la prologa de Lucia, revelando spoilers sobre el juego. El leaker, conocido como Cyberleek, ha solicitado más dinero por la información.",
+      "summary": "Un leaker de GTA 6 ha lanzado 4 minutos de la prologa de Lucia, causando un gran revuelo entre los fans del juego.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/gta-6-leaker-escalates-spoilers-releases-4-minutes-of-lucias-prologue/",
       "source": {
         "name": "PC Gamer",
@@ -90,7 +124,7 @@
     {
       "id": "63047351238a1e4d",
       "title": "Grand Theft Auto 6 Will Have RPG Mechanics Like Eating, Exercising, and More",
-      "summary": "Grand Theft Auto 6 incluir mejoras en mecánicas de RPG, como comer, ejercitarse y m©s",
+      "summary": "Grand Theft Auto 6 incluir¡ RPG mechanics como comer, ejercitarse y m©s",
       "url": "https://www.ign.com/articles/grand-theft-auto-6-will-have-rpg-mechanics-like-eating-exercising-and-more",
       "source": {
         "name": "IGN",
@@ -107,7 +141,7 @@
     {
       "id": "1c555014b4abaf1f",
       "title": "I added a gang notoriety system to GTA 5, but it mostly seems to make them murder everyone except me",
-      "summary": "El juego Grand Theft Auto 5 ha recibido una actualización que agrega un sistema de notoriedad de pandillas, pero algunos jugadores critican que solo afecta a los personajes enemigos",
+      "summary": "El juego Grand Theft Auto 5 ha recibido una actualización que agrega un sistema de notoriedad de gangas, pero muchos jugadores critican que solo les permite matar a todos excepto a ellos mismos",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/i-added-a-gang-notoriety-system-to-gta-5-but-it-mostly-seems-to-make-them-murder-everyone-except-me/",
       "source": {
         "name": "PC Gamer",
@@ -141,7 +175,7 @@
     {
       "id": "dee25b5019d99be9",
       "title": "Call of Duty: Modern Warfare 4's Beta Will Be Playable on Switch 2 for Free This Weekend",
-      "summary": "Call of Duty: Modern Warfare 4 beta se jugar de forma gratuita en Nintendo Switch 2 este fin de semana",
+      "summary": "Call of Duty: Modern Warfare 4 tendrá su beta disponible para jugar en Nintendo Switch 2 de forma gratuita este fin de semana.",
       "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4s-beta-will-be-playable-on-switch-2-for-free-this-weekend",
       "source": {
         "name": "IGN",
@@ -151,7 +185,7 @@
       "game": "Call of Duty",
       "language": "en",
       "published_at": "2026-08-26T16:08:22Z",
-      "relevance": 5,
+      "relevance": 4,
       "category": "lanzamiento",
       "image_url": "https://assets-prd.ignimgs.com/2026/08/26/mw4-switch-2-1787760327779.jpg"
     },
@@ -226,7 +260,7 @@
     {
       "id": "46b36c2371cf9dd9",
       "title": "Rockstar finally break silence on \"heartbreaking\" GTA 6 leak, say it's \"unfortunate that the intended game experience may now be impacted by some spoilers\"",
-      "summary": "Rockstar Games ha hablado por primera vez públicamente sobre las noticias de GTA 6, agradeciendo que no haya sido un anuncio oficial, y expresando su deseo de que la experiencia de juego no se vea afectada por los spoilers.",
+      "summary": "Rockstar Games ha hablado por primera vez públicamente sobre las noticias de GTA 6, agradeciendo que no haya sido un anuncio de lanzamiento, pero lamentando que algunos spoilers hayan afectado la experiencia del juego.",
       "url": "https://www.rockpapershotgun.com/rockstar-finally-break-silence-on-heartbreaking-gta-6-leak-say-its-unfortunate-that-the-intended-game-experience-may-now-be-impacted-by-some-spoilers",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -237,7 +271,7 @@
       "language": "en",
       "published_at": "2026-08-26T12:21:00Z",
       "relevance": 4,
-      "category": "lanzamiento",
+      "category": "actualizacion",
       "image_url": "https://assetsio.gnwcdn.com/gta-6-leak-rockstar-statement-01.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
@@ -260,7 +294,7 @@
     {
       "id": "4d5c5167f4b5e362",
       "title": "Rockstar issues statement on GTA 6 gameplay leaks, calling them \"heartbreaking\" and warning they may include some spoilers",
-      "summary": "Rockstar denuncia las filtraciones de GTA 6, calificándolas como 'heartbreaking' y advirtiendo posibles spoilers",
+      "summary": "Rockstar denuncia las filtraciones de GTA 6, calificándolas como 'heartbreaking' y advirtiendo sobre posibles spoilers.",
       "url": "https://www.eurogamer.net/gta-6-leaks-rockstar-statement-spoilers",
       "source": {
         "name": "Eurogamer",
@@ -277,7 +311,7 @@
     {
       "id": "ccde30d68f9ad727",
       "title": "Rockstar Games Finally Addresses Extraordinary and 'Heartbreaking' GTA 6 Leaks, Warns Players That 'Some Spoilers' May Now Impact 'The Intended Game Experience'",
-      "summary": "Rockstar Games ha respondido a las lecciones de GTA 6, advirtiendo que algunos spoilers pueden afectar la experiencia del juego",
+      "summary": "Rockstar Games ha abordado las lecciones de Grand Theft Auto 6, advirtiendo a los jugadores que algunos spoilers pueden afectar la experiencia del juego",
       "url": "https://www.ign.com/articles/rockstar-games-finally-addresses-extraordinary-gta-6-leaks-warns-players-that-some-spoilers-may-now-impact-the-intended-game-experience",
       "source": {
         "name": "IGN",
@@ -379,7 +413,7 @@
     {
       "id": "f91c21304a134762",
       "title": "Rainbow Six Tactics transforms the demolition-driven Siege into a turn-based game while keeping the destructible environments, operators, and reconnaissance drones",
-      "summary": "Ubisoft lanza Rainbow Six Tactics, una versión turn-based de Rainbow Six Siege con destructibles y drones de reconocimiento.",
+      "summary": "Ubisoft transforma Rainbow Six Siege en un juego táctico en tiempo real con destructibles entornos y drones de reconocimiento, manteniendo la esencia del juego original.",
       "url": "https://www.rockpapershotgun.com/rainbow-six-tactics-transforms-the-demolition-driven-siege-into-a-turn-based-game-while-keeping-the-destructible-environments-operators-and-reconnaissance-drones",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -430,7 +464,7 @@
     {
       "id": "f4c84cee1bf73aec",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y explosiones.",
+      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y colisiones.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228678941",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -440,7 +474,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-25T17:00:00Z",
-      "relevance": 4,
+      "relevance": 3,
       "category": "lanzamiento",
       "image_url": null
     },
@@ -532,7 +566,7 @@
     {
       "id": "3e3ca1002786c59d",
       "title": "Nvidia tech behind PUBG's genAI team mates will let folks chat to creature-collecting RPG Aniimo's not-Pokemon next year",
-      "summary": "Nvidia anuncia su tecnología ACE para Aniimo, un juego de RPG de captura de criaturas que permitirá a los jugadores interactuar con sus criaturas.",
+      "summary": "Nvidia anuncia su tecnología ACE para Aniimo, un juego de RPG de captura de criaturas que se lanzará en 2024 con chat con criaturas",
       "url": "https://www.rockpapershotgun.com/nvidia-tech-behind-pubgs-genai-team-mates-will-let-folks-chat-to-creature-collecting-rpg-aniimos-not-pokemon-next-year",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -576,7 +610,7 @@
       "game": "Call of Duty",
       "language": "en",
       "published_at": "2026-08-25T14:25:02Z",
-      "relevance": 3,
+      "relevance": 4,
       "category": "actualizacion",
       "image_url": "https://assetsio.gnwcdn.com/modern-warfare-4-slide-crop-1.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
@@ -1178,7 +1212,7 @@
     {
       "id": "e2dbd2bc385ba46b",
       "title": "Declare Your Allegiance and Determine Who Owns Los Santos in the Brand Wars Event",
-      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores pueden proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
+      "summary": "GTA Online: Declara tu lealtad en la guerra de marcas Brand Wars Event, que dura dos semanas y ofrece premios y recompensas.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183786534",
       "source": {
         "name": "Steam · Grand Theft Auto",

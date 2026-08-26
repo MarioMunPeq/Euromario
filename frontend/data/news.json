@@ -1,11 +1,96 @@
 {
-  "generated_at": "2026-08-26T17:42:23.178115Z",
-  "total": 66,
+  "generated_at": "2026-08-26T19:15:50.555463Z",
+  "total": 71,
   "news": [
+    {
+      "id": "e15f1ed4ba09da66",
+      "title": "Roblox Officially Cracks Down on Doomscrolling-Reward Games After Controversy",
+      "summary": "Roblox pone fin a juegos que recompensan la consumición continua de contenido",
+      "url": "https://www.polygon.com/roblox-doomscroll-game-steal-an-egg-media-feed-restriction/",
+      "source": {
+        "name": "Polygon",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Roblox",
+      "language": "en",
+      "published_at": "2026-08-26T19:01:00Z",
+      "relevance": 5,
+      "category": "lanzamiento",
+      "image_url": "https://static0.polygonimages.com/wordpress/wp-content/uploads/2026/08/roblox-key-art.jpg"
+    },
+    {
+      "id": "af190f7c7cdfced7",
+      "title": "BG3 Fans, We've Been Pronouncing Astarion's Name Wrong",
+      "summary": "Fans de Baldur's Gate 3 descubren que han estado pronunciando incorrectamente el nombre de Astarion",
+      "url": "https://www.polygon.com/baldurs-gate-3-bg3-astarion-surname-pronunciation-audiobook-ancunin/",
+      "source": {
+        "name": "Polygon",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Baldur's Gate 3",
+      "language": "en",
+      "published_at": "2026-08-26T19:00:14Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": "https://static0.polygonimages.com/wordpress/wp-content/uploads/chorus/uploads/chorus_asset/file/24826244/baldurs_gate_3_astarion_vampire.jpg"
+    },
+    {
+      "id": "2aa0e1a125e1e69f",
+      "title": "GTA 6's First Official Preview Reveals 5 Juicy New Details",
+      "summary": "GTA 6 revela detalles sobre su honor system y NPCs",
+      "url": "https://www.polygon.com/gta-6-dazed-magazine-preview-npc-honor-realism-gameplay/",
+      "source": {
+        "name": "Polygon",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-26T18:52:59Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": "https://static0.polygonimages.com/wordpress/wp-content/uploads/2026/08/untitled-design-9.jpg"
+    },
+    {
+      "id": "f74514f876aff637",
+      "title": "GTA 6 leaker escalates spoilers, releases 4 minutes of Lucia's prologue",
+      "summary": "Un leaker de GTA 6 ha lanzado 4 minutos de la prologa de Lucia, revelando spoilers sobre el juego. El leaker, conocido como Cyberleek, ha solicitado más dinero por la información.",
+      "url": "https://www.pcgamer.com/games/grand-theft-auto/gta-6-leaker-escalates-spoilers-releases-4-minutes-of-lucias-prologue/",
+      "source": {
+        "name": "PC Gamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-26T18:17:59Z",
+      "relevance": 5,
+      "category": "lanzamiento",
+      "image_url": "https://cdn.mos.cms.futurecdn.net/6NyfcEfKJxUCEBrtuC3eZD-1280-80.jpg"
+    },
+    {
+      "id": "4e831d3ea652c8dd",
+      "title": "New GTA 6 character swapping details revealed: Jason and Lucia can 'play as a couple, or go off and cause chaos independently'",
+      "summary": "Se han revelado detalles sobre el personaje Jason y Lucia en GTA 6, incluyendo la posibilidad de jugar como pareja o actuar de manera independiente.",
+      "url": "https://www.pcgamer.com/games/grand-theft-auto/big-new-gta-6-gameplay-details-revealed-including-specifics-about-jason-and-lucia-character-swapping-play-as-a-couple-or-go-off-and-cause-chaos-independently/",
+      "source": {
+        "name": "PC Gamer",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-26T17:47:40Z",
+      "relevance": 4,
+      "category": "lanzamiento",
+      "image_url": "https://cdn.mos.cms.futurecdn.net/EhSthkSscGVzbZ78QNNiGD-1280-80.jpg"
+    },
     {
       "id": "63047351238a1e4d",
       "title": "Grand Theft Auto 6 Will Have RPG Mechanics Like Eating, Exercising, and More",
-      "summary": "Grand Theft Auto 6 incluir¡ RPG mechanics como comer, ejercitarse y m©s",
+      "summary": "Grand Theft Auto 6 incluir mejoras en mecánicas de RPG, como comer, ejercitarse y m©s",
       "url": "https://www.ign.com/articles/grand-theft-auto-6-will-have-rpg-mechanics-like-eating-exercising-and-more",
       "source": {
         "name": "IGN",
@@ -22,7 +107,7 @@
     {
       "id": "1c555014b4abaf1f",
       "title": "I added a gang notoriety system to GTA 5, but it mostly seems to make them murder everyone except me",
-      "summary": "El juego Grand Theft Auto 5 ha recibido una actualización que agrega un sistema de notoriedad de gangas, pero este parece no afectar a nadie excepto al jugador.",
+      "summary": "El juego Grand Theft Auto 5 ha recibido una actualización que agrega un sistema de notoriedad de pandillas, pero algunos jugadores critican que solo afecta a los personajes enemigos",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/i-added-a-gang-notoriety-system-to-gta-5-but-it-mostly-seems-to-make-them-murder-everyone-except-me/",
       "source": {
         "name": "PC Gamer",
@@ -39,7 +124,7 @@
     {
       "id": "3c80689525d363ca",
       "title": "I added a gang notoriety system to GTA 5, but it mostly seems to make them murder everyone except me",
-      "summary": "El sistema de notoriedad de la pandilla en GTA 5 parece ser ineficaz, ya que los gangsters solo matan a los demás excepto al jugador",
+      "summary": "El sistema de notoriedad de la pandilla en GTA 5 parece ser ineficaz, ya que los miembros de las pandillas no reaccionan de manera realista ante el ataque.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1842212951297597",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -50,7 +135,7 @@
       "language": "en",
       "published_at": "2026-08-26T17:00:00Z",
       "relevance": 3,
-      "category": "actualizacion",
+      "category": "analisis",
       "image_url": null
     },
     {
@@ -66,7 +151,7 @@
       "game": "Call of Duty",
       "language": "en",
       "published_at": "2026-08-26T16:08:22Z",
-      "relevance": 4,
+      "relevance": 5,
       "category": "lanzamiento",
       "image_url": "https://assets-prd.ignimgs.com/2026/08/26/mw4-switch-2-1787760327779.jpg"
     },
@@ -90,7 +175,7 @@
     {
       "id": "ca76e9e2a20a2c4d",
       "title": "Leaker Posts Extended Gameplay From GTA 6 Prologue Just Hours After Rockstar Warns Fans to Expect Story Spoilers",
-      "summary": "Un leaker ha publicado contenido de juego extendido de la prologa de GTA 6 horas después de que Rockstar advirtiera sobre posibles spoilers de la historia.",
+      "summary": "Un leaker ha publicado gameplay extendido de la prologa de GTA 6 horas después de que Rockstar advirtiera a los fans sobre spoilers de la historia.",
       "url": "https://www.ign.com/articles/leaker-posts-extended-gameplay-from-gta-6-prologue-just-hours-after-rockstar-warns-fans-to-expect-story-spoilers",
       "source": {
         "name": "IGN",
@@ -124,7 +209,7 @@
     {
       "id": "3112a970605047de",
       "title": "Rockstar responds to GTA 6 leaks: 'This is not how we intended for you see the game after all this time'",
-      "summary": "Rockstar respondió a las filtraciones de GTA 6, describiendo las filtraciones como 'desoladoras' para su equipo.",
+      "summary": "Rockstar respondió a las noticias de GTA 6, describiendo las filtraciones como 'heartbreaking' y aclarando que no es así como lo habían planeado que se viera el juego después de tanto tiempo.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/rockstar-responds-to-gta-6-leaks-this-is-not-how-we-intended-for-you-see-the-game-after-all-this-time/",
       "source": {
         "name": "PC Gamer",
@@ -141,7 +226,7 @@
     {
       "id": "46b36c2371cf9dd9",
       "title": "Rockstar finally break silence on \"heartbreaking\" GTA 6 leak, say it's \"unfortunate that the intended game experience may now be impacted by some spoilers\"",
-      "summary": "Rockstar Games ha hablado por primera vez públicamente sobre las noticias de GTA 6, agradeciendo que no haya sido un anuncio oficial",
+      "summary": "Rockstar Games ha hablado por primera vez públicamente sobre las noticias de GTA 6, agradeciendo que no haya sido un anuncio oficial, y expresando su deseo de que la experiencia de juego no se vea afectada por los spoilers.",
       "url": "https://www.rockpapershotgun.com/rockstar-finally-break-silence-on-heartbreaking-gta-6-leak-say-its-unfortunate-that-the-intended-game-experience-may-now-be-impacted-by-some-spoilers",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -151,8 +236,8 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-26T12:21:00Z",
-      "relevance": 3,
-      "category": "actualizacion",
+      "relevance": 4,
+      "category": "lanzamiento",
       "image_url": "https://assetsio.gnwcdn.com/gta-6-leak-rockstar-statement-01.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
@@ -175,7 +260,7 @@
     {
       "id": "4d5c5167f4b5e362",
       "title": "Rockstar issues statement on GTA 6 gameplay leaks, calling them \"heartbreaking\" and warning they may include some spoilers",
-      "summary": "Rockstar denuncia las filtraciones de GTA 6, considerándolas 'heartbreaking' y advirtiendo sobre posibles spoilers",
+      "summary": "Rockstar denuncia las filtraciones de GTA 6, calificándolas como 'heartbreaking' y advirtiendo posibles spoilers",
       "url": "https://www.eurogamer.net/gta-6-leaks-rockstar-statement-spoilers",
       "source": {
         "name": "Eurogamer",
@@ -192,7 +277,7 @@
     {
       "id": "ccde30d68f9ad727",
       "title": "Rockstar Games Finally Addresses Extraordinary and 'Heartbreaking' GTA 6 Leaks, Warns Players That 'Some Spoilers' May Now Impact 'The Intended Game Experience'",
-      "summary": "Rockstar Games ha abordado las lecciones de GTA 6, advirtiendo que algunos spoilers pueden afectar la experiencia del juego",
+      "summary": "Rockstar Games ha respondido a las lecciones de GTA 6, advirtiendo que algunos spoilers pueden afectar la experiencia del juego",
       "url": "https://www.ign.com/articles/rockstar-games-finally-addresses-extraordinary-gta-6-leaks-warns-players-that-some-spoilers-may-now-impact-the-intended-game-experience",
       "source": {
         "name": "IGN",
@@ -294,7 +379,7 @@
     {
       "id": "f91c21304a134762",
       "title": "Rainbow Six Tactics transforms the demolition-driven Siege into a turn-based game while keeping the destructible environments, operators, and reconnaissance drones",
-      "summary": "Ubisoft lanza Rainbow Six Tactics, una versión de Rainbow Six con un enfoque en estrategia táctica y turn-based, manteniendo los entornos destructibles y drones de reconocimiento.",
+      "summary": "Ubisoft lanza Rainbow Six Tactics, una versión turn-based de Rainbow Six Siege con destructibles y drones de reconocimiento.",
       "url": "https://www.rockpapershotgun.com/rainbow-six-tactics-transforms-the-demolition-driven-siege-into-a-turn-based-game-while-keeping-the-destructible-environments-operators-and-reconnaissance-drones",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -345,7 +430,7 @@
     {
       "id": "f4c84cee1bf73aec",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y explosiones",
+      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y explosiones.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228678941",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -481,7 +566,7 @@
     {
       "id": "dcabc4f7bf42b0be",
       "title": "\"People wanted faster movement, but not this fast\" - Call of Duty: Modern Warfare 4 beta players aren't happy with slide spammers and the increased pace of the game",
-      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego",
+      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego, que es más rápido de lo que esperaban.",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-beta-player-reaction",
       "source": {
         "name": "Eurogamer",
@@ -491,7 +576,7 @@
       "game": "Call of Duty",
       "language": "en",
       "published_at": "2026-08-25T14:25:02Z",
-      "relevance": 4,
+      "relevance": 3,
       "category": "actualizacion",
       "image_url": "https://assetsio.gnwcdn.com/modern-warfare-4-slide-crop-1.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
@@ -1093,7 +1178,7 @@
     {
       "id": "e2dbd2bc385ba46b",
       "title": "Declare Your Allegiance and Determine Who Owns Los Santos in the Brand Wars Event",
-      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores deben decidir quién es el dueño de Los Santos. El evento incluye eventos de Freemode, carreras y misiones.",
+      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores pueden proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183786534",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -1120,7 +1205,7 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-14T11:49:34Z",
-      "relevance": 4,
+      "relevance": 5,
       "category": "lanzamiento",
       "image_url": null
     }

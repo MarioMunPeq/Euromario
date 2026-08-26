@@ -197,6 +197,12 @@ function getSourceBadge(source) {
 // Game Tiles (visual filter with logo support)
 // ============================================================
 
+const DARK_BG_SVGS = new Set([
+  'baldurs-gate', 'call-of-duty', 'elden-ring', 'god-of-war',
+  'hollow-knight', 'minecraft', 'persona', 'pokemon',
+  'super-mario', 'zelda',
+]);
+
 function renderGameTiles(games) {
   const allTile = `
     <button type="button" class="game-tile active" data-game="" aria-pressed="true">
@@ -208,9 +214,11 @@ function renderGameTiles(games) {
     const logo = state.gameLogos[game];
     const color = getGameColor(game);
     if (logo) {
+      const slug = logo.split('/').pop().replace('.svg', '');
+      const darkClass = DARK_BG_SVGS.has(slug) ? ' img--dark' : '';
       return `
         <button type="button" class="game-tile" data-game="${escapeHtml(game)}" aria-pressed="false">
-          <div class="game-tile__image">
+          <div class="game-tile__image${darkClass}">
             <img src="${escapeHtml(logo)}" alt="${escapeHtml(game)}" loading="lazy"/>
           </div>
           <span class="game-tile__name">${escapeHtml(game)}</span>
@@ -636,18 +644,22 @@ async function fetchGameData() {
   const url = `${CONFIG.gamesUrl}?${CONFIG.cacheBustParam}=${Date.now()}`;
   try {
     const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) return { logos: {}, platforms: {} };
+    if (!response.ok) return { logos: {}, platforms: {}, names: new Set() };
     const data = await response.json();
-    if (!data || !Array.isArray(data.games)) return { logos: {}, platforms: {} };
+    if (!data || !Array.isArray(data.games)) return { logos: {}, platforms: {}, names: new Set() };
     const logos = {};
     const platforms = {};
+    const names = new Set();
     for (const g of data.games) {
-      if (g.name && g.logo) logos[g.name] = `assets/games/${g.logo}`;
-      if (g.name && Array.isArray(g.platform)) platforms[g.name] = g.platform;
+      if (g.name) {
+        names.add(g.name);
+        if (g.logo) logos[g.name] = `assets/games/${g.logo}`;
+        if (Array.isArray(g.platform)) platforms[g.name] = g.platform;
+      }
     }
-    return { logos, platforms };
+    return { logos, platforms, names };
   } catch {
-    return { logos: {}, platforms: {} };
+    return { logos: {}, platforms: {}, names: new Set() };
   }
 }
 
@@ -667,7 +679,8 @@ async function loadData() {
     state.gamePlatforms = gameData.platforms;
     state.platformGames = buildPlatformData(gameData.platforms);
 
-    const games = [...new Set(data.news.map(i => i.game).filter(Boolean))].sort();
+    const configNames = gameData.names || new Set();
+    const games = [...configNames].sort();
     renderGameTiles(games);
     renderPlatformTiles(data.news);
     initCategoryPills();

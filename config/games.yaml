@@ -80,10 +80,6 @@ incluir:
     aliases: [HD2]
     logo: null
     platform: [pc, playstation]
-  - nombre: Nintendo Switch 2
-    aliases: [Switch 2, NS2]
-    logo: null
-    platform: [nintendo]
   - nombre: Starfield
     aliases: []
     logo: null

@@ -101,6 +101,7 @@ class Pipeline:
                     body_text=item.body_text,
                     language=item.language,
                     game=game,
+                    image_url=item.image_url,
                 )
                 kept.append(item)
         return kept

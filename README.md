@@ -9,8 +9,9 @@ Agregador de noticias de videojuegos que rastrea, filtra y resume automáticamen
 ## Qué hace
 
 - Rastrea noticias de medios (IGN, Eurogamer, PC Gamer, Polygon, Rock Paper Shotgun), la API oficial de Steam News, y subreddits de la comunidad (marcados como contenido no verificado).
-- Filtra el contenido por una lista de juegos/sagas seguidos, con exclusión de juegos no deseados.
-- Resume y clasifica cada noticia con IA (modelo local vía Ollama, con fallback automático a Groq si el modelo local no está disponible).
+- Filtra el contenido por una lista de juegos/sagas seguidos, con exclusión de juegos no deseados, usando una lógica de "tema principal" para evitar ruido.
+- Resume y clasifica cada noticia con IA (modelo local vía Ollama, con fallback automático a Groq si el modelo local no está disponible o falla por infraestructura).
+- Extrae la imagen destacada de cada noticia cuando está disponible, con un placeholder visual por categoría cuando no la hay.
 - Publica el resultado en una web estática, sin backend ni base de datos — todo vive en un archivo JSON generado por el propio pipeline.
 - Se ejecuta automáticamente cada hora mediante GitHub Actions.
 
@@ -34,10 +35,16 @@ Proyecto de portfolio para practicar un pipeline completo de extremo a extremo: 
 ## Cómo funciona el pipeline
 
 1. **Fetch** — descarga noticias de RSS de medios, la API de Steam News, y RSS de subreddits configurados.
-2. **Filtrado** — aplica una lista de inclusión (juegos seguidos) y exclusión (juegos vetados), con lógica de "tema principal" para evitar ruido.
+2. **Filtrado** — aplica una lista de inclusión (juegos seguidos) y exclusión (juegos vetados). La exclusión actúa como "poison pill": basta una mención para descartar la noticia entera; la inclusión exige que el juego sea tema principal (título o dos o más menciones en el cuerpo).
 3. **Resumen con IA** — cada noticia se resume, clasifica (lanzamiento / actualización / rumor / análisis) y puntúa por relevancia.
-4. **Persistencia** — el resultado se fusiona con el histórico existente, se aplica una política de retención (14 días o 200 items, lo que ocurra primero), y se escribe de forma atómica.
-5. **Publicación** — el frontend estático lee ese JSON y lo muestra con filtros por juego, categoría y fecha.
+4. **Persistencia** — el resultado se fusiona con el histórico existente (el más reciente gana en caso de duplicado), se aplica una política de retención (14 días o 200 items, lo que ocurra primero), y se escribe de forma atómica para no corromper el archivo que sirve el frontend.
+5. **Publicación** — el frontend estático lee ese JSON y lo muestra con filtros por categoría, plataforma y juego.
+
+## Filtros del frontend
+
+- **Categoría** — selección única (lanzamiento, actualización, rumor, análisis).
+- **Plataforma** — PC/Steam, Nintendo, PlayStation, Xbox.
+- **Juego** — selección única, con logo SVG cuando está disponible o una inicial como respaldo visual.
 
 ## Ejecutar en local
 
@@ -62,7 +69,7 @@ python -m http.server 8000
 
 ## Configuración
 
-- `config/games.yaml` — lista de juegos/sagas a seguir (inclusión) y a excluir.
+- `config/games.yaml` — lista de juegos/sagas a seguir (inclusión) y a excluir, con logo y plataformas asociadas por juego.
 - `config/sources.yaml` — feeds RSS de medios, IDs de juegos en Steam, y subreddits a rastrear.
 
 ## Documentación técnica
@@ -71,4 +78,4 @@ Ver [`CONTRIBUTING.md`](./CONTRIBUTING.md) para el detalle completo de arquitect
 
 ## Estado del proyecto
 
-En desarrollo activo — el pipeline de backend está funcionando en producción; el frontend está en fase de rediseño visual.
+Pipeline de backend funcionando en producción (fetch, filtrado, IA, publicación automática cada hora). El frontend está en fase de rediseño visual iterativo: la estructura de filtros y las tarjetas de noticias con imagen ya están implementadas; quedan pendientes ajustes de estilo y algún bug conocido en la extracción de enlaces de Reddit.

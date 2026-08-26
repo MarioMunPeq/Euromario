@@ -45,14 +45,14 @@ const TILE_COLORS = [
 ];
 
 const PLATFORM_ICONS = {
-  pc: 'assets/platforms/steam.svg',
+  'pc-steam': 'assets/platforms/steam.svg',
   playstation: 'assets/platforms/playstation.svg',
   xbox: 'assets/platforms/xbox.svg',
   nintendo: 'assets/platforms/nintendo.svg',
 };
 
 const PLATFORM_LABELS = {
-  pc: 'PC',
+  'pc-steam': 'PC / Steam',
   playstation: 'PlayStation',
   xbox: 'Xbox',
   nintendo: 'Nintendo',
@@ -69,9 +69,9 @@ const state = {
   gamePlatforms: {},
   platformGames: {},
   filters: {
-    games: [],
+    game: null,
     platforms: [],
-    categories: [],
+    category: null,
     search: '',
   },
   ui: {
@@ -206,7 +206,9 @@ const DARK_BG_SVGS = new Set([
 function renderGameTiles(games) {
   const allTile = `
     <button type="button" class="game-tile active" data-game="" aria-pressed="true">
-      <div class="game-tile__icon" style="background: var(--accent); border-color: var(--accent)">ALL</div>
+      <div class="game-tile__icon" style="background: var(--accent); border-color: var(--accent)">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><rect x="1" y="1" width="8" height="8" rx="1.5"/><rect x="11" y="1" width="8" height="8" rx="1.5"/><rect x="1" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/></svg>
+      </div>
       <span class="game-tile__name">Todos</span>
     </button>`;
 
@@ -238,32 +240,22 @@ function renderGameTiles(games) {
   els.gameTiles.querySelectorAll('.game-tile').forEach(tile => {
     tile.addEventListener('click', () => {
       const game = tile.dataset.game;
-      if (game === '') {
-        state.filters.games = [];
-        els.gameTiles.querySelectorAll('.game-tile').forEach(t => {
-          t.classList.remove('active');
-          t.setAttribute('aria-pressed', 'false');
-        });
+      const wasActive = tile.classList.contains('active');
+
+      els.gameTiles.querySelectorAll('.game-tile').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-pressed', 'false');
+      });
+
+      if (wasActive || game === '') {
+        state.filters.game = null;
+        const allBtn = els.gameTiles.querySelector('[data-game=""]');
+        allBtn.classList.add('active');
+        allBtn.setAttribute('aria-pressed', 'true');
+      } else {
+        state.filters.game = game;
         tile.classList.add('active');
         tile.setAttribute('aria-pressed', 'true');
-      } else {
-        const allBtn = els.gameTiles.querySelector('[data-game=""]');
-        allBtn.classList.remove('active');
-        allBtn.setAttribute('aria-pressed', 'false');
-
-        if (state.filters.games.includes(game)) {
-          state.filters.games = state.filters.games.filter(g => g !== game);
-          tile.classList.remove('active');
-          tile.setAttribute('aria-pressed', 'false');
-          if (state.filters.games.length === 0) {
-            allBtn.classList.add('active');
-            allBtn.setAttribute('aria-pressed', 'true');
-          }
-        } else {
-          state.filters.games.push(game);
-          tile.classList.add('active');
-          tile.setAttribute('aria-pressed', 'true');
-        }
       }
       applyFilters();
       pushUrl();
@@ -288,15 +280,17 @@ function buildPlatformData(gamePlatforms) {
 
 function renderPlatformTiles(newsItems) {
   const hasSteam = newsItems.some(i => i.source && i.source.type === 'steam');
+  const hasPCGames = (state.platformGames['pc'] || []).length > 0;
   const availablePlatforms = Object.keys(state.platformGames)
     .filter(p => state.platformGames[p].length > 0)
     .sort();
 
   const tiles = [];
-  if (hasSteam) {
-    tiles.push({ id: 'steam', src: 'assets/platforms/steam.svg', label: 'Steam' });
+  if (hasSteam || hasPCGames) {
+    tiles.push({ id: 'pc-steam', src: 'assets/platforms/steam.svg', label: 'PC / Steam' });
   }
   for (const p of availablePlatforms) {
+    if (p === 'pc') continue;
     tiles.push({ id: p, src: PLATFORM_ICONS[p], label: PLATFORM_LABELS[p] });
   }
 
@@ -340,11 +334,16 @@ function initCategoryPills() {
   els.categoryPills.querySelectorAll('.category-pill').forEach(pill => {
     pill.addEventListener('click', () => {
       const cat = pill.dataset.cat;
-      if (state.filters.categories.includes(cat)) {
-        state.filters.categories = state.filters.categories.filter(c => c !== cat);
-        pill.classList.remove('active');
+      const wasActive = pill.classList.contains('active');
+
+      els.categoryPills.querySelectorAll('.category-pill').forEach(p => {
+        p.classList.remove('active');
+      });
+
+      if (wasActive) {
+        state.filters.category = null;
       } else {
-        state.filters.categories.push(cat);
+        state.filters.category = cat;
         pill.classList.add('active');
       }
       applyFilters();
@@ -484,7 +483,7 @@ function clearError() {
 // ============================================================
 
 function applyFilters() {
-  const { games, platforms, categories, search } = state.filters;
+  const { game, platforms, category, search } = state.filters;
 
   state.filteredNews = state.allNews.filter(item => {
     if (search) {
@@ -493,39 +492,33 @@ function applyFilters() {
       if (!haystack.includes(query)) return false;
     }
 
-    if (games.length > 0) {
-      if (!item.game || !games.includes(item.game)) return false;
+    if (game) {
+      if (!item.game || item.game !== game) return false;
     }
 
     if (platforms.length > 0) {
-      const hasSteamFilter = platforms.includes('steam');
-      const otherPlatforms = platforms.filter(p => p !== 'steam');
-
       let platformPass = false;
+      const hasUnified = platforms.includes('pc-steam');
+      const otherPlatforms = platforms.filter(p => p !== 'pc-steam');
 
-      if (hasSteamFilter && item.source && item.source.type === 'steam') {
-        platformPass = true;
+      if (hasUnified) {
+        const isSteam = item.source && item.source.type === 'steam';
+        const isPC = item.game && (state.gamePlatforms[item.game] || []).includes('pc');
+        if (isSteam || isPC) platformPass = true;
       }
 
-      if (otherPlatforms.length > 0 && item.game) {
+      if (!platformPass && otherPlatforms.length > 0 && item.game) {
         const gamePlats = state.gamePlatforms[item.game] || [];
         if (otherPlatforms.some(p => gamePlats.includes(p))) {
           platformPass = true;
         }
       }
 
-      if (hasSteamFilter && otherPlatforms.length > 0) {
-        const gamePlats = item.game ? (state.gamePlatforms[item.game] || []) : [];
-        const steamMatch = item.source && item.source.type === 'steam';
-        const platMatch = otherPlatforms.some(p => gamePlats.includes(p));
-        platformPass = steamMatch && platMatch;
-      }
-
       if (!platformPass) return false;
     }
 
-    if (categories.length > 0) {
-      if (!item.category || !categories.includes(item.category)) return false;
+    if (category) {
+      if (!item.category || item.category !== category) return false;
     }
 
     return true;
@@ -538,7 +531,7 @@ function applyFilters() {
 function syncFilterUIFromState() {
   els.gameTiles.querySelectorAll('.game-tile').forEach(tile => {
     const game = tile.dataset.game;
-    const isActive = game === '' ? state.filters.games.length === 0 : state.filters.games.includes(game);
+    const isActive = game === '' ? !state.filters.game : state.filters.game === game;
     tile.classList.toggle('active', isActive);
     tile.setAttribute('aria-pressed', String(isActive));
   });
@@ -552,7 +545,7 @@ function syncFilterUIFromState() {
 
   els.categoryPills.querySelectorAll('.category-pill').forEach(pill => {
     const cat = pill.dataset.cat;
-    pill.classList.toggle('active', state.filters.categories.includes(cat));
+    pill.classList.toggle('active', state.filters.category === cat);
   });
 
   els.search.value = state.filters.search || '';
@@ -564,18 +557,18 @@ function syncFilterUIFromState() {
 
 function filtersToUrlParams() {
   const params = new URLSearchParams();
-  if (state.filters.games.length) params.set('game', state.filters.games.join(','));
+  if (state.filters.game) params.set('game', state.filters.game);
   if (state.filters.platforms.length) params.set('platforms', state.filters.platforms.join(','));
-  if (state.filters.categories.length) params.set('category', state.filters.categories.join(','));
+  if (state.filters.category) params.set('category', state.filters.category);
   if (state.filters.search) params.set('q', state.filters.search);
   return params.toString();
 }
 
 function syncUrlToState() {
   const params = new URLSearchParams(window.location.search);
-  state.filters.games = params.get('game')?.split(',').filter(Boolean) || [];
+  state.filters.game = params.get('game') || null;
   state.filters.platforms = params.get('platforms')?.split(',').filter(Boolean) || [];
-  state.filters.categories = params.get('category')?.split(',').filter(Boolean) || [];
+  state.filters.category = params.get('category') || null;
   state.filters.search = params.get('q') || '';
 }
 
@@ -598,9 +591,9 @@ function onFilterChange() {
 
 function onClearFilters() {
   state.filters = {
-    games: [],
+    game: null,
     platforms: [],
-    categories: [],
+    category: null,
     search: '',
   };
   syncFilterUIFromState();

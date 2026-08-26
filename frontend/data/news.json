@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-26T08:57:41.171841Z",
+  "generated_at": "2026-08-26T09:36:02.602068Z",
   "total": 56,
   "news": [
     {
@@ -17,12 +17,12 @@
       "published_at": "2026-08-25T19:15:00Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assets-prd.ignimgs.com/2026/08/24/tcrst-screenshotinsertionscreen-announcementgamescom-250826-815pm-cest-1787605032874.png"
     },
     {
       "id": "2db099c235bcc745",
       "title": "Battle royale goes grunge: there's a new PUBG game and it's set in the '90s",
-      "summary": "PUBG lanzó un nuevo juego con un enfoque en la música grunge y un sistema de progresión roguelite, llamado PUBG: Ded.net.",
+      "summary": "PUBG lanzó un nuevo juego llamado Ded.net, que combina gameplay de disparos con progresión roguelite en un entorno grunge de los '90s.",
       "url": "https://www.pcgamer.com/games/battle-royale/battle-royale-goes-grunge-theres-a-new-pubg-game-and-its-set-in-the-90s/",
       "source": {
         "name": "PC Gamer",
@@ -34,12 +34,12 @@
       "published_at": "2026-08-25T19:07:49Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://cdn.mos.cms.futurecdn.net/pEybPyuGiJZRdTa9q4rtg3-1280-80.jpg"
     },
     {
       "id": "771dab836c64869e",
       "title": "Cyberpunk 2077 Commodore Computer Premieres at Gamescom, and It's Up for Preorder Now",
-      "summary": "La Commodore 64 se ha lanzado como parte del juego Cyberpunk 2077 en Gamescom, y está disponible para preordenar ahora.",
+      "summary": "La Commodore 64 es el nuevo juego de Cyberpunk 2077 que se estrenará en Gamescom, y ya está disponible para preordenar",
       "url": "https://www.ign.com/articles/cyberpunk-2077-commodore-computer-reveal-gamescom-2026",
       "source": {
         "name": "IGN",
@@ -49,9 +49,9 @@
       "game": "Cyberpunk 2077",
       "language": "en",
       "published_at": "2026-08-25T19:00:00Z",
-      "relevance": 4,
+      "relevance": 5,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assets-prd.ignimgs.com/2026/08/25/commodore-77-01-1787668050455.png"
     },
     {
       "id": "64863a3bc9facd6a",
@@ -73,7 +73,7 @@
     {
       "id": "b828b56ea4dc7efa",
       "title": "The next game from Hoyoverse sure looks like someone put Elden Ring's clothes on Monster Hunter",
-      "summary": "Hoyoverse anuncia su próximo juego, que recuerda a Elden Ring con elementos de Monster Hunter.",
+      "summary": "Hoyoverse anuncia su próximo juego, que recuerda a Elden Ring con un estilo similar a Monster Hunter",
       "url": "https://www.pcgamer.com/games/action/the-next-game-from-hoyoverse-sure-looks-like-someone-put-elden-rings-clothes-on-monster-hunter/",
       "source": {
         "name": "PC Gamer",
@@ -85,7 +85,7 @@
       "published_at": "2026-08-25T18:46:38Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://cdn.mos.cms.futurecdn.net/MHyDyJVN5xwUjvXsNUUqGA-1280-80.jpg"
     },
     {
       "id": "f91c21304a134762",
@@ -102,7 +102,7 @@
       "published_at": "2026-08-25T18:15:17Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assetsio.gnwcdn.com/rainbow-six-tactics-_0011_SND_Screenshot_ShoulderShoot_PC_AnnoucementGamesCom_250826_815PM_CEST.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
       "id": "4b818d2c40378769",
@@ -119,7 +119,7 @@
       "published_at": "2026-08-25T18:15:00Z",
       "relevance": 5,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assets-prd.ignimgs.com/2026/08/24/tcrst-screenshotbishopcinematique-01-announcementgamescom-250826-815pm-cest-1787605032874.png"
     },
     {
       "id": "e9ebef5a14fa0e57",
@@ -141,7 +141,7 @@
     {
       "id": "f4c84cee1bf73aec",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y explosiones.",
+      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y colisiones.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228678941",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -204,7 +204,7 @@
       "published_at": "2026-08-25T16:15:06Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assetsio.gnwcdn.com/roblox-shopping-mall.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
       "id": "29ccd2bed2a55c5d",
@@ -243,7 +243,7 @@
     {
       "id": "3e3ca1002786c59d",
       "title": "Nvidia tech behind PUBG's genAI team mates will let folks chat to creature-collecting RPG Aniimo's not-Pokemon next year",
-      "summary": "Nvidia anuncia su tecnología ACE para Aniimo, un RPG de captura de criaturas que permitirá a los jugadores interactuar con sus criaturas.",
+      "summary": "Nvidia anuncia su tecnología ACE para Aniimo, un juego de RPG de captura de criaturas que se lanzará en el próximo año.",
       "url": "https://www.rockpapershotgun.com/nvidia-tech-behind-pubgs-genai-team-mates-will-let-folks-chat-to-creature-collecting-rpg-aniimos-not-pokemon-next-year",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -255,7 +255,7 @@
       "published_at": "2026-08-25T15:30:00Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assetsio.gnwcdn.com/Nvidia-ace-ai-teammate-tech-aniimo-01.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
       "id": "c15f1de8a3ca8421",
@@ -277,7 +277,7 @@
     {
       "id": "dcabc4f7bf42b0be",
       "title": "\"People wanted faster movement, but not this fast\" - Call of Duty: Modern Warfare 4 beta players aren't happy with slide spammers and the increased pace of the game",
-      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego, que algunos consideran demasiado rápido, mientras que otros lo encuentran insuficiente.",
+      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego, que es más rápido de lo que esperaban.",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-beta-player-reaction",
       "source": {
         "name": "Eurogamer",
@@ -287,9 +287,9 @@
       "game": "Call of Duty",
       "language": "en",
       "published_at": "2026-08-25T14:25:02Z",
-      "relevance": 3,
-      "category": "lanzamiento",
-      "image_url": null
+      "relevance": 4,
+      "category": "actualizacion",
+      "image_url": "https://assetsio.gnwcdn.com/modern-warfare-4-slide-crop-1.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
       "id": "de40481e022d5d5d",
@@ -311,7 +311,7 @@
     {
       "id": "18c3698901de299b",
       "title": "Despite being a Switch 2 exclusive, The Duskbloods closed network test had more applications than Elden Ring Nightreign",
-      "summary": "El juego The Duskbloods, exclusivo de Switch 2, atrajo más solicitudes de jugadores que Elden Ring Nightreign, a pesar de estar disponible solo en una plataforma.",
+      "summary": "El juego The Duskbloods, exclusivo de Switch 2, atrajo más solicitudes de jugadores que Nightreign de Elden Ring en su prueba de red, a pesar de estar disponible solo en una plataforma.",
       "url": "https://www.eurogamer.net/the-duskbloods-closed-network-test-more-applications-nightreign",
       "source": {
         "name": "Eurogamer",
@@ -323,7 +323,7 @@
       "published_at": "2026-08-25T11:31:43Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assetsio.gnwcdn.com/The-Duskbloods-%E2%80%93-Nintendo-Direct-_-Nintendo-Switch-2-1-46-screenshot.png?width=690&quality=85&format=jpg&auto=webp"
     },
     {
       "id": "518535f827885de9",
@@ -389,9 +389,9 @@
       "game": "Grand Theft Auto",
       "language": "en",
       "published_at": "2026-08-25T10:03:28Z",
-      "relevance": 4,
+      "relevance": 3,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assetsio.gnwcdn.com/gta-6-discord-respond-potential-subpoena-01.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
       "id": "fedeefc056e0516c",
@@ -413,7 +413,7 @@
     {
       "id": "6cddca81472c1827",
       "title": "Discord is yet to be served Take-Two's GTA 6 leak subpoena, which is set to demand broad access to user data",
-      "summary": "Discord nega haber sido servido una orden de subpoena de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
+      "summary": "Discord niega haber sido servido una orden de busca de Take-Two para obtener datos de usuarios relacionados con los estafas de GTA 6.",
       "url": "https://www.eurogamer.net/take-two-rockstar-gta-6-leaks-subpoena-discord-response",
       "source": {
         "name": "Eurogamer",
@@ -425,7 +425,7 @@
       "published_at": "2026-08-25T08:39:48Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assetsio.gnwcdn.com/gta-6-ultimate-screen-crop-1.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
       "id": "025923db788c2727",
@@ -595,7 +595,7 @@
       "published_at": "2026-08-24T13:10:49Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assetsio.gnwcdn.com/Dont-drop-the-cake.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
       "id": "8b8303066f661177",
@@ -612,7 +612,7 @@
       "published_at": "2026-08-24T11:41:32Z",
       "relevance": 4,
       "category": "lanzamiento",
-      "image_url": null
+      "image_url": "https://assetsio.gnwcdn.com/modern-warfare-4-campaign-shot-crop-1.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
       "id": "3ad5a894b22fb394",
@@ -923,7 +923,7 @@
     {
       "id": "e2dbd2bc385ba46b",
       "title": "Declare Your Allegiance and Determine Who Owns Los Santos in the Brand Wars Event",
-      "summary": "El evento Brand Wars Event de GTA Online comienza, donde los jugadores deben decidir quién es el dueño de Los Santos. Los jugadores pueden ganar premios y recompensas al unirse a una de las dos bandas, Team Sprunk o Team eCola.",
+      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores deben proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183786534",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -940,7 +940,7 @@
     {
       "id": "a9e632cf5e66d08e",
       "title": "GTA roleplayers rejoice: Nopixel V's beta is coming, and the timing couldn't be better",
-      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado en colaboración con Rockstar, coincidiendo con el lanzamiento de GTA 6 y una nueva era de caos.",
+      "summary": "Nopixel V, un servidor de GTA RP, anuncia su beta cerrado en el momento perfecto para los jugadores, justo antes del lanzamiento de GTA 6.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PCGamesN/1840944183779680",
       "source": {
         "name": "Steam · Grand Theft Auto",

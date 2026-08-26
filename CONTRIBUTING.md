@@ -202,7 +202,7 @@ excluir:
 - **Vanilla total:** HTML/CSS/JS sin frameworks, sin build step, sin bundler, sin CDNs externos (tipografía system-ui, iconografía inline/CSS). Tres archivos: `index.html`, `css/style.css`, `js/app.js`.
 - **Modo oscuro por defecto:** `color-scheme: dark` y paleta oscura en `:root` con custom properties (`--bg`, `--surface`, `--text`, `--accent`...). Un toggle claro es opcional a futuro, nunca al revés.
 - **Datos:** un único `fetch("data/news.json")` relativo y render cliente. Sin estado global complejo ni persistencia más allá de lo justo.
-- **Funcionalidad mínima:** búsqueda/filtrado cliente por juego, categoría y fecha; mostrar `summary`, `relevance` (1–5) y `category` por tarjeta.
+- **Funcionalidad mínima:** búsqueda/filtrado cliente por juego, categoría y plataforma; mostrar `summary`, `relevance` (1–5) y `category` por tarjeta.
 - **Reddit distinguible siempre:** badge propio tipo "Reddit · no verificado" en cada card cuyo `source.type === "reddit"`.
 - **Calidad:** HTML semántico, contraste AA, focus visible, responsive mobile-first. Simple pero cuidado: nada de aspecto de plantilla genérica.
 - CSS con clases coherentes y planas (kebab-case); JS en modo estricto, funciones puras para filtrar/renderizar (testeables mentalmente), sin dependencias.

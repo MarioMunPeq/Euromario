@@ -72,8 +72,6 @@ const state = {
     games: [],
     platforms: [],
     categories: [],
-    dateFrom: null,
-    dateTo: null,
     search: '',
   },
   ui: {
@@ -102,8 +100,6 @@ const els = {
   platformTiles: document.getElementById('platform-tiles'),
   platformSection: document.getElementById('platform-section'),
   categoryPills: document.getElementById('category-pills'),
-  dateFrom: document.getElementById('date-from'),
-  dateTo: document.getElementById('date-to'),
   clearFilters: document.getElementById('clear-filters'),
   statsCount: document.getElementById('stats-count'),
   statsUpdated: document.getElementById('stats-updated'),
@@ -480,7 +476,7 @@ function clearError() {
 // ============================================================
 
 function applyFilters() {
-  const { games, platforms, categories, dateFrom, dateTo, search } = state.filters;
+  const { games, platforms, categories, search } = state.filters;
 
   state.filteredNews = state.allNews.filter(item => {
     if (search) {
@@ -524,14 +520,6 @@ function applyFilters() {
       if (!item.category || !categories.includes(item.category)) return false;
     }
 
-    const itemDate = new Date(item.published_at);
-    if (dateFrom && itemDate < new Date(dateFrom)) return false;
-    if (dateTo) {
-      const toDate = new Date(dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      if (itemDate > toDate) return false;
-    }
-
     return true;
   });
 
@@ -559,8 +547,6 @@ function syncFilterUIFromState() {
     pill.classList.toggle('active', state.filters.categories.includes(cat));
   });
 
-  els.dateFrom.value = state.filters.dateFrom || '';
-  els.dateTo.value = state.filters.dateTo || '';
   els.search.value = state.filters.search || '';
 }
 
@@ -573,8 +559,6 @@ function filtersToUrlParams() {
   if (state.filters.games.length) params.set('game', state.filters.games.join(','));
   if (state.filters.platforms.length) params.set('platforms', state.filters.platforms.join(','));
   if (state.filters.categories.length) params.set('category', state.filters.categories.join(','));
-  if (state.filters.dateFrom) params.set('date_from', state.filters.dateFrom);
-  if (state.filters.dateTo) params.set('date_to', state.filters.dateTo);
   if (state.filters.search) params.set('q', state.filters.search);
   return params.toString();
 }
@@ -584,8 +568,6 @@ function syncUrlToState() {
   state.filters.games = params.get('game')?.split(',').filter(Boolean) || [];
   state.filters.platforms = params.get('platforms')?.split(',').filter(Boolean) || [];
   state.filters.categories = params.get('category')?.split(',').filter(Boolean) || [];
-  state.filters.dateFrom = params.get('date_from') || null;
-  state.filters.dateTo = params.get('date_to') || null;
   state.filters.search = params.get('q') || '';
 }
 
@@ -600,8 +582,6 @@ function pushUrl() {
 // ============================================================
 
 function onFilterChange() {
-  state.filters.dateFrom = els.dateFrom.value || null;
-  state.filters.dateTo = els.dateTo.value || null;
   state.filters.search = els.search.value.trim();
 
   applyFilters();
@@ -613,8 +593,6 @@ function onClearFilters() {
     games: [],
     platforms: [],
     categories: [],
-    dateFrom: null,
-    dateTo: null,
     search: '',
   };
   syncFilterUIFromState();
@@ -722,8 +700,6 @@ function init() {
   const debouncedFilterChange = debounce(onFilterChange, CONFIG.debounceMs);
 
   els.search.addEventListener('input', debouncedFilterChange);
-  els.dateFrom.addEventListener('change', onFilterChange);
-  els.dateTo.addEventListener('change', onFilterChange);
   els.clearFilters.addEventListener('click', onClearFilters);
   els.retryBtn.addEventListener('click', onRetry);
 

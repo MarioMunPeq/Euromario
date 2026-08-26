@@ -85,7 +85,8 @@ const els = {
   newsList: document.getElementById('news-list'),
   retryBtn: document.getElementById('retry-btn'),
   search: document.getElementById('search'),
-  filterTiles: document.getElementById('filter-tiles'),
+  filterPlatforms: document.getElementById('filter-platforms'),
+  filterGames: document.getElementById('filter-games'),
   segmentedControl: document.getElementById('segmented-control'),
   segmentedIndicator: document.getElementById('segmented-indicator'),
   clearFilters: document.getElementById('clear-filters'),
@@ -249,13 +250,12 @@ function buildPlatformData(gamePlatforms) {
 function renderAllTiles(newsItems, games) {
   const platHtml = renderPlatformTiles(newsItems);
   const gameHtml = renderGameTiles(games);
-  const hasPlatforms = platHtml.length > 0;
-  const divider = hasPlatforms ? '<div class="tiles-divider" aria-hidden="true"></div>' : '';
 
-  els.filterTiles.innerHTML = platHtml + divider + gameHtml;
+  els.filterPlatforms.innerHTML = platHtml;
+  els.filterGames.innerHTML = gameHtml;
 
   // Platform click handlers (multi-select)
-  els.filterTiles.querySelectorAll('[data-platform]').forEach(tile => {
+  els.filterPlatforms.querySelectorAll('[data-platform]').forEach(tile => {
     tile.addEventListener('click', () => {
       const platform = tile.dataset.platform;
       if (state.filters.platforms.includes(platform)) {
@@ -273,19 +273,19 @@ function renderAllTiles(newsItems, games) {
   });
 
   // Game click handlers (single-select)
-  els.filterTiles.querySelectorAll('[data-game]').forEach(tile => {
+  els.filterGames.querySelectorAll('[data-game]').forEach(tile => {
     tile.addEventListener('click', () => {
       const game = tile.dataset.game;
       const wasActive = tile.classList.contains('active');
 
-      els.filterTiles.querySelectorAll('[data-game]').forEach(t => {
+      els.filterGames.querySelectorAll('[data-game]').forEach(t => {
         t.classList.remove('active');
         t.setAttribute('aria-pressed', 'false');
       });
 
       if (wasActive || game === '') {
         state.filters.game = null;
-        const allBtn = els.filterTiles.querySelector('[data-game=""]');
+        const allBtn = els.filterGames.querySelector('[data-game=""]');
         allBtn.classList.add('active');
         allBtn.setAttribute('aria-pressed', 'true');
       } else {
@@ -529,14 +529,14 @@ function applyFilters() {
 }
 
 function syncFilterUIFromState() {
-  els.filterTiles.querySelectorAll('[data-game]').forEach(tile => {
+  els.filterGames.querySelectorAll('[data-game]').forEach(tile => {
     const game = tile.dataset.game;
     const isActive = game === '' ? !state.filters.game : state.filters.game === game;
     tile.classList.toggle('active', isActive);
     tile.setAttribute('aria-pressed', String(isActive));
   });
 
-  els.filterTiles.querySelectorAll('[data-platform]').forEach(tile => {
+  els.filterPlatforms.querySelectorAll('[data-platform]').forEach(tile => {
     const platform = tile.dataset.platform;
     const isActive = state.filters.platforms.includes(platform);
     tile.classList.toggle('active', isActive);

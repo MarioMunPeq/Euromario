@@ -1,0 +1,33 @@
+import json
+
+# Load remote news.json (UTF-16 with BOM)
+with open('scripts/remote_news.json', 'r', encoding='utf-16') as f:
+    remote_data = json.load(f)
+
+print(f"Remote total: {remote_data['total']}")
+
+# Remove bad Reddit items
+original_news = remote_data['news']
+cleaned_news = [
+    item for item in original_news
+    if not (item.get('source', {}).get('type') == 'reddit' and 
+            ('abc123' in item.get('url', '') or 'def456' in item.get('url', '')))
+]
+
+removed = len(original_news) - len(cleaned_news)
+print(f"Removed {removed} bad Reddit items")
+
+remote_data['news'] = cleaned_news
+remote_data['total'] = len(cleaned_news)
+
+# Save as the resolved news.json (UTF-8)
+with open('frontend/data/news.json', 'w', encoding='utf-8') as f:
+    json.dump(remote_data, f, ensure_ascii=False, indent=2)
+
+print(f"New total: {remote_data['total']}")
+
+# Verify
+reddit_remaining = [i for i in cleaned_news if i.get('source', {}).get('type') == 'reddit']
+print(f"Remaining Reddit items: {len(reddit_remaining)}")
+for item in reddit_remaining:
+    print(f"  {item['title'][:60]} -> {item['url']}")

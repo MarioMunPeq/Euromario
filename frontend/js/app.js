@@ -85,12 +85,12 @@ const els = {
   newsList: document.getElementById('news-list'),
   retryBtn: document.getElementById('retry-btn'),
   search: document.getElementById('search'),
+  searchTrigger: document.querySelector('.header__search-trigger'),
+  searchField: document.querySelector('.header__search-field'),
   filterPlatforms: document.getElementById('filter-platforms'),
   filterGames: document.getElementById('filter-games'),
   headerNavButtons: document.querySelectorAll('.header__nav-btn'),
   clearFilters: document.getElementById('clear-filters'),
-  statsCount: document.getElementById('stats-count'),
-  statsUpdated: document.getElementById('stats-updated'),
 };
 
 // ============================================================
@@ -153,17 +153,12 @@ function getCategoryColor(category) {
 }
 
 // ============================================================
-// Source Badge
+// Source Helpers
 // ============================================================
 
-function getSourceBadge(source) {
-  const labels = {
-    media: { class: 'badge--media', label: source.name },
-    steam: { class: 'badge--steam', label: source.name },
-    reddit: { class: 'badge--reddit', label: 'Reddit' },
-  };
-  const config = labels[source.type] || { class: 'badge', label: source.name };
-  return `<span class="badge ${config.class}">${escapeHtml(config.label)}</span>`;
+function getSourceName(source) {
+  if (source.type === 'reddit') return 'Reddit';
+  return source.name;
 }
 
 // ============================================================
@@ -343,10 +338,9 @@ function renderNewsCard(item) {
       </div>`;
   }
 
-  const sourceBadge = getSourceBadge(item.source);
+  const sourceName = getSourceName(item.source);
   const dateObj = new Date(item.published_at);
   const dateStr = formatDate(dateObj);
-  const relStr = formatRelativeDate(dateObj);
 
   return `
     <article class="news-card" data-id="${item.id}" data-category="${category}">
@@ -355,8 +349,8 @@ function renderNewsCard(item) {
       </div>
       <div class="news-card__content">
         <div class="news-card__meta">
-          ${sourceBadge}
-          <time datetime="${dateObj.toISOString()}" title="${relStr}">${dateStr}</time>
+          <span class="news-card__source">${escapeHtml(sourceName)}</span>
+          <time class="news-card__date" datetime="${dateObj.toISOString()}">${dateStr}</time>
         </div>
         <h3 class="news-card__title">
           <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
@@ -365,7 +359,7 @@ function renderNewsCard(item) {
         </h3>
         ${item.summary ? `<p class="news-card__summary">${escapeHtml(item.summary)}</p>` : ''}
         <a href="${escapeHtml(item.url)}" class="news-card__link" target="_blank" rel="noopener noreferrer">
-          LEER EN ${escapeHtml(item.source.name)} <span aria-hidden="true">\u2197</span>
+          Leer en ${escapeHtml(sourceName)} <span class="news-card__link-arrow" aria-hidden="true">\u2197</span>
         </a>
       </div>
     </article>
@@ -389,9 +383,6 @@ function renderStats(data) {
   const updatedStr = data.generated_at
     ? formatDate(new Date(data.generated_at))
     : '\u2014';
-
-  if (els.statsCount) els.statsCount.textContent = countStr;
-  if (els.statsUpdated) els.statsUpdated.textContent = updatedStr;
 
   if (els.headerCount) els.headerCount.textContent = `${countStr} noticias`;
   if (els.headerUpdated) {
@@ -497,7 +488,6 @@ function applyFilters() {
   });
 
   renderNewsList(state.filteredNews);
-  if (els.statsCount) els.statsCount.textContent = state.filteredNews.length.toLocaleString('es');
 }
 
 function syncFilterUIFromState() {
@@ -577,6 +567,49 @@ function onClearFilters() {
 function onRetry() {
   clearError();
   loadData();
+}
+
+function onSearchTriggerClick() {
+  const isExpanded = els.searchTrigger.getAttribute('aria-expanded') === 'true';
+  if (isExpanded) {
+    collapseSearch();
+  } else {
+    expandSearch();
+  }
+}
+
+function expandSearch() {
+  els.searchTrigger.setAttribute('aria-expanded', 'true');
+  els.searchField.hidden = false;
+  els.search.focus();
+}
+
+function collapseSearch() {
+  els.searchTrigger.setAttribute('aria-expanded', 'false');
+  els.searchField.hidden = true;
+  els.search.blur();
+}
+
+function onKeyDown(e) {
+  if (e.key === 'Escape') {
+    const isExpanded = els.searchTrigger.getAttribute('aria-expanded') === 'true';
+    if (isExpanded) {
+      collapseSearch();
+    }
+  }
+}
+
+function onDocumentClick(e) {
+  const isExpanded = els.searchTrigger.getAttribute('aria-expanded') === 'true';
+  if (!isExpanded) return;
+
+  const searchContainer = document.getElementById('header-search');
+  if (!searchContainer.contains(e.target)) {
+    const searchValue = els.search.value.trim();
+    if (searchValue === '') {
+      collapseSearch();
+    }
+  }
 }
 
 // ============================================================
@@ -680,12 +713,16 @@ function init() {
   els.search.addEventListener('input', debouncedFilterChange);
   els.clearFilters.addEventListener('click', onClearFilters);
   els.retryBtn.addEventListener('click', onRetry);
+  els.searchTrigger.addEventListener('click', onSearchTriggerClick);
 
   window.addEventListener('popstate', () => {
     syncUrlToState();
     syncFilterUIFromState();
     applyFilters();
   });
+
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('click', onDocumentClick);
 
   loadData();
 }

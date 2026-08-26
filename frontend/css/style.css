@@ -423,29 +423,36 @@ input, select, textarea {
   filter: brightness(0) invert(1);
 }
 
-#platform-tiles .game-tile__image img {
+[data-platform] .game-tile__image img {
   filter: brightness(0) invert(1);
 }
 
-/* Game tile fallback: initial on colored background */
+/* Game tile fallback: initial on neutral background */
 .game-tile__icon {
   width: 48px;
   height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
+  background: var(--surface);
   border: 2px solid var(--border);
   border-radius: var(--radius-md);
   font-family: var(--font-family-display);
   font-size: 1.25rem;
   font-weight: 900;
-  color: #fff;
+  color: var(--text-muted);
   letter-spacing: -0.02em;
-  transition: box-shadow var(--transition-fast);
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.game-tile__icon--all {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .game-tile.active .game-tile__icon {
+  border-color: var(--accent);
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
@@ -461,34 +468,26 @@ input, select, textarea {
   white-space: nowrap;
 }
 
-/* ── Secondary filters: platforms + games ─────────────────── */
+/* ── Unified tiles container: platforms + games ────────────── */
 
-.filters__secondary {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.filters__section--platforms {
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border);
-}
-
-.platform-tiles {
+.filters__tiles {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
-}
-
-.game-tiles {
-  display: flex;
-  flex-wrap: wrap;
+  align-items: flex-start;
   gap: var(--space-3);
   max-height: 220px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
   padding-right: var(--space-1);
+}
+
+.tiles-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px var(--space-1);
+  background: var(--border);
+  flex-shrink: 0;
 }
 
 /* ── Filters actions ──────────────────────────────────────── */

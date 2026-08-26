@@ -33,12 +33,6 @@ const CATEGORY_COLORS = {
   analisis: 'var(--cat-analisis)',
 };
 
-const TILE_COLORS = [
-  '#3FB950', '#0080D6', '#D29922', '#A371F7',
-  '#F97583', '#56D4DD', '#DB6D28', '#79C0FF',
-  '#7EE787', '#D2A8FF', '#FFA657', '#FF7B72',
-];
-
 const PLATFORM_ICONS = {
   'pc-steam': 'assets/platforms/steam.svg',
   playstation: 'assets/platforms/playstation.svg',
@@ -91,9 +85,7 @@ const els = {
   newsList: document.getElementById('news-list'),
   retryBtn: document.getElementById('retry-btn'),
   search: document.getElementById('search'),
-  gameTiles: document.getElementById('game-tiles'),
-  platformTiles: document.getElementById('platform-tiles'),
-  platformSection: document.getElementById('platform-section'),
+  filterTiles: document.getElementById('filter-tiles'),
   segmentedControl: document.getElementById('segmented-control'),
   segmentedIndicator: document.getElementById('segmented-indicator'),
   clearFilters: document.getElementById('clear-filters'),
@@ -146,18 +138,6 @@ function getGameInitial(name) {
   return name.charAt(0).toUpperCase();
 }
 
-function hashGameName(name) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = ((hash << 5) - hash + name.charCodeAt(i)) | 0;
-  }
-  return Math.abs(hash) % TILE_COLORS.length;
-}
-
-function getGameColor(name) {
-  return TILE_COLORS[hashGameName(name)];
-}
-
 
 function getSourceInitials(name) {
   if (!name) return '?';
@@ -199,7 +179,7 @@ const DARK_BG_SVGS = new Set([
 function renderGameTiles(games) {
   const allTile = `
     <button type="button" class="game-tile active" data-game="" aria-pressed="true">
-      <div class="game-tile__icon" style="background: var(--accent); border-color: var(--accent)">
+      <div class="game-tile__icon game-tile__icon--all">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><rect x="1" y="1" width="8" height="8" rx="1.5"/><rect x="11" y="1" width="8" height="8" rx="1.5"/><rect x="1" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/></svg>
       </div>
       <span class="game-tile__name">Todos</span>
@@ -207,7 +187,6 @@ function renderGameTiles(games) {
 
   const gameTiles = games.map(game => {
     const logo = state.gameLogos[game];
-    const color = getGameColor(game);
     if (logo) {
       const slug = logo.split('/').pop().replace('.svg', '');
       const darkClass = DARK_BG_SVGS.has(slug) ? ' img--dark' : '';
@@ -221,54 +200,14 @@ function renderGameTiles(games) {
     }
     return `
       <button type="button" class="game-tile" data-game="${escapeHtml(game)}" aria-pressed="false">
-        <div class="game-tile__icon" style="background:${color}; border-color:${color}">
+        <div class="game-tile__icon">
           ${getGameInitial(game)}
         </div>
         <span class="game-tile__name">${escapeHtml(game)}</span>
       </button>`;
   }).join('');
 
-  els.gameTiles.innerHTML = allTile + gameTiles;
-
-  els.gameTiles.querySelectorAll('.game-tile').forEach(tile => {
-    tile.addEventListener('click', () => {
-      const game = tile.dataset.game;
-      const wasActive = tile.classList.contains('active');
-
-      els.gameTiles.querySelectorAll('.game-tile').forEach(t => {
-        t.classList.remove('active');
-        t.setAttribute('aria-pressed', 'false');
-      });
-
-      if (wasActive || game === '') {
-        state.filters.game = null;
-        const allBtn = els.gameTiles.querySelector('[data-game=""]');
-        allBtn.classList.add('active');
-        allBtn.setAttribute('aria-pressed', 'true');
-      } else {
-        state.filters.game = game;
-        tile.classList.add('active');
-        tile.setAttribute('aria-pressed', 'true');
-      }
-      applyFilters();
-      pushUrl();
-    });
-  });
-}
-
-// ============================================================
-// Platform Tiles (data-driven, clickable filter)
-// ============================================================
-
-function buildPlatformData(gamePlatforms) {
-  const platformGames = {};
-  for (const [game, platforms] of Object.entries(gamePlatforms)) {
-    for (const p of platforms) {
-      if (!platformGames[p]) platformGames[p] = [];
-      platformGames[p].push(game);
-    }
-  }
-  return platformGames;
+  return allTile + gameTiles;
 }
 
 function renderPlatformTiles(newsItems) {
@@ -287,21 +226,36 @@ function renderPlatformTiles(newsItems) {
     tiles.push({ id: p, src: PLATFORM_ICONS[p], label: PLATFORM_LABELS[p] });
   }
 
-  if (tiles.length === 0) {
-    els.platformSection.hidden = true;
-    return;
-  }
-
-  els.platformSection.hidden = false;
-  els.platformTiles.innerHTML = tiles.map(t => `
+  return tiles.map(t => `
     <button type="button" class="game-tile" data-platform="${escapeHtml(t.id)}" aria-pressed="false">
       <div class="game-tile__image">
         <img src="${escapeHtml(t.src)}" alt="${escapeHtml(t.label)}" loading="lazy"/>
       </div>
       <span class="game-tile__name">${escapeHtml(t.label)}</span>
     </button>`).join('');
+}
 
-  els.platformTiles.querySelectorAll('.game-tile').forEach(tile => {
+function buildPlatformData(gamePlatforms) {
+  const platformGames = {};
+  for (const [game, platforms] of Object.entries(gamePlatforms)) {
+    for (const p of platforms) {
+      if (!platformGames[p]) platformGames[p] = [];
+      platformGames[p].push(game);
+    }
+  }
+  return platformGames;
+}
+
+function renderAllTiles(newsItems, games) {
+  const platHtml = renderPlatformTiles(newsItems);
+  const gameHtml = renderGameTiles(games);
+  const hasPlatforms = platHtml.length > 0;
+  const divider = hasPlatforms ? '<div class="tiles-divider" aria-hidden="true"></div>' : '';
+
+  els.filterTiles.innerHTML = platHtml + divider + gameHtml;
+
+  // Platform click handlers (multi-select)
+  els.filterTiles.querySelectorAll('[data-platform]').forEach(tile => {
     tile.addEventListener('click', () => {
       const platform = tile.dataset.platform;
       if (state.filters.platforms.includes(platform)) {
@@ -310,6 +264,32 @@ function renderPlatformTiles(newsItems) {
         tile.setAttribute('aria-pressed', 'false');
       } else {
         state.filters.platforms.push(platform);
+        tile.classList.add('active');
+        tile.setAttribute('aria-pressed', 'true');
+      }
+      applyFilters();
+      pushUrl();
+    });
+  });
+
+  // Game click handlers (single-select)
+  els.filterTiles.querySelectorAll('[data-game]').forEach(tile => {
+    tile.addEventListener('click', () => {
+      const game = tile.dataset.game;
+      const wasActive = tile.classList.contains('active');
+
+      els.filterTiles.querySelectorAll('[data-game]').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-pressed', 'false');
+      });
+
+      if (wasActive || game === '') {
+        state.filters.game = null;
+        const allBtn = els.filterTiles.querySelector('[data-game=""]');
+        allBtn.classList.add('active');
+        allBtn.setAttribute('aria-pressed', 'true');
+      } else {
+        state.filters.game = game;
         tile.classList.add('active');
         tile.setAttribute('aria-pressed', 'true');
       }
@@ -549,14 +529,14 @@ function applyFilters() {
 }
 
 function syncFilterUIFromState() {
-  els.gameTiles.querySelectorAll('.game-tile').forEach(tile => {
+  els.filterTiles.querySelectorAll('[data-game]').forEach(tile => {
     const game = tile.dataset.game;
     const isActive = game === '' ? !state.filters.game : state.filters.game === game;
     tile.classList.toggle('active', isActive);
     tile.setAttribute('aria-pressed', String(isActive));
   });
 
-  els.platformTiles.querySelectorAll('.game-tile').forEach(tile => {
+  els.filterTiles.querySelectorAll('[data-platform]').forEach(tile => {
     const platform = tile.dataset.platform;
     const isActive = state.filters.platforms.includes(platform);
     tile.classList.toggle('active', isActive);
@@ -697,8 +677,7 @@ async function loadData() {
 
     const configNames = gameData.names || new Set();
     const games = [...configNames].sort();
-    renderGameTiles(games);
-    renderPlatformTiles(data.news);
+    renderAllTiles(data.news, games);
     initSegmentedControl();
 
     syncUrlToState();

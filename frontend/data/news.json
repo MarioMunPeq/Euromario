@@ -1,7 +1,24 @@
 {
-  "generated_at": "2026-08-26T14:55:40.476150Z",
-  "total": 62,
+  "generated_at": "2026-08-26T16:26:51.860970Z",
+  "total": 63,
   "news": [
+    {
+      "id": "f07588ffb06ae465",
+      "title": "GTA 6 Leaks Keep Spilling In Defiance of Rockstar's 'Heartbreaking' Response",
+      "summary": "Se han filtrado noticias sobre GTA 6, a pesar de la respuesta negativa de Rockstar",
+      "url": "https://www.polygon.com/gta-6-leak-rideout-customs-rockstar-games-statement-netflix-reveal/",
+      "source": {
+        "name": "Polygon",
+        "type": "media",
+        "subreddit": null
+      },
+      "game": "Grand Theft Auto",
+      "language": "en",
+      "published_at": "2026-08-26T15:41:39Z",
+      "relevance": 4,
+      "category": "rumor",
+      "image_url": "https://static0.polygonimages.com/wordpress/wp-content/uploads/2026/05/screenshot-2026-05-18-at-11-38-25-am.jpg"
+    },
     {
       "id": "5f20f7d6826361b0",
       "title": "Chinese Pokémon-like Open-World Game With 15 million Players Is Set to Launch Globally",
@@ -22,7 +39,7 @@
     {
       "id": "3112a970605047de",
       "title": "Rockstar responds to GTA 6 leaks: 'This is not how we intended for you see the game after all this time'",
-      "summary": "Rockstar respondió a las noticias de GTA 6, calificando las filtraciones como 'heartbreaking' y aclarando que no es así como lo habían planeado que se viera el juego después de tanto tiempo",
+      "summary": "Rockstar respondió a las filtraciones de GTA 6, describiendo las filtraciones como 'heartbreaking' para su equipo.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/rockstar-responds-to-gta-6-leaks-this-is-not-how-we-intended-for-you-see-the-game-after-all-this-time/",
       "source": {
         "name": "PC Gamer",
@@ -39,7 +56,7 @@
     {
       "id": "46b36c2371cf9dd9",
       "title": "Rockstar finally break silence on \"heartbreaking\" GTA 6 leak, say it's \"unfortunate that the intended game experience may now be impacted by some spoilers\"",
-      "summary": "Rockstar Games ha hablado por primera vez públicamente sobre las noticias de GTA 6, agradeciendo que no haya sido un anuncio oficial, y expresando su deseo de proteger la experiencia del juego.",
+      "summary": "Rockstar Games ha hablado por primera vez públicamente sobre los leaks de GTA 6, expresando su decepción por la posible influencia de spoilers en la experiencia del juego.",
       "url": "https://www.rockpapershotgun.com/rockstar-finally-break-silence-on-heartbreaking-gta-6-leak-say-its-unfortunate-that-the-intended-game-experience-may-now-be-impacted-by-some-spoilers",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -73,7 +90,7 @@
     {
       "id": "4d5c5167f4b5e362",
       "title": "Rockstar issues statement on GTA 6 gameplay leaks, calling them \"heartbreaking\" and warning they may include some spoilers",
-      "summary": "Rockstar critica las filtraciones de GTA 6 como 'heartbreaking' y advierte sobre posibles spoilers",
+      "summary": "Rockstar critica las noticias de GTA 6 que revelan detalles de gameplay",
       "url": "https://www.eurogamer.net/gta-6-leaks-rockstar-statement-spoilers",
       "source": {
         "name": "Eurogamer",
@@ -90,7 +107,7 @@
     {
       "id": "ccde30d68f9ad727",
       "title": "Rockstar Games Finally Addresses Extraordinary and 'Heartbreaking' GTA 6 Leaks, Warns Players That 'Some Spoilers' May Now Impact 'The Intended Game Experience'",
-      "summary": "Rockstar Games ha respondido a las lecciones de GTA 6, advirtiendo a los jugadores que algunos spoilers pueden afectar la experiencia del juego",
+      "summary": "Rockstar Games ha respondido a las revelaciones masivas de GTA 6, advirtiendo a los jugadores que algunos spoilers pueden afectar la experiencia del juego",
       "url": "https://www.ign.com/articles/rockstar-games-finally-addresses-extraordinary-gta-6-leaks-warns-players-that-some-spoilers-may-now-impact-the-intended-game-experience",
       "source": {
         "name": "IGN",
@@ -101,13 +118,13 @@
       "language": "en",
       "published_at": "2026-08-26T11:42:08Z",
       "relevance": 5,
-      "category": "lanzamiento",
+      "category": "actualizacion",
       "image_url": "https://assets-prd.ignimgs.com/2026/08/19/gta-6-main-1787138861069.jpg"
     },
     {
       "id": "2a708bf5c02253d8",
       "title": "Rainbow Six Tactics Features Optional Permadeath, Ironman Mode",
-      "summary": "Ubisoft anuncia Rainbow Six Tactics, un juego de estrategia en tiempo real con modos de juego desafiantes.",
+      "summary": "Ubisoft anuncia Rainbow Six Tactics, un juego de estrategia en tiempo real con modos de juego desafiantes, incluyendo una opción de muerte permanente.",
       "url": "https://www.ign.com/articles/rainbow-six-tactics-interview-optional-permadeath-ironman-mode",
       "source": {
         "name": "IGN",
@@ -192,7 +209,7 @@
     {
       "id": "f91c21304a134762",
       "title": "Rainbow Six Tactics transforms the demolition-driven Siege into a turn-based game while keeping the destructible environments, operators, and reconnaissance drones",
-      "summary": "Ubisoft transforma Rainbow Six Siege en un juego táctico en tiempo real con destructibles entornos y drones de reconocimiento, manteniendo la esencia del juego original.",
+      "summary": "Ubisoft lanza Rainbow Six Tactics, una versión turn-based de Rainbow Six Siege, manteniendo los entornos destructibles y los drones de reconocimiento.",
       "url": "https://www.rockpapershotgun.com/rainbow-six-tactics-transforms-the-demolition-driven-siege-into-a-turn-based-game-while-keeping-the-destructible-environments-operators-and-reconnaissance-drones",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -243,7 +260,7 @@
     {
       "id": "f4c84cee1bf73aec",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y explosiones",
+      "summary": "Un jugador de GTA 5 modifica el juego para eliminar la fricción en los vehículos NPC, lo que causa problemas de movimiento y estabilidad.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228678941",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -294,7 +311,7 @@
     {
       "id": "92a57a55939b1889",
       "title": "Roblox put a stop to games that include rewards for endless, TikTok-style scrolling, if you're under the age of 16 anyway",
-      "summary": "Roblox elimina juegos con recompensas por scrollar infinitamente, incluso para usuarios menores de 16 años",
+      "summary": "Roblox elimina juegos que ofrecen recompensas por scrollar infinitamente en TikTok, incluso si el jugador tiene menos de 16 años",
       "url": "https://www.rockpapershotgun.com/roblox-put-a-stop-to-games-that-include-rewards-for-endless-tiktok-style-scrolling-if-youre-under-the-age-of-16-anyway",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -345,7 +362,7 @@
     {
       "id": "3e3ca1002786c59d",
       "title": "Nvidia tech behind PUBG's genAI team mates will let folks chat to creature-collecting RPG Aniimo's not-Pokemon next year",
-      "summary": "Nvidia anuncia su tecnología ACE para Aniimo, un juego de RPG de captura de criaturas que permitirá a los jugadores interactuar con sus criaturas.",
+      "summary": "Nvidia anuncia su tecnología ACE para Aniimo, un RPG de captura de criaturas que permitirá a los jugadores interactuar con sus criaturas.",
       "url": "https://www.rockpapershotgun.com/nvidia-tech-behind-pubgs-genai-team-mates-will-let-folks-chat-to-creature-collecting-rpg-aniimos-not-pokemon-next-year",
       "source": {
         "name": "Rock Paper Shotgun",
@@ -379,7 +396,7 @@
     {
       "id": "dcabc4f7bf42b0be",
       "title": "\"People wanted faster movement, but not this fast\" - Call of Duty: Modern Warfare 4 beta players aren't happy with slide spammers and the increased pace of the game",
-      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego, que es más rápido de lo que esperaban.",
+      "summary": "Los jugadores de Call of Duty: Modern Warfare 4 beta expresan su insatisfacción con el ritmo del juego",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-beta-player-reaction",
       "source": {
         "name": "Eurogamer",
@@ -390,7 +407,7 @@
       "language": "en",
       "published_at": "2026-08-25T14:25:02Z",
       "relevance": 4,
-      "category": "actualizacion",
+      "category": "lanzamiento",
       "image_url": "https://assetsio.gnwcdn.com/modern-warfare-4-slide-crop-1.jpg?width=690&quality=85&format=jpg&auto=webp"
     },
     {
@@ -923,7 +940,7 @@
     {
       "id": "3dc4a21cb6a3306c",
       "title": "Don't tell Nintendo, but I turned GTA 5 into Pokémon Go using a mod",
-      "summary": "Un modista ha creado una mod para GTA 5 que convierte el juego en Pokémon Go, permitiendo a los jugadores atrapar Pokémon en la ciudad de Los Santos.",
+      "summary": "Un modder ha creado una mod para GTA 5 que convierte el juego en Pokémon Go",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228669484",
       "source": {
         "name": "Steam · Grand Theft Auto",
@@ -1025,7 +1042,7 @@
     {
       "id": "e2dbd2bc385ba46b",
       "title": "Declare Your Allegiance and Determine Who Owns Los Santos in the Brand Wars Event",
-      "summary": "El evento Brand Wars Event de GTA Online comienza en GTA Online, donde los jugadores deben proclamar su lealtad a una de las dos bandas rivales, Team Sprunk o Team eCola, y ganar recompensas y bonos.",
+      "summary": "GTA Online lanza el evento Brand Wars, donde los jugadores deben decidir quién controla Los Santos, con premios y recompensas.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1840944183786534",
       "source": {
         "name": "Steam · Grand Theft Auto",

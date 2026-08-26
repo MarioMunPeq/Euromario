@@ -65,7 +65,7 @@ incluir:
   - nombre: Roblox
     aliases: []
     logo: roblox.svg
-    platform: [pc, playstation, xbox, nintendo]
+    platform: [pc, playstation, xbox]
 
   # ── Nuevos: sin SVG (fallback a inicial en frontend) ──────
   - nombre: Cyberpunk 2077

@@ -16,6 +16,7 @@ def make_item(title="Noticia", body="Cuerpo", game="Persona", lang="en"):
         url="https://test.com",
         source=Source(name="Test", type="media"),
         published_at=datetime(2026, 8, 23, 12, 0, tzinfo=timezone.utc),
+        fetched_at=datetime(2026, 8, 23, 12, 5, tzinfo=timezone.utc),
         body_text=body,
         language=lang,
         game=game,

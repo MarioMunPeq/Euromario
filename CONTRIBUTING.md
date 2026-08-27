@@ -84,13 +84,18 @@ Es el único archivo que consumen frontend y backend en común. Cambiar su schem
       "title": "Persona 6 muestra primer tráiler",
       "summary": "Atlus adelanta el primer tráiler y ventana de lanzamiento.",
       "url": "https://www.eurogamer.net/...",
-      "source": { "name": "Eurogamer", "type": "media", "subreddit": null },
+      "source": "Eurogamer",
+      "source_type": "media",
       "game": "Persona",
+      "game_id": null,
       "language": "en",
       "published_at": "2026-08-23T09:15:00Z",
+      "fetched_at": "2026-08-23T12:04:30Z",
       "relevance": 5,
       "category": "lanzamiento",
-      "image_url": "https://cdn.example.com/persona6.jpg"
+      "image": "https://cdn.example.com/persona6.jpg",
+      "author": null,
+      "is_verified": true
     }
   ]
 }
@@ -100,11 +105,18 @@ Invariantes:
 
 - Claves en inglés; valores de enums en español ASCII (sin tildes, para URLs/comparaciones seguras).
 - `id`: hex de 16 caracteres = primeros 16 bytes de `sha256(url normalizada)`. Estable entre ejecuciones (base del dedup).
-- `source.type`: `"media"` | `"steam"` | `"reddit"`. Si es `"reddit"`, `subreddit` no es null y el frontend lo muestra como "Reddit / Rumores".
+- `source`: string con el nombre normalizado de la fuente (ej. `"Eurogamer"`, `"Steam · Grand Theft Auto"`, `"Reddit · r/gamingleaks"`).
+- `source_type`: enum cerrado `"media"` | `"steam"` | `"reddit"`. Si es `"reddit"`, el frontend lo muestra como "Reddit / Rumores".
+- `game`: string con el nombre canónico del juego (según `config/games.yaml`).
+- `game_id`: string opcional con identificador externo (ej. Steam `app_id` como `"1687950"`), o `null`.
 - `category`: `"lanzamiento"` | `"actualizacion"` | `"rumor"` | `"analisis"`.
 - `relevance`: entero 1–5 asignado por la IA (5 = anuncio mayor de una saga seguida; 1 = mención menor).
 - `language`: `"es"` o `"en"`; `summary` va en ese mismo idioma.
-- `image_url`: URL http(s) válida o `null` (cuando no se encontró imagen destacada en el feed).
+- `published_at`: ISO-8601 UTC con sufijo `Z` (fecha de publicación original).
+- `fetched_at`: ISO-8601 UTC con sufijo `Z` (fecha de rastreo por el pipeline).
+- `image`: URL http(s) válida o `null` (cuando no se encontró imagen destacada en el feed).
+- `author`: string opcional con autor del artículo (cuando el feed lo provee), o `null`.
+- `is_verified`: boolean. `true` = medio oficial / Steam; `false` = Reddit / comunidad no verificada.
 - Todos los timestamps en UTC ISO-8601 con sufijo `Z`.
 - `news` ordenada por `published_at` descendente. `total == len(news)`.
 

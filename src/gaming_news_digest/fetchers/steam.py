@@ -100,4 +100,6 @@ def _build_item(entry: dict, game: SteamGame, now: datetime) -> FetchedItem | No
         body_text=strip_html(contents),
         language=None,
         image_url=extract_first_image_url(contents),
+        author=None,
+        game_id=str(game.app_id),
     )

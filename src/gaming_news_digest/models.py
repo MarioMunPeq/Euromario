@@ -277,13 +277,17 @@ class NewsItem:
         object.__setattr__(self, "summary", summary.strip())
 
     def to_dict(self) -> dict:
-        """Serializa según el contrato JSON documentado en CONTRIBUTING.md."""
+        """Serializa según el contrato JSON documentado en CONTRIBUTING.md.
+
+        Formato plano: source (string) + source_type (enum) en vez de objeto anidado.
+        """
         return {
             "id": self.id,
             "title": self.title,
             "summary": self.summary,
             "url": self.url,
-            "source": self.source.to_dict(),
+            "source": self.source.name,
+            "source_type": self.source.type.value,
             "game": self.game,
             "game_id": self.game_id,
             "language": self.language.value,
@@ -291,7 +295,7 @@ class NewsItem:
             "fetched_at": to_iso_utc(self.fetched_at),
             "relevance": self.relevance,
             "category": self.category.value,
-            "image_url": self.image_url,
+            "image": self.image_url,
             "author": self.author,
             "is_verified": self.is_verified,
         }
@@ -304,21 +308,40 @@ class NewsItem:
         enums, fechas ISO-8601 y coherencia del ``id`` (derivado de la URL
         debe coincidir con el almacenado). Reutiliza la validación de
         ``__post_init__`` para garantizar integridad.
+
+        Soporta tanto el formato nuevo (source + source_type plano)
+        como el histórico (source anidado con name/type/subreddit).
         """
         missing = [
-            f for f in ("title", "url", "source", "game", "language",
+            f for f in ("title", "url", "game", "language",
                         "published_at", "fetched_at", "relevance", "category")
             if f not in data
         ]
+        # source puede venir como string (nuevo) u objeto (histórico)
+        if "source" not in data:
+            missing.append("source")
         if missing:
             raise ModelValidationError(
                 f"campo(s) obligatorio(s) ausente(s): {', '.join(sorted(missing))}"
             )
         summary = data.get("summary")
+
+        # Reconstruir Source: formato nuevo (plano) o histórico (anidado)
+        if isinstance(data["source"], dict):
+            # Histórico: source anidado {name, type, subreddit}
+            source = Source.from_dict(data["source"])
+        else:
+            # Nuevo: source (string) + source_type (string) + opcional source_subreddit
+            source = Source(
+                name=data["source"],
+                type=data.get("source_type", "media"),
+                subreddit=data.get("source_subreddit"),
+            )
+
         item = cls(
             title=data["title"],
             url=data["url"],
-            source=Source.from_dict(data["source"]),
+            source=source,
             game=data["game"],
             language=data["language"],
             published_at=_parse_iso(data["published_at"], "published_at"),
@@ -326,7 +349,7 @@ class NewsItem:
             relevance=data["relevance"],
             category=data["category"],
             summary=summary,
-            image_url=data.get("image_url"),
+            image_url=data.get("image") or data.get("image_url"),  # compat
             author=data.get("author"),
             is_verified=data.get("is_verified", False),
             game_id=data.get("game_id"),
@@ -360,6 +383,7 @@ class FetchedItem:
     game: str | None = None
     image_url: str | None = None
     author: str | None = None
+    game_id: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.source, Source):
@@ -386,3 +410,4 @@ class FetchedItem:
                 image = None
         object.__setattr__(self, "image_url", image or None)
         object.__setattr__(self, "author", _optional_text(self.author, "el autor"))
+        object.__setattr__(self, "game_id", _optional_text(self.game_id, "el game_id"))

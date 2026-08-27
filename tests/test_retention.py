@@ -15,8 +15,10 @@ def make_item(title: str, hours_ago: int, game: str = "Persona", now: datetime |
         game=game,
         language="en",
         published_at=base - timedelta(hours=hours_ago),
+        fetched_at=base - timedelta(hours=hours_ago),
         relevance=3,
         category="actualizacion",
+        summary="Resumen de prueba.",
     )
 
 
@@ -32,8 +34,10 @@ class TestApplyRetention:
                 game="Persona",
                 language="en",
                 published_at=now - timedelta(days=d),
+                fetched_at=now - timedelta(days=d),
                 relevance=3,
                 category="actualizacion",
+                summary="Resumen de prueba.",
             )
             for i, d in enumerate([1, 13, 14, 15, 30])
         ]
@@ -55,8 +59,10 @@ class TestApplyRetention:
                 game="Persona",
                 language="en",
                 published_at=now - timedelta(hours=204 - i),
+                fetched_at=now - timedelta(hours=204 - i),
                 relevance=3,
                 category="actualizacion",
+                summary="Resumen de prueba.",
             )
             for i in range(205)
         ]
@@ -79,8 +85,10 @@ class TestApplyRetention:
                 game="Persona",
                 language="en",
                 published_at=now - timedelta(hours=200 - i),
+                fetched_at=now - timedelta(hours=200 - i),
                 relevance=3,
                 category="actualizacion",
+                summary="Resumen de prueba.",
             )
             for i in range(201)
         ]
@@ -105,8 +113,10 @@ class TestApplyRetention:
                     game="Persona",
                     language="en",
                     published_at=now - timedelta(days=days_ago),
+                    fetched_at=now - timedelta(days=days_ago),
                     relevance=3,
                     category="actualizacion",
+                    summary="Resumen de prueba.",
                 )
             )
         items.reverse()
@@ -139,8 +149,10 @@ class TestApplyRetention:
             game="Persona",
             language="en",
             published_at=cutoff,
+            fetched_at=cutoff,
             relevance=3,
             category="actualizacion",
+            summary="Resumen de prueba.",
         )
         result = apply_retention([item], max_age_days=14, now=now)
         assert len(result) == 1

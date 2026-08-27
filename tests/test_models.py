@@ -253,11 +253,11 @@ class TestImageUrl:
         assert make_item(image_url="").image_url is None
 
     def test_serializa_null(self):
-        assert make_item(image_url=None).to_dict()["image_url"] is None
+        assert make_item(image_url=None).to_dict()["image"] is None
 
     def test_serializa_url(self):
         url = "https://cdn.example.com/img.jpg"
-        assert make_item(image_url=url).to_dict()["image_url"] == url
+        assert make_item(image_url=url).to_dict()["image"] == url
 
 
 class TestToDict:
@@ -275,6 +275,7 @@ class TestToDict:
             "summary",
             "url",
             "source",
+            "source_type",
             "game",
             "game_id",
             "language",
@@ -282,7 +283,7 @@ class TestToDict:
             "fetched_at",
             "relevance",
             "category",
-            "image_url",
+            "image",
             "author",
             "is_verified",
         }
@@ -295,8 +296,8 @@ class TestToDict:
             fetched_at=datetime(2026, 8, 20, 12, 10, tzinfo=timezone.utc),
         )
         data = item.to_dict()
-        assert data["source"]["subreddit"] == "gaming"
-        assert data["source"]["type"] == "reddit"
+        assert data["source"] == "GaminLeaks"
+        assert data["source_type"] == "reddit"
         assert data["category"] == "lanzamiento"
         assert data["published_at"] == "2026-08-20T12:00:00Z"
         assert data["fetched_at"] == "2026-08-20T12:10:00Z"
@@ -336,10 +337,10 @@ class TestFromDict:
         restored = NewsItem.from_dict(data)
         assert restored.id == item.id
 
-    def test_image_url_ausente_en_dict_compatibilidad(self):
+    def test_image_ausente_en_dict_compatibilidad(self):
         item = make_item()
         data = item.to_dict()
-        del data["image_url"]
+        del data["image"]
         restored = NewsItem.from_dict(data)
         assert restored.image_url is None
 

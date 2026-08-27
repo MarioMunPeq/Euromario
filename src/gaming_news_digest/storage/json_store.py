@@ -99,19 +99,27 @@ def _migrate_legacy_item(item: dict) -> dict:
     - ``author`` / ``game_id`` / ``is_verified`` ausentes → ``None``/``False``.
     - Destrozado de codificación "┬À" en ``source.name`` → "·" (reparación
       determinista del punto medio histórico).
+    - Formato histórico ``source`` anidado → plano ``source`` + ``source_type`` (+ ``source_subreddit`` para Reddit).
+    - ``image_url`` → ``image``.
     """
     migrated = dict(item)
     source = migrated.get("source")
     if isinstance(source, dict) and isinstance(source.get("name"), str):
-        source = dict(source)
-        if _LEGACY_MOJIBAKE in source["name"]:
+        # Extraer campos del source anidado y convertir a formato plano
+        source_name = source.get("name")
+        source_type = source.get("type", "media")
+        source_subreddit = source.get("subreddit") if source_type == "reddit" else None
+        if _LEGACY_MOJIBAKE in source_name:
             logger.info(
                 "Migración: source.name con mojibake reparado (%r → %r)",
-                source["name"],
-                source["name"].replace(_LEGACY_MOJIBAKE, _INTERPUNCT),
+                source_name,
+                source_name.replace(_LEGACY_MOJIBAKE, _INTERPUNCT),
             )
-            source["name"] = source["name"].replace(_LEGACY_MOJIBAKE, _INTERPUNCT)
-        migrated["source"] = source
+            source_name = source_name.replace(_LEGACY_MOJIBAKE, _INTERPUNCT)
+        migrated["source"] = source_name
+        migrated["source_type"] = source_type
+        if source_subreddit:
+            migrated["source_subreddit"] = source_subreddit
 
     if not str(migrated.get("fetched_at") or "").strip():
         fallback = migrated.get("published_at")
@@ -121,20 +129,36 @@ def _migrate_legacy_item(item: dict) -> dict:
         )
         migrated["fetched_at"] = fallback
 
+    # Renombrar image_url → image
+    if "image" not in migrated and "image_url" in migrated:
+        migrated["image"] = migrated.pop("image_url")
+
+    # is_verified: true para medios oficiales y Steam, false para Reddit
+    # Si no existe, inferirlo del source_type migrado
+    if "is_verified" not in migrated:
+        st = migrated.get("source_type")
+        if st == "reddit":
+            migrated["is_verified"] = False
+        elif st in ("media", "steam"):
+            migrated["is_verified"] = True
+        else:
+            migrated["is_verified"] = False
+
     migrated.setdefault("author", None)
     migrated.setdefault("game_id", None)
-    migrated.setdefault("is_verified", False)
     return migrated
 
 
 def _item_context(raw: dict) -> dict:
     """Extrae contexto mínimo (sin lanzar) para el log de descarte."""
+    source_name = None
+    src = raw.get("source")
+    if isinstance(src, dict):
+        source_name = src.get("name")
+    elif isinstance(src, str):
+        source_name = src
     return {key: raw[key] for key in ("id", "title", "url")
-            if isinstance(raw.get(key), str)} | {
-        "source": raw.get("source", {}).get("name")
-        if isinstance(raw.get("source"), dict)
-        else None
-    }
+            if isinstance(raw.get(key), str)} | {"source": source_name}
 
 
 def merge_and_retain(existing: list[NewsItem], new: list[NewsItem]) -> list[NewsItem]:

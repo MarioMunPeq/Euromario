@@ -18,10 +18,10 @@ const CONFIG = {
 };
 
 const CATEGORY_LABELS = {
-  lanzamiento: 'Lanzamiento',
-  actualizacion: 'Actualizaci\u00f3n',
+  lanzamiento: 'Release',
+  actualizacion: 'Update',
   rumor: 'Rumor',
-  analisis: 'An\u00e1lisis',
+  analisis: 'Analysis',
 };
 
 
@@ -61,6 +61,7 @@ const state = {
     game: null,
     platforms: [],
     category: null,
+    section: 'news',
     search: '',
   },
   ui: {
@@ -106,7 +107,7 @@ function debounce(fn, ms) {
 }
 
 function formatDate(date) {
-  return date.toLocaleDateString('es', {
+  return date.toLocaleDateString('en', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -121,10 +122,10 @@ function formatRelativeDate(date) {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return 'ahora mismo';
-  if (diffMin < 60) return `hace ${diffMin} min`;
-  if (diffHour < 24) return `hace ${diffHour}h`;
-  if (diffDay < 30) return `hace ${diffDay}d`;
+  if (diffSec < 60) return 'just now';
+  if (diffMin < 60) return `${diffMin} min ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  if (diffDay < 30) return `${diffDay}d ago`;
   return formatDate(date);
 }
 
@@ -153,12 +154,23 @@ function getCategoryColor(category) {
 }
 
 // ============================================================
-// Source Helpers
+// Source Helpers (soporta ambos formatos: plano y anidado)
 // ============================================================
 
-function getSourceName(source) {
-  if (source.type === 'reddit') return 'Reddit';
-  return source.name;
+function getSourceName(source, sourceType) {
+  // source puede ser string (formato nuevo) u objeto {name, type, subreddit} (formato histórico)
+  const name = typeof source === 'string' ? source : (source?.name ?? 'Unknown');
+  if (sourceType === 'reddit') return 'Reddit';
+  return name;
+}
+
+function getSourceType(item) {
+  // source_type puede venir como campo plano (formato nuevo) o dentro de source (formato histórico)
+  return item.source_type ?? item.source?.type ?? 'media';
+}
+
+function getSourceSubreddit(item) {
+  return item.source?.subreddit ?? null;
 }
 
 // ============================================================
@@ -175,9 +187,9 @@ function renderGameTiles(games) {
   const allTile = `
     <button type="button" class="game-tile active" data-game="" aria-pressed="true">
       <div class="game-tile__icon game-tile__icon--all">
-        <img src="assets/todos.svg" alt="" width="20" height="20" loading="lazy"/>
+        <img src="assets/icons/all.svg" alt="" width="20" height="20" loading="lazy"/>
       </div>
-      <span class="game-tile__name">Todos</span>
+      <span class="game-tile__name">All</span>
     </button>`;
 
   const gameTiles = games.map(game => {
@@ -206,7 +218,7 @@ function renderGameTiles(games) {
 }
 
 function renderPlatformTiles(newsItems) {
-  const hasSteam = newsItems.some(i => i.source && i.source.type === 'steam');
+  const hasSteam = newsItems.some(i => getSourceType(i) === 'steam');
   const hasPCGames = (state.platformGames['pc'] || []).length > 0;
   const availablePlatforms = Object.keys(state.platformGames)
     .filter(p => state.platformGames[p].length > 0)
@@ -294,13 +306,13 @@ function renderAllTiles(newsItems, games) {
 }
 
 // ============================================================
-// Header Category Navigation
+// Header Section Navigation (NEWS / RUMORS)
 // ============================================================
 
 function initHeaderNav() {
   els.headerNavButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      const cat = btn.dataset.cat;
+      const section = btn.dataset.section;
       const wasActive = btn.getAttribute('aria-checked') === 'true';
 
       els.headerNavButtons.forEach(b => {
@@ -308,9 +320,9 @@ function initHeaderNav() {
       });
 
       if (wasActive) {
-        state.filters.category = null;
+        state.filters.section = null;
       } else {
-        state.filters.category = cat;
+        state.filters.section = section;
         btn.setAttribute('aria-checked', 'true');
       }
       applyFilters();
@@ -323,31 +335,30 @@ function initHeaderNav() {
 // Rendering — Gaming Pulse Card Design
 // ============================================================
 
-function getAvatarColor(source) {
-  if (!source) return 'var(--surface-elevated)';
-  if (source.type === 'reddit') return 'var(--reddit, #FF4500)';
-  if (source.type === 'steam') return 'var(--steam, #66C0F4)';
+function getAvatarColor(sourceType) {
+  if (sourceType === 'reddit') return 'var(--reddit, #FF4500)';
+  if (sourceType === 'steam') return 'var(--steam, #66C0F4)';
   return 'var(--surface-elevated)';
 }
 
 // Text inside the avatar circle. Steam blue is light: #fff sobre #66C0F4 es 2.02:1
 // (falla AA); navy alcanza 9.17:1. Reddit naranja con letras blancas es su identidad
 // y pasa AA large-text (3.44:1).
-function getAvatarTextColor(source) {
-  if (source && source.type === 'steam') return 'var(--bg)';
+function getAvatarTextColor(sourceType) {
+  if (sourceType === 'steam') return 'var(--bg)';
   return '#fff';
 }
 
 function renderNewsCard(item) {
   const category = item.category || '';
   const catColor = getCategoryColor(category);
-  const source = item.source || {};
-  const sourceName = getSourceName(source);
-  const sourceInitials = getSourceInitials(source.name);
-  const avatarColor = getAvatarColor(source);
-  const avatarTextColor = getAvatarTextColor(source);
+  const sourceType = getSourceType(item);
+  const sourceName = getSourceName(item.source, sourceType);
   const gameName = item.game || sourceName;
   const isHighRelevance = item.relevance >= 4;
+
+  const sectionLabel = category === 'rumor' ? 'RUMOR' : 'NEWS';
+  const editorialLine = `${sectionLabel} · ${escapeHtml(gameName.toUpperCase())}`;
 
   let mediaHtml;
   if (item.image_url) {
@@ -355,28 +366,25 @@ function renderNewsCard(item) {
   } else {
     mediaHtml = `
       <div class="news-card__placeholder" style="--cat-color: ${catColor}">
-        <span class="news-card__placeholder-initials">${escapeHtml(sourceInitials)}</span>
+        <span class="news-card__placeholder-initials">${escapeHtml(getSourceInitials(getSourceName(item.source, sourceType)))}</span>
       </div>`;
   }
 
   const dateObj = new Date(item.published_at);
   const dateStr = formatDate(dateObj);
-  const gameLabel = escapeHtml(gameName);
+  const sourceLabel = escapeHtml(sourceName.toUpperCase());
+  const metaLine = `${sourceLabel} · ${dateStr}`;
 
   return `
     <article class="news-card${isHighRelevance ? ' news-card--high' : ''}" data-id="${item.id}" data-category="${category}" style="--cat-color: ${catColor}">
-      <div class="news-card__media">
-        ${mediaHtml}
-        ${isHighRelevance ? '<span class="news-card__glow" aria-hidden="true"></span>' : ''}
-        <div class="news-card__overlay-top" aria-hidden="true"></div>
-        <div class="news-card__overlay-bottom" aria-hidden="true"></div>
-        ${category ? `<span class="news-card__chip news-card__chip--category">${escapeHtml(category)}</span>` : ''}
-        <span class="news-card__chip news-card__chip--game">${gameLabel}</span>
-        <span class="news-card__avatar" style="--avatar-color: ${avatarColor}; --avatar-text: ${avatarTextColor}" aria-hidden="true">${escapeHtml(sourceInitials)}</span>
-      </div>
+      <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="news-card__media-link">
+        <div class="news-card__media">
+          ${mediaHtml}
+        </div>
+      </a>
       <div class="news-card__content">
         <div class="news-card__meta">
-          <time class="news-card__date" datetime="${dateObj.toISOString()}">${dateStr}</time>
+          <time class="news-card__date" datetime="${dateObj.toISOString()}">${metaLine}</time>
         </div>
         <h3 class="news-card__title">
           <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
@@ -384,9 +392,7 @@ function renderNewsCard(item) {
           </a>
         </h3>
         ${item.summary ? `<p class="news-card__summary">${escapeHtml(item.summary)}</p>` : ''}
-        <a href="${escapeHtml(item.url)}" class="news-card__link" target="_blank" rel="noopener noreferrer">
-          Leer en ${escapeHtml(sourceName)} <span class="news-card__link-arrow" aria-hidden="true">\u2197</span>
-        </a>
+        <p class="news-card__editorial"><span class="news-card__section">${sectionLabel}</span> · <span class="news-card__game">${escapeHtml(gameName)}</span></p>
       </div>
     </article>
   `;
@@ -405,15 +411,15 @@ function renderNewsList(items) {
 
 function renderStats(data) {
   const count = data.total ?? data.news?.length ?? 0;
-  const countStr = count.toLocaleString('es');
+  const countStr = count.toLocaleString('en');
   const updatedStr = data.generated_at
     ? formatDate(new Date(data.generated_at))
     : '\u2014';
 
-  if (els.headerCount) els.headerCount.textContent = `${countStr} noticias`;
+  if (els.headerCount) els.headerCount.textContent = `${countStr} news`;
   if (els.headerUpdated) {
     els.headerUpdated.textContent = data.generated_at
-      ? `Actualizado ${formatRelativeDate(new Date(data.generated_at))}`
+      ? `Updated ${formatRelativeDate(new Date(data.generated_at))}`
       : '\u2014';
     els.headerUpdated.dateTime = data.generated_at
       ? new Date(data.generated_at).toISOString()
@@ -455,7 +461,7 @@ function setLoading(loading) {
   }
 }
 
-function setError(message, title = 'Error al cargar') {
+function setError(message, title = 'Failed to load') {
   state.ui.error = message;
   state.ui.loading = false;
   els.errorTitle.textContent = title;
@@ -472,7 +478,7 @@ function clearError() {
 // ============================================================
 
 function applyFilters() {
-  const { game, platforms, category, search } = state.filters;
+  const { game, platforms, category, search, section } = state.filters;
 
   state.filteredNews = state.allNews.filter(item => {
     if (search) {
@@ -491,7 +497,7 @@ function applyFilters() {
       const otherPlatforms = platforms.filter(p => p !== 'pc-steam');
 
       if (hasUnified) {
-        const isSteam = item.source && item.source.type === 'steam';
+        const isSteam = getSourceType(item) === 'steam';
         const isPC = item.game && (state.gamePlatforms[item.game] || []).includes('pc');
         if (isSteam || isPC) platformPass = true;
       }
@@ -506,6 +512,14 @@ function applyFilters() {
       if (!platformPass) return false;
     }
 
+    // Section filter: NEWS = all except rumor, RUMORS = only rumor
+    if (section === 'news') {
+      if (item.category === 'rumor') return false;
+    } else if (section === 'rumors') {
+      if (item.category !== 'rumor') return false;
+    }
+
+    // Category sub-filter (works within NEWS section)
     if (category) {
       if (!item.category || item.category !== category) return false;
     }
@@ -532,8 +546,8 @@ function syncFilterUIFromState() {
   });
 
   els.headerNavButtons.forEach(btn => {
-    const cat = btn.dataset.cat;
-    const isActive = state.filters.category === cat;
+    const section = btn.dataset.section;
+    const isActive = state.filters.section === section;
     btn.setAttribute('aria-checked', String(isActive));
   });
 
@@ -548,7 +562,7 @@ function filtersToUrlParams() {
   const params = new URLSearchParams();
   if (state.filters.game) params.set('game', state.filters.game);
   if (state.filters.platforms.length) params.set('platforms', state.filters.platforms.join(','));
-  if (state.filters.category) params.set('category', state.filters.category);
+  if (state.filters.section) params.set('section', state.filters.section);
   if (state.filters.search) params.set('q', state.filters.search);
   return params.toString();
 }
@@ -557,7 +571,7 @@ function syncUrlToState() {
   const params = new URLSearchParams(window.location.search);
   state.filters.game = params.get('game') || null;
   state.filters.platforms = params.get('platforms')?.split(',').filter(Boolean) || [];
-  state.filters.category = params.get('category') || null;
+  state.filters.section = params.get('section') || null;
   state.filters.search = params.get('q') || '';
 }
 
@@ -583,6 +597,7 @@ function onClearFilters() {
     game: null,
     platforms: [],
     category: null,
+    section: 'news',
     search: '',
   };
   syncFilterUIFromState();
@@ -717,9 +732,9 @@ async function loadData() {
   } catch (err) {
     setError(
       err.message.includes('404') || err.message.includes('Failed to fetch')
-        ? 'No se encontraron noticias (primera ejecuci\u00f3n pendiente).'
-        : `Error de red: ${err.message}`,
-      'No se pudieron cargar las noticias'
+        ? 'No news found (first run pending).'
+        : `Network error: ${err.message}`,
+      'Failed to load news'
     );
     return;
   }
@@ -751,6 +766,10 @@ function init() {
   document.addEventListener('click', onDocumentClick);
 
   loadData();
+}
+
+function getSectionName(section) {
+  return section === 'news' ? 'NEWS' : 'RUMORS';
 }
 
 // ============================================================

@@ -19,7 +19,12 @@ from gaming_news_digest.fetchers.reddit import (
 from gaming_news_digest.fetchers.rss import fetch_media_feed
 from gaming_news_digest.fetchers.steam import fetch_steam_news
 from gaming_news_digest.filtering.matcher import create_matcher
-from gaming_news_digest.models import FetchedItem, ModelValidationError, NewsItem
+from gaming_news_digest.models import (
+    FetchedItem,
+    ModelValidationError,
+    NewsItem,
+    SourceType,
+)
 from gaming_news_digest.storage.json_store import save_digest, save_games_config
 from gaming_news_digest.storage.retention import apply_retention
 
@@ -110,6 +115,7 @@ class Pipeline:
                     game=game,
                     image_url=item.image_url,
                     author=item.author,
+                    game_id=item.game_id,
                 )
                 kept.append(item)
         return kept
@@ -136,6 +142,8 @@ class Pipeline:
                     item.source.name,
                 )
                 ai_data = _SAFE_FALLBACK
+            # is_verified = True para medios oficiales y Steam, False para Reddit
+            is_verified = item.source.type != SourceType.REDDIT
             try:
                 yield NewsItem(
                     title=item.title,
@@ -151,6 +159,8 @@ class Pipeline:
                     image_url=item.image_url,
                     author=item.author,
                     summary_is_fallback=is_fallback,
+                    game_id=item.game_id,
+                    is_verified=is_verified,
                 )
             except ModelValidationError as exc:
                 # regla P0: un item inválido se descarta; nunca tumba el resto

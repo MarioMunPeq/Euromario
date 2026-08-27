@@ -23,8 +23,10 @@ def make_item(title: str, hours_ago: int, game: str = "Persona") -> NewsItem:
         game=game,
         language="en",
         published_at=datetime.now(timezone.utc) - timedelta(hours=hours_ago),
+        fetched_at=datetime.now(timezone.utc) - timedelta(hours=hours_ago),
         relevance=3,
         category="actualizacion",
+        summary="Resumen de prueba.",
     )
 
 
@@ -66,8 +68,10 @@ class TestLoadExistingDigest:
                 game="Persona",
                 language="en",
                 published_at=datetime.now(timezone.utc) - timedelta(hours=1),
+                fetched_at=datetime.now(timezone.utc) - timedelta(hours=1),
                 relevance=3,
                 category="actualizacion",
+                summary="Resumen de prueba.",
             )
         ]
         path = tmp_path / "news.json"
@@ -96,8 +100,10 @@ class TestMergeAndRetain:
                 game="Persona",
                 language="en",
                 published_at=datetime.now(timezone.utc) - timedelta(hours=5),
+                fetched_at=datetime.now(timezone.utc) - timedelta(hours=5),
                 relevance=2,
                 category="rumor",
+                summary="Resumen de prueba.",
             )
         ]
         new = [
@@ -108,8 +114,10 @@ class TestMergeAndRetain:
                 game="Persona",
                 language="en",
                 published_at=datetime.now(timezone.utc),
+                fetched_at=datetime.now(timezone.utc),
                 relevance=5,
                 category="lanzamiento",
+                summary="Resumen de prueba.",
             )
         ]
         merged = merge_and_retain(existing, new)
@@ -126,8 +134,10 @@ class TestMergeAndRetain:
                 game="Persona",
                 language="en",
                 published_at=datetime.now(timezone.utc) - timedelta(hours=10),
+                fetched_at=datetime.now(timezone.utc) - timedelta(hours=10),
                 relevance=3,
                 category="actualizacion",
+                summary="Resumen de prueba.",
             )
         ]
         new = [
@@ -138,8 +148,10 @@ class TestMergeAndRetain:
                 game="Persona",
                 language="en",
                 published_at=datetime.now(timezone.utc),
+                fetched_at=datetime.now(timezone.utc),
                 relevance=3,
                 category="actualizacion",
+                summary="Resumen de prueba.",
             )
         ]
         merged = merge_and_retain(existing, new)
@@ -155,8 +167,10 @@ class TestMergeAndRetain:
                 game="Persona",
                 language="en",
                 published_at=datetime.now(timezone.utc) - timedelta(days=20 + i),
+                fetched_at=datetime.now(timezone.utc) - timedelta(days=20 + i),
                 relevance=3,
                 category="actualizacion",
+                summary="Resumen de prueba.",
             )
             for i in range(5)
         ]
@@ -168,8 +182,10 @@ class TestMergeAndRetain:
                 game="Persona",
                 language="en",
                 published_at=datetime.now(timezone.utc) - timedelta(hours=i),
+                fetched_at=datetime.now(timezone.utc) - timedelta(hours=i),
                 relevance=3,
                 category="actualizacion",
+                summary="Resumen de prueba.",
             )
             for i in range(3)
         ]
@@ -230,8 +246,10 @@ class TestSaveDigest:
                 game="Persona",
                 language="en",
                 published_at=datetime.now(timezone.utc) - timedelta(hours=5),
+                fetched_at=datetime.now(timezone.utc) - timedelta(hours=5),
                 relevance=3,
                 category="actualizacion",
+                summary="Resumen de prueba.",
             )
             path.write_text(json.dumps({
                 "generated_at": "2026-01-01T00:00:00Z",

@@ -140,3 +140,18 @@ def extract_first_image_url(html: str) -> str | None:
         if url.startswith(("http://", "https://")):
             return url
     return None
+
+
+def extract_author(entry) -> str | None:
+    """Extrae un autor legible del item del feed (si lo expone).
+
+    Soportan el formato ``entry.author`` de feedparser (medio y reddit)
+    y su variante de dict ``{"name": ...}``. Sin autor → ``None``.
+    """
+    raw = entry.get("author") if hasattr(entry, "get") else None
+    if isinstance(raw, dict):
+        raw = raw.get("name") or raw.get("email")
+    if not raw:
+        return None
+    text = str(raw).strip()
+    return text or None

@@ -19,7 +19,7 @@ from gaming_news_digest.fetchers.reddit import (
 from gaming_news_digest.fetchers.rss import fetch_media_feed
 from gaming_news_digest.fetchers.steam import fetch_steam_news
 from gaming_news_digest.filtering.matcher import create_matcher
-from gaming_news_digest.models import FetchedItem, NewsItem
+from gaming_news_digest.models import FetchedItem, ModelValidationError, NewsItem
 from gaming_news_digest.storage.json_store import save_digest, save_games_config
 from gaming_news_digest.storage.retention import apply_retention
 
@@ -104,10 +104,12 @@ class Pipeline:
                     url=item.url,
                     source=item.source,
                     published_at=item.published_at,
+                    fetched_at=item.fetched_at,
                     body_text=item.body_text,
                     language=item.language,
                     game=game,
                     image_url=item.image_url,
+                    author=item.author,
                 )
                 kept.append(item)
         return kept
@@ -126,20 +128,39 @@ class Pipeline:
             if self.current_client is self.groq and i > 0:
                 time.sleep(1)  # rate limit: 1 req/s para Groq free tier
             ai_data = self._summarize_with_fallback(item)
-            if ai_data is None:  # fallback seguro
+            is_fallback = ai_data is None
+            if is_fallback:  # fallback seguro documentado
+                logger.info(
+                    "Item '%s' (fuente=%s): summary=null por fallback IA",
+                    item.title,
+                    item.source.name,
+                )
                 ai_data = _SAFE_FALLBACK
-            yield NewsItem(
-                title=item.title,
-                url=item.url,
-                source=item.source,
-                game=item.game or "",
-                language=item.language.value if item.language else "en",
-                published_at=item.published_at,
-                relevance=ai_data["relevance"],
-                category=ai_data["category"],
-                summary=ai_data["summary"],
-                image_url=item.image_url,
-            )
+            try:
+                yield NewsItem(
+                    title=item.title,
+                    url=item.url,
+                    source=item.source,
+                    game=item.game or "",
+                    language=item.language.value if item.language else "en",
+                    published_at=item.published_at,
+                    fetched_at=item.fetched_at,
+                    relevance=ai_data["relevance"],
+                    category=ai_data["category"],
+                    summary=ai_data["summary"],
+                    image_url=item.image_url,
+                    author=item.author,
+                    summary_is_fallback=is_fallback,
+                )
+            except ModelValidationError as exc:
+                # regla P0: un item inválido se descarta; nunca tumba el resto
+                logger.warning(
+                    "Noticia inválida descartada (fuente=%s título=%r motivo=%s)",
+                    item.source.name,
+                    item.title,
+                    exc,
+                )
+                continue
 
     def _summarize_with_fallback(self, item) -> dict | None:
         """

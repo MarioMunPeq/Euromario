@@ -96,6 +96,7 @@ def _build_item(entry: dict, game: SteamGame, now: datetime) -> FetchedItem | No
         url=url,
         source=Source(name=f"Steam · {game.nombre}", type=SourceType.STEAM),
         published_at=resolve_date(moment, None, now),
+        fetched_at=now,
         body_text=strip_html(contents),
         language=None,
         image_url=extract_first_image_url(contents),

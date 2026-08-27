@@ -175,7 +175,7 @@ function renderGameTiles(games) {
   const allTile = `
     <button type="button" class="game-tile active" data-game="" aria-pressed="true">
       <div class="game-tile__icon game-tile__icon--all">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><rect x="1" y="1" width="8" height="8" rx="1.5"/><rect x="11" y="1" width="8" height="8" rx="1.5"/><rect x="1" y="11" width="8" height="8" rx="1.5"/><rect x="11" y="11" width="8" height="8" rx="1.5"/></svg>
+        <img src="assets/todos.svg" alt="" width="20" height="20" loading="lazy"/>
       </div>
       <span class="game-tile__name">Todos</span>
     </button>`;

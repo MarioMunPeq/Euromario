@@ -28,8 +28,10 @@ def make_item(**overrides) -> NewsItem:
         "game": "Persona",
         "language": "en",
         "published_at": datetime(2026, 8, 20, 12, 0, tzinfo=timezone.utc),
+        "fetched_at": datetime(2026, 8, 20, 12, 5, tzinfo=timezone.utc),
         "relevance": 4,
         "category": "lanzamiento",
+        "summary": "Resumen breve de prueba.",
     }
     values.update(overrides)
     return NewsItem(**values)
@@ -151,19 +153,78 @@ class TestValidacionCampos:
 
 
 class TestSummary:
-    def test_none_es_valido(self):
-        assert make_item(summary=None).summary is None
+    def test_texto_no_vacio_es_valido(self):
+        assert make_item(summary="Un resumen.").summary == "Un resumen."
+
+    def test_none_sin_fallback_es_invalido(self):
+        with pytest.raises(ModelValidationError, match="fallback"):
+            make_item(summary=None)
+
+    def test_none_con_fallback_explicito_es_valido(self):
+        item = make_item(summary=None, summary_is_fallback=True)
+        assert item.summary is None
+        assert item.summary_is_fallback is True
+
+    def test_texto_con_flag_de_fallback_es_invalido(self):
+        with pytest.raises(ModelValidationError, match="exige summary=None"):
+            make_item(summary="x", summary_is_fallback=True)
+
+    def test_flag_de_tipo_invalido_rechazado(self):
+        with pytest.raises(ModelValidationError, match="booleano"):
+            make_item(summary="x", summary_is_fallback="si")
 
     def test_cadena_vacia_rechazada(self):
-        with pytest.raises(ModelValidationError, match="None"):
+        with pytest.raises(ModelValidationError, match="texto no vacío"):
             make_item(summary="")
 
     def test_solo_espacios_rechazado(self):
-        with pytest.raises(ModelValidationError, match="None"):
+        with pytest.raises(ModelValidationError, match="texto no vacío"):
             make_item(summary="   ")
 
     def test_se_recorta(self):
         assert make_item(summary=" hola ").summary == "hola"
+
+
+class TestFetchedAt:
+    def test_none_rechazado(self):
+        with pytest.raises(ModelValidationError, match="datetime"):
+            make_item(fetched_at=None)
+
+    def test_fecha_naive_rechazada(self):
+        naive = datetime(2026, 8, 20, 12, 5)  # noqa: DTZ001 (naive es lo que se prueba)
+        with pytest.raises(ModelValidationError, match="naive"):
+            make_item(fetched_at=naive)
+
+    def test_otra_zona_utc_se_normaliza(self):
+        offset = timezone(timedelta(hours=-3))
+        item = make_item(fetched_at=datetime(2026, 8, 20, 9, 5, tzinfo=offset))
+        assert item.to_dict()["fetched_at"] == "2026-08-20T12:05:00Z"
+
+
+class TestNuevosOpcionales:
+    def test_author_none_y_texto(self):
+        assert make_item(author=None).author is None
+        assert make_item(author="  Editor  ").author == "Editor"
+
+    def test_author_vacio_rechazado(self):
+        with pytest.raises(ModelValidationError, match="autor"):
+            make_item(author=" ")
+
+    def test_is_verified_booleano(self):
+        assert make_item(is_verified=False).is_verified is False
+        assert make_item(is_verified=True).is_verified is True
+
+    def test_is_verified_no_booleano_rechazado(self):
+        with pytest.raises(ModelValidationError, match="booleano"):
+            make_item(is_verified="true")
+
+    def test_game_id_none_y_texto(self):
+        assert make_item(game_id=None).game_id is None
+        assert make_item(game_id="gta5").game_id == "gta5"
+
+    def test_game_id_vacio_rechazado(self):
+        with pytest.raises(ModelValidationError, match="game_id"):
+            make_item(game_id="")
 
 
 class TestImageUrl:
@@ -201,7 +262,12 @@ class TestImageUrl:
 
 class TestToDict:
     def test_claves_exactas_del_contrato(self):
-        item = make_item(summary="Resumen breve.", image_url="https://cdn.example.com/img.jpg")
+        item = make_item(
+            summary="Resumen breve.",
+            image_url="https://cdn.example.com/img.jpg",
+            author="R. Editor",
+            is_verified=True,
+        )
         data = item.to_dict()
         assert set(data) == {
             "id",
@@ -210,25 +276,39 @@ class TestToDict:
             "url",
             "source",
             "game",
+            "game_id",
             "language",
             "published_at",
+            "fetched_at",
             "relevance",
             "category",
             "image_url",
+            "author",
+            "is_verified",
         }
 
     def test_valores_serializados(self):
         source = make_source(name="GaminLeaks", type="reddit", subreddit="gaming")
-        item = make_item(source=source, summary="Rumor sin verificar.")
+        item = make_item(
+            source=source,
+            summary="Rumor sin verificar.",
+            fetched_at=datetime(2026, 8, 20, 12, 10, tzinfo=timezone.utc),
+        )
         data = item.to_dict()
         assert data["source"]["subreddit"] == "gaming"
         assert data["source"]["type"] == "reddit"
         assert data["category"] == "lanzamiento"
         assert data["published_at"] == "2026-08-20T12:00:00Z"
+        assert data["fetched_at"] == "2026-08-20T12:10:00Z"
         assert data["summary"] == "Rumor sin verificar."
+        assert data["is_verified"] is False
+        assert data["author"] is None
+        assert data["game_id"] is None
 
-    def test_summary_nulo_se_serializa_como_null(self):
-        assert make_item(summary=None).to_dict()["summary"] is None
+    def test_summary_nulo_con_fallback_se_serializa_como_null(self):
+        item = make_item(summary=None, summary_is_fallback=True)
+        assert item.to_dict()["summary"] is None
+        assert "summary_is_fallback" not in item.to_dict()
 
 
 class TestFromDict:

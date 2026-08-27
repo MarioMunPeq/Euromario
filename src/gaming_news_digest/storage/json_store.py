@@ -9,11 +9,16 @@ import os
 from pathlib import Path
 from typing import Any
 
-from ..models import NewsItem
+from ..models import ModelValidationError, NewsItem
 
 logger = logging.getLogger(__name__)
 
 DATA_PATH = Path("frontend/data/news.json")
+
+#: Corrupción histórica de codificación detectada en ``source.name`` de
+#: ejecuciones viejas: el punto medio "·" (U+00B7) quedó escrito como "┬À".
+_LEGACY_MOJIBAKE = "┬À"
+_INTERPUNCT = "·"
 
 
 def _make_digest_data(items: list[NewsItem]) -> dict[str, Any]:
@@ -33,7 +38,10 @@ def utc_now_iso() -> str:
 def load_existing_digest() -> list[NewsItem]:
     """Carga el digest existente desde `frontend/data/news.json`.
 
-    Devuelve lista vacía si el archivo no existe o está corrupto.
+    - Un archivo ausente, ilegible o con JSON inválido devuelve lista vacía.
+    - Cada item se migra de la forma histórica a la actual y se valida
+      contra el contrato INDIVIDUALMENTE: uno inválido se descarta con log
+      y NUNCA tumba el resto del histórico (regla P0).
     """
     if not DATA_PATH.exists():
         return []
@@ -41,11 +49,92 @@ def load_existing_digest() -> list[NewsItem]:
     try:
         content = DATA_PATH.read_text(encoding="utf-8")
         data = json.loads(content)
-        news = data.get("news", [])
-        return [NewsItem.from_dict(item) for item in news]
-    except (json.JSONDecodeError, KeyError, ValueError) as exc:
-        logger.warning("news.json corrupto o inválido (%s); se inicia histórico vacío", exc)
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.warning(
+            "news.json corrupto o ilegible (%s); se inicia histórico vacío", exc
+        )
         return []
+
+    news = data.get("news") if isinstance(data, dict) else None
+    if not isinstance(news, list):
+        logger.warning("news.json sin lista 'news'; se inicia histórico vacío")
+        return []
+
+    items: list[NewsItem] = []
+    for index, raw in enumerate(news):
+        if not isinstance(raw, dict):
+            logger.warning(
+                "Item %d del histórico descartado: no es un objeto JSON", index
+            )
+            continue
+        try:
+            item = NewsItem.from_dict(_migrate_legacy_item(raw))
+        except (ModelValidationError, KeyError, TypeError, ValueError) as exc:
+            logger.warning(
+                "Item %d del histórico descartado por validación del contrato "
+                "(motivo: %s). Contexto: %s",
+                index,
+                exc,
+                _item_context(raw),
+            )
+            continue
+        if item.summary is None:
+            logger.info(
+                "Item '%s' cargado con summary=null: fallback IA documentado",
+                item.title,
+            )
+        items.append(item)
+
+    discarded = len(news) - len(items)
+    if discarded:
+        logger.warning("%d item(s) del histórico descartados por contrato", discarded)
+    return items
+
+
+def _migrate_legacy_item(item: dict) -> dict:
+    """Adecúa un item del JSON histórico al contrato actual (sin inventar).
+
+    - ``fetched_at`` ausente (no existía) → se rellena con ``published_at``:
+      es el timestamp conocido más cercano al hecho; se registra en log.
+    - ``author`` / ``game_id`` / ``is_verified`` ausentes → ``None``/``False``.
+    - Destrozado de codificación "┬À" en ``source.name`` → "·" (reparación
+      determinista del punto medio histórico).
+    """
+    migrated = dict(item)
+    source = migrated.get("source")
+    if isinstance(source, dict) and isinstance(source.get("name"), str):
+        source = dict(source)
+        if _LEGACY_MOJIBAKE in source["name"]:
+            logger.info(
+                "Migración: source.name con mojibake reparado (%r → %r)",
+                source["name"],
+                source["name"].replace(_LEGACY_MOJIBAKE, _INTERPUNCT),
+            )
+            source["name"] = source["name"].replace(_LEGACY_MOJIBAKE, _INTERPUNCT)
+        migrated["source"] = source
+
+    if not str(migrated.get("fetched_at") or "").strip():
+        fallback = migrated.get("published_at")
+        logger.info(
+            "Migración: item histórico sin fetched_at → usa published_at (%s)",
+            fallback,
+        )
+        migrated["fetched_at"] = fallback
+
+    migrated.setdefault("author", None)
+    migrated.setdefault("game_id", None)
+    migrated.setdefault("is_verified", False)
+    return migrated
+
+
+def _item_context(raw: dict) -> dict:
+    """Extrae contexto mínimo (sin lanzar) para el log de descarte."""
+    return {key: raw[key] for key in ("id", "title", "url")
+            if isinstance(raw.get(key), str)} | {
+        "source": raw.get("source", {}).get("name")
+        if isinstance(raw.get("source"), dict)
+        else None
+    }
 
 
 def merge_and_retain(existing: list[NewsItem], new: list[NewsItem]) -> list[NewsItem]:

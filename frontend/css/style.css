@@ -1,19 +1,19 @@
 /* ============================================================
    EuroMario — CSS Design System
-   Deep navy + #35b8ff accent — Gaming editorial identity
+   Neutral editorial black + #35b8ff accent — Gaming editorial identity
    ============================================================ */
 
 :root {
-  /* Colors — Deep Navy */
-  --bg: #0a0e14;
-  --surface: #111820;
-  --surface-hover: #1a2230;
-  --surface-elevated: #1e2a38;
-  --border: #1e2a38;
-  --border-hover: #2a3a4e;
-  --text: #E8ECF0;
-  --text-muted: #7B8794;
-  --text-subtle: #5A6570;
+  /* Colors — Neutral editorial black (sin tinte azulado) */
+  --bg: #0A0A0B;
+  --surface: #121214;
+  --surface-hover: #1B1B1F;
+  --surface-elevated: #222226;
+  --border: #26262B;
+  --border-hover: #3A3A42;
+  --text: #ECECEF;
+  --text-muted: #8B8E97;
+  --text-subtle: #5E616A;
 
   /* Accent — EuroMario blue */
   --accent: #35b8ff;
@@ -619,6 +619,12 @@ input, select, textarea {
   color: #fff;
 }
 
+.game-tile__icon--all img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
 .game-tile.active .game-tile__icon {
   border-color: var(--accent);
   box-shadow: 0 0 12px var(--accent-glow);
@@ -685,9 +691,13 @@ input, select, textarea {
     flex-wrap: nowrap;
     gap: var(--space-2);
     overflow-x: auto;
+    overflow-y: hidden;
     scroll-snap-type: x mandatory;
     padding-bottom: var(--space-2);
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
   .filters__platforms::-webkit-scrollbar,
   .filters__games::-webkit-scrollbar {
@@ -1129,7 +1139,7 @@ input, select, textarea {
   letter-spacing: 0.05em;
   padding: 4px 8px;
   border-radius: 6px;
-  background: rgba(10, 14, 20, 0.45);
+  background: rgba(10, 10, 11, 0.48);
   line-height: 1;
   white-space: nowrap;
   pointer-events: none;

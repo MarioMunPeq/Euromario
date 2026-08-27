@@ -15,6 +15,7 @@ from ..models import FetchedItem, Source, SourceType
 from .base import (
     FetchError,
     build_session,
+    extract_author,
     extract_first_image_url,
     http_get,
     resolve_date,
@@ -70,9 +71,11 @@ def _build_item(
         url=url,
         source=source,
         published_at=resolve_date(published, updated, now),
+        fetched_at=now,
         body_text=strip_html(str(entry.get("summary") or "")),
         language=language,
         image_url=_extract_image(entry),
+        author=extract_author(entry),
     )
 
 

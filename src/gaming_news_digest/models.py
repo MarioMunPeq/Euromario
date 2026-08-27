@@ -84,6 +84,30 @@ def _ensure_utc(value: object) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _parse_iso(value: object, label: str) -> datetime:
+    """Parsea una fecha ISO-8601 (con ``Z``) del JSON y la normaliza a UTC.
+
+    Es la puerta de entrada del contrato público: cualquier formato no
+    ISO-8601 se rechaza con ``ModelValidationError`` nombrando el campo.
+    """
+    if not isinstance(value, str):
+        raise ModelValidationError(
+            f"{label} debe ser un string ISO-8601 UTC, no {value!r}"
+        )
+    cleaned = value.strip().replace("Z", "+00:00")
+    try:
+        return _ensure_utc(datetime.fromisoformat(cleaned))
+    except (ValueError, TypeError):
+        raise ModelValidationError(
+            f"{label} no es una fecha ISO-8601 válida: {value!r}"
+        ) from None
+
+
+def to_iso_utc(value: datetime) -> str:
+    """Serializa un datetime UTC como ISO-8601 con sufijo ``Z``."""
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def normalize_url(url: str) -> str:
     """Devuelve la forma canónica de una URL para derivar ids estables.
 
@@ -163,8 +187,13 @@ class NewsItem:
     published_at: datetime
     relevance: int
     category: Category
+    fetched_at: datetime
     summary: str | None = None
     image_url: str | None = None
+    author: str | None = None
+    is_verified: bool = False
+    game_id: str | None = None
+    summary_is_fallback: bool = False
     id: str = field(init=False)
 
     def __post_init__(self):
@@ -184,13 +213,23 @@ class NewsItem:
         )
         self._validate_relevance()
         object.__setattr__(self, "published_at", _ensure_utc(self.published_at))
-        object.__setattr__(self, "summary", _optional_text(self.summary, "el resumen"))
+        object.__setattr__(self, "fetched_at", _ensure_utc(self.fetched_at))
+        self._validate_summary()
         image = self.image_url
         if image is not None:
             image = image.strip()
             if not _HTTP_PREFIX.match(image):
                 image = None
         object.__setattr__(self, "image_url", image or None)
+        object.__setattr__(self, "author", _optional_text(self.author, "el autor"))
+        if not isinstance(self.is_verified, bool):
+            raise ModelValidationError(
+                f"is_verified debe ser un booleano, no {self.is_verified!r}"
+            )
+        object.__setattr__(self, "is_verified", self.is_verified)
+        object.__setattr__(
+            self, "game_id", _optional_text(self.game_id, "el game_id")
+        )
         digest = hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()
         object.__setattr__(self, "id", digest[:16])
 
@@ -203,6 +242,40 @@ class NewsItem:
         if not 1 <= score <= 5:
             raise ModelValidationError(f"la relevancia debe estar entre 1 y 5, no {score}")
 
+    def _validate_summary(self):
+        """Regla explícita del contrato sobre ``summary``.
+
+        - Si la IA generó resumen: string no vacío (nunca una cadena vacía).
+        - ``None`` SOLO se admite cuando se activó el fallback documentado
+          por fallo de IA (``summary_is_fallback=True``). Nada silencioso:
+          una instancia con ``summary=None`` sin el flag es inválida.
+        """
+        is_fallback = self.summary_is_fallback
+        if not isinstance(is_fallback, bool):
+            raise ModelValidationError(
+                f"summary_is_fallback debe ser un booleano, no {is_fallback!r}"
+            )
+        object.__setattr__(self, "summary_is_fallback", is_fallback)
+        summary = self.summary
+        if summary is None:
+            if is_fallback:
+                object.__setattr__(self, "summary", None)
+                return
+            raise ModelValidationError(
+                "summary=null solo se admite tras el fallback IA documentado "
+                "(summary_is_fallback=True)"
+            )
+        if not isinstance(summary, str) or not summary.strip():
+            raise ModelValidationError(
+                f"summary debe ser un texto no vacío o None (fallback IA), no {summary!r}"
+            )
+        if is_fallback:
+            raise ModelValidationError(
+                "summary_is_fallback=True exige summary=None "
+                "(no puede venir del fallback si hay resumen real)"
+            )
+        object.__setattr__(self, "summary", summary.strip())
+
     def to_dict(self) -> dict:
         """Serializa según el contrato JSON documentado en CONTRIBUTING.md."""
         return {
@@ -212,37 +285,60 @@ class NewsItem:
             "url": self.url,
             "source": self.source.to_dict(),
             "game": self.game,
+            "game_id": self.game_id,
             "language": self.language.value,
-            "published_at": self.published_at.isoformat().replace("+00:00", "Z"),
+            "published_at": to_iso_utc(self.published_at),
+            "fetched_at": to_iso_utc(self.fetched_at),
             "relevance": self.relevance,
             "category": self.category.value,
             "image_url": self.image_url,
+            "author": self.author,
+            "is_verified": self.is_verified,
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> "NewsItem":
         """Reconstruye NewsItem desde dict (como viene del JSON).
-        
-        Reutiliza la validación de __post_init__ para garantizar integridad.
-        El id se recalcula desde la URL y debe coincidir con el guardado.
+
+        Valida TODO el contrato: campos obligatorios ausentes, tipos,
+        enums, fechas ISO-8601 y coherencia del ``id`` (derivado de la URL
+        debe coincidir con el almacenado). Reutiliza la validación de
+        ``__post_init__`` para garantizar integridad.
         """
-        source = Source.from_dict(data["source"])
-        # Parsear datetime ISO con Z
-        published_at = datetime.fromisoformat(
-            data["published_at"].replace("Z", "+00:00")
-        )
-        return cls(
+        missing = [
+            f for f in ("title", "url", "source", "game", "language",
+                        "published_at", "fetched_at", "relevance", "category")
+            if f not in data
+        ]
+        if missing:
+            raise ModelValidationError(
+                f"campo(s) obligatorio(s) ausente(s): {', '.join(sorted(missing))}"
+            )
+        summary = data.get("summary")
+        item = cls(
             title=data["title"],
             url=data["url"],
-            source=source,
+            source=Source.from_dict(data["source"]),
             game=data["game"],
             language=data["language"],
-            published_at=published_at,
+            published_at=_parse_iso(data["published_at"], "published_at"),
+            fetched_at=_parse_iso(data["fetched_at"], "fetched_at"),
             relevance=data["relevance"],
             category=data["category"],
-            summary=data.get("summary"),
+            summary=summary,
             image_url=data.get("image_url"),
+            author=data.get("author"),
+            is_verified=data.get("is_verified", False),
+            game_id=data.get("game_id"),
+            summary_is_fallback=summary is None,
         )
+        stored_id = data.get("id")
+        if stored_id != item.id:
+            raise ModelValidationError(
+                f"id almacenado {stored_id!r} no coincide con el derivado "
+                f"de la URL {item.id!r}"
+            )
+        return item
 
 
 @dataclass(frozen=True, slots=True)
@@ -258,10 +354,12 @@ class FetchedItem:
     url: str
     source: Source
     published_at: datetime
+    fetched_at: datetime
     body_text: str | None = None
     language: Language | None = None
     game: str | None = None
     image_url: str | None = None
+    author: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.source, Source):
@@ -272,6 +370,7 @@ class FetchedItem:
             raise ModelValidationError(f"url inválida (solo http/https): {url!r}")
         object.__setattr__(self, "url", url)
         object.__setattr__(self, "published_at", _ensure_utc(self.published_at))
+        object.__setattr__(self, "fetched_at", _ensure_utc(self.fetched_at))
         if self.body_text is not None and not isinstance(self.body_text, str):
             raise ModelValidationError("body_text debe ser texto o None")
         body = self.body_text.strip() if self.body_text else None
@@ -286,3 +385,4 @@ class FetchedItem:
             if not _HTTP_PREFIX.match(image):
                 image = None
         object.__setattr__(self, "image_url", image or None)
+        object.__setattr__(self, "author", _optional_text(self.author, "el autor"))

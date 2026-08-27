@@ -10,6 +10,7 @@ import requests
 from gaming_news_digest.ai.base import AIClient, AIError
 from gaming_news_digest.ai.groq_client import GroqClient
 from gaming_news_digest.ai.ollama_client import OllamaClient
+from gaming_news_digest.clustering import cluster_and_select_representatives
 from gaming_news_digest.config import GamesConfig, Limits, SourcesConfig
 from gaming_news_digest.fetchers.base import FetchError, build_session
 from gaming_news_digest.fetchers.reddit import (
@@ -62,7 +63,10 @@ class Pipeline:
         """Ejecuta el pipeline completo y guarda el digest."""
         fetched = self._fetch_all()
         filtered = self._filter(fetched)
-        enriched = list(self._enrich_with_ai(filtered))
+        # Clustering: agrupar por historia y seleccionar representante
+        clustered = cluster_and_select_representatives(filtered)
+        logger.info("Clustering: %d items → %d historias", len(filtered), len(clustered))
+        enriched = list(self._enrich_with_ai(clustered))
         retained = apply_retention(enriched, max_age_days=14, max_total=200)
         save_digest(retained)
         self._save_games_config()

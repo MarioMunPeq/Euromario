@@ -111,6 +111,10 @@ async function getStateDiagnostics(page) {
     check('loading hidden', content['state-loading'].hidden === true);
     check('error hidden', content['state-error'].hidden === true);
     check('empty hidden', content['state-empty'].hidden === true);
+    // TODO(known-issue): "header shows noticias" FALLA desde el rework de la topbar
+    // (se eliminó la stats bar de "X noticias · Actualizado"). Es un bug real:
+    // header-count sigue estando en el HTML/JS pero no se popula o quedó huérfano
+    // de la barra que lo usaba. Ver sección "Issues conocidos" en CONTRIBUTING.md.
     check('header shows noticias', content.headerCount.includes('noticias'));
     // Gaming Pulse card structure
     check('card has media section', content.firstCard && content.firstCard.hasMedia);
@@ -122,6 +126,10 @@ async function getStateDiagnostics(page) {
     check('card has data-category', content.firstCard && !!content.firstCard.dataCategory);
     // Game tiles
     check('game tiles rendered', content.gameTileCount > 0);
+    // TODO(known-issue): "first tile (ALL) has icon" FALLA desde el rework de los
+    // filtros. Es un bug real: el tile "Todos" de juegos no expone
+    // `.game-tile__icon` (o el selector del check ya no coincide con la estructura).
+    // Ver sección "Issues conocidos" en CONTRIBUTING.md.
     check('first tile (ALL) has icon', content.firstTileHasIcon);
     console.log('  Parent chain:', content.parentChain.join(' > '));
     console.log('  News-list dimensions:', content['news-list'].width + 'x' + content['news-list'].height);

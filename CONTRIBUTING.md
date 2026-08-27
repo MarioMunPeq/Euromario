@@ -223,3 +223,16 @@ Sin red: los fetchers se testean con fixtures locales (XML/HTML/JSON guardados e
 Cobertura objetivo: ≥ 90 % en los módulos críticos (`matcher`, `retention`, `json_store`); resto, razonable sin obsesión.
 
 Antes de pushear: `pytest` verde y `ruff check src tests` limpio. Si cambia el contrato de datos o una regla de este documento, actualiza `CONTRIBUTING.md` en el mismo PR.
+
+---
+
+## 9. Issues conocidos del frontend
+
+Bugs reales detectados y pendientes. No son "decorativos": fallan checks de `scripts/verify-visual.js` y algún día deben arreglarse. Cada uno lleva su marcador `TODO(known-issue)` en el propio test.
+
+| ID | Síntoma | Origen | Archivos implicados | Cómo reproducirlo |
+|----|---------|--------|---------------------|-------------------|
+| `KI-01` | Check `header shows noticias` en `verify-visual.js` falla (`header-count` no contiene "noticias") | Tras el rework de la topbar se eliminó la stats bar ("X noticias · Actualizado") que poblaba `header-count`; el elemento sigue referenciado desde `renderStats` pero quedó huérfano o ya no está en el DOM | `frontend/js/app.js` (`renderStats`, `els.headerCount`), `frontend/index.html`, `scripts/verify-visual.js` | `node scripts/verify-visual.js` → 1er FAIL de TEST 1 |
+| `KI-02` | Check `first tile (ALL) has icon` en `verify-visual.js` falla (`firstTileHasIcon` es false) | Tras el rework de los filtros, el tile "Todos" de juegos ya no expone un `.game-tile__icon` detectable, o el selector del check no coincide con la estructura actual | `frontend/js/app.js` (`renderGameTiles`), `frontend/css/style.css`, `scripts/verify-visual.js` | `node scripts/verify-visual.js` → 2º FAIL de TEST 1 |
+
+**Nota:** ambos se marcaron como "pre-existentes" (ya fallaban antes del rediseño de cards de noticias), pero siguen siendo bugs reales: el objetivo es que `verify-visual.js` acabe en verde completo.

@@ -26,6 +26,10 @@ from .base import (
 
 _REDDIT_RSS_URL = "https://www.reddit.com/r/{name}/new/.rss"
 
+#: Pausa entre subreddits para respetar el límite anónimo de Reddit
+#: (≈1 petición por minuto por IP, observado en 2026-08).
+REDDIT_REQUEST_INTERVAL_SECONDS = 60
+
 
 def fetch_subreddit(
     subreddit: Subreddit,
@@ -49,6 +53,11 @@ def fetch_subreddit(
         raise FetchError(
             f"Reddit r/{subreddit.name}: feed inservible "
             f"({getattr(parsed, 'bozo_exception', 'desconocido')})"
+        )
+    if not parsed.entries:
+        raise FetchError(
+            f"Reddit r/{subreddit.name}: feed Atom válido pero sin entradas "
+            "(subreddit privado/restringido o sin posts accesibles anónimamente)"
         )
     source = Source(
         name=f"Reddit · r/{subreddit.name}",

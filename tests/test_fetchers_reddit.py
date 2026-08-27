@@ -107,3 +107,18 @@ class TestPeticionHttp:
 
         with pytest.raises(FetchError, match="r/gamingleaks"):
             fetch_subreddit(SUBREDDIT, LIMITS, session=fake_session, now=NOW)
+
+    def test_feed_200_sin_entradas_lanza_error(self, fake_session):
+        # Réplica exacta del feed vacío que Reddit sirve para subreddits
+        # privados/restringidos (observado con r/gamingleaks en 2026-08).
+        vacio = (
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<feed xmlns="http://www.w3.org/2005/Atom">'
+            b'<category term="GamingLeaks" label="r/GamingLeaks"/>'
+            b"<title>newest submissions : GamingLeaks</title>"
+            b"</feed>"
+        )
+        fake_session.route("gamingleaks", FakeResponse(vacio))
+
+        with pytest.raises(FetchError, match="sin entradas"):
+            fetch_subreddit(SUBREDDIT, LIMITS, session=fake_session, now=NOW)

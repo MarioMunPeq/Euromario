@@ -19,6 +19,10 @@ USER_AGENT = "gpatch-notes/0.1 (digest automatico de noticias gaming)"
 #: Margen tolerado hacia el futuro antes de dar una fecha por corrupta.
 FUTURE_TOLERANCE = timedelta(hours=24)
 
+#: Reintentos ante HTTP 429 (rate limit) y espera base entre ellos.
+HTTP_MAX_ATTEMPTS = 2
+HTTP_RETRY_BACKOFF_SECONDS = 2
+
 
 class FetchError(Exception):
     """Una fuente no se pudo rastrear (red, HTTP o contenido inservible)."""
@@ -31,17 +35,44 @@ def build_session() -> requests.Session:
     return session
 
 
+def _retry_delay(response: requests.Response) -> int:
+    """Segundos a esperar antes de reintentar un ``429``.
+
+    Prioriza la cabecera ``Retry-After``; si no viene (o no es un número),
+    usa ``HTTP_RETRY_BACKOFF_SECONDS``. Tolerante con respuestas falsas en
+    tests que no exponen ``headers``.
+    """
+    headers = getattr(response, "headers", None) or {}
+    raw = headers.get("Retry-After")
+    if raw:
+        try:
+            return max(1, int(raw))
+        except (TypeError, ValueError):
+            pass
+    return HTTP_RETRY_BACKOFF_SECONDS
+
+
 def http_get(
     session: requests.Session, url: str, timeout_seconds: int
 ) -> bytes:
-    """Descarga ``url`` elevando ``FetchError`` ante cualquier fallo."""
-    try:
-        response = session.get(url, timeout=timeout_seconds)
-    except requests.RequestException as exc:
-        raise FetchError(f"fallo de red en {url}: {exc}") from exc
-    if response.status_code != 200:
+    """Descarga ``url`` elevando ``FetchError`` ante cualquier fallo.
+
+    Un ``HTTP 429`` (rate limit) se reintenta una vez tras ``Retry-After``
+    (o ``HTTP_RETRY_BACKOFF_SECONDS``); el resto de estados eleva error
+    directamente. Reddit anónimo limita a ≈1 petición/minuto, así que el
+    429 puntual no debe tumbar una fuente.
+    """
+    for attempt in range(1, HTTP_MAX_ATTEMPTS + 1):
+        try:
+            response = session.get(url, timeout=timeout_seconds)
+        except requests.RequestException as exc:
+            raise FetchError(f"fallo de red en {url}: {exc}") from exc
+        if response.status_code == 200:
+            return response.content
+        if response.status_code == 429 and attempt < HTTP_MAX_ATTEMPTS:
+            time.sleep(_retry_delay(response))
+            continue
         raise FetchError(f"HTTP {response.status_code} en {url}")
-    return response.content
 
 
 def struct_to_utc(value: time.struct_time | None) -> datetime | None:

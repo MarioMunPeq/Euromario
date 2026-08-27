@@ -33,7 +33,7 @@ steam:
 reddit:
   habilitado: true
   subreddits:
-    - nombre: gamingleaks
+    - nombre: gamingleaksandrumours
       etiqueta: rumores
   # Subreddits de sagas concretas: se añadirán según crezca la lista de inclusión
 

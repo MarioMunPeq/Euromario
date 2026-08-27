@@ -12,7 +12,10 @@ from gaming_news_digest.ai.groq_client import GroqClient
 from gaming_news_digest.ai.ollama_client import OllamaClient
 from gaming_news_digest.config import GamesConfig, Limits, SourcesConfig
 from gaming_news_digest.fetchers.base import FetchError, build_session
-from gaming_news_digest.fetchers.reddit import fetch_subreddit
+from gaming_news_digest.fetchers.reddit import (
+    REDDIT_REQUEST_INTERVAL_SECONDS,
+    fetch_subreddit,
+)
 from gaming_news_digest.fetchers.rss import fetch_media_feed
 from gaming_news_digest.fetchers.steam import fetch_steam_news
 from gaming_news_digest.filtering.matcher import create_matcher
@@ -76,11 +79,14 @@ class Pipeline:
             except FetchError as exc:
                 logger.warning("Steam: %s", exc)
 
-        for sub in self.sources.reddit.subreddits:
+        reddit_subs = list(self.sources.reddit.subreddits)
+        for index, sub in enumerate(reddit_subs):
             try:
                 items.extend(fetch_subreddit(sub, self.sources.limits, session))
             except FetchError as exc:
                 logger.warning("Reddit r/%s: %s", sub.name, exc)
+            if index < len(reddit_subs) - 1:
+                time.sleep(REDDIT_REQUEST_INTERVAL_SECONDS)
 
         logger.info("Total fetched: %d items", len(items))
         return items

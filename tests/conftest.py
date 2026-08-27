@@ -6,9 +6,15 @@ import pytest
 class FakeResponse:
     """Sustituto mínimo de ``requests.Response``."""
 
-    def __init__(self, content: bytes = b"", status_code: int = 200):
+    def __init__(
+        self,
+        content: bytes = b"",
+        status_code: int = 200,
+        headers: dict | None = None,
+    ):
         self.content = content
         self.status_code = status_code
+        self.headers = headers or {}
 
 
 class FakeSession:
@@ -16,8 +22,10 @@ class FakeSession:
 
     Las respuestas se registran por fragmento de URL y se aplica la
     primera coincidencia; si una "respuesta" es una instancia de
-    ``Exception`` se eleva (simula fallos de red). Cada llamada queda
-    grabada para asertar URLs, timeouts y cabeceras enviadas.
+    ``Exception`` se eleva (simula fallos de red). Si la "respuesta" es
+    una lista, se consumen sus elementos en orden por llamada (permite
+    simular secuencias como 429 → 200). Cada llamada queda grabada para
+    asertar URLs, timeouts y cabeceras enviadas.
     """
 
     def __init__(self):
@@ -36,6 +44,10 @@ class FakeSession:
             if fragment in url:
                 if isinstance(response, Exception):
                     raise response
+                if isinstance(response, list):
+                    response = response.pop(0) if response else FakeResponse(
+                        status_code=404
+                    )
                 return response
         return self._default
 

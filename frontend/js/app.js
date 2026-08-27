@@ -323,33 +323,59 @@ function initHeaderNav() {
 // Rendering — Gaming Pulse Card Design
 // ============================================================
 
+function getAvatarColor(source) {
+  if (!source) return 'var(--surface-elevated)';
+  if (source.type === 'reddit') return 'var(--reddit, #FF4500)';
+  if (source.type === 'steam') return 'var(--steam, #66C0F4)';
+  return 'var(--surface-elevated)';
+}
+
+// Text inside the avatar circle. Steam blue is light: #fff sobre #66C0F4 es 2.02:1
+// (falla AA); navy alcanza 9.17:1. Reddit naranja con letras blancas es su identidad
+// y pasa AA large-text (3.44:1).
+function getAvatarTextColor(source) {
+  if (source && source.type === 'steam') return 'var(--bg)';
+  return '#fff';
+}
+
 function renderNewsCard(item) {
   const category = item.category || '';
   const catColor = getCategoryColor(category);
+  const source = item.source || {};
+  const sourceName = getSourceName(source);
+  const sourceInitials = getSourceInitials(source.name);
+  const avatarColor = getAvatarColor(source);
+  const avatarTextColor = getAvatarTextColor(source);
+  const gameName = item.game || sourceName;
+  const isHighRelevance = item.relevance >= 4;
 
   let mediaHtml;
   if (item.image_url) {
     mediaHtml = `<img src="${escapeHtml(item.image_url)}" alt="" class="news-card__image" loading="lazy"/>`;
   } else {
-    const initials = getSourceInitials(item.source?.name);
     mediaHtml = `
       <div class="news-card__placeholder" style="--cat-color: ${catColor}">
-        <span class="news-card__placeholder-initials">${escapeHtml(initials)}</span>
+        <span class="news-card__placeholder-initials">${escapeHtml(sourceInitials)}</span>
       </div>`;
   }
 
-  const sourceName = getSourceName(item.source);
   const dateObj = new Date(item.published_at);
   const dateStr = formatDate(dateObj);
+  const gameLabel = escapeHtml(gameName);
 
   return `
-    <article class="news-card" data-id="${item.id}" data-category="${category}">
+    <article class="news-card${isHighRelevance ? ' news-card--high' : ''}" data-id="${item.id}" data-category="${category}" style="--cat-color: ${catColor}">
       <div class="news-card__media">
         ${mediaHtml}
+        ${isHighRelevance ? '<span class="news-card__glow" aria-hidden="true"></span>' : ''}
+        <div class="news-card__overlay-top" aria-hidden="true"></div>
+        <div class="news-card__overlay-bottom" aria-hidden="true"></div>
+        ${category ? `<span class="news-card__chip news-card__chip--category">${escapeHtml(category)}</span>` : ''}
+        <span class="news-card__chip news-card__chip--game">${gameLabel}</span>
+        <span class="news-card__avatar" style="--avatar-color: ${avatarColor}; --avatar-text: ${avatarTextColor}" aria-hidden="true">${escapeHtml(sourceInitials)}</span>
       </div>
       <div class="news-card__content">
         <div class="news-card__meta">
-          <span class="news-card__source">${escapeHtml(sourceName)}</span>
           <time class="news-card__date" datetime="${dateObj.toISOString()}">${dateStr}</time>
         </div>
         <h3 class="news-card__title">

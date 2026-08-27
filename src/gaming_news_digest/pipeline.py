@@ -3,6 +3,7 @@
 import logging
 import re
 import time
+from collections import defaultdict
 from collections.abc import Iterator
 
 import requests
@@ -39,8 +40,39 @@ _SAFE_FALLBACK = {
 }
 
 
+def _limit_stories_per_game(
+    items: list[NewsItem], max_per_game: int
+) -> list[NewsItem]:
+    """Limita el número de historias por juego, priorizando por relevancia y actualidad."""
+    if max_per_game <= 0:
+        return items
+
+    # Agrupar por juego
+    by_game: dict[str, list[NewsItem]] = defaultdict(list)
+    for item in items:
+        by_game[item.game].append(item)
+
+    # Para cada juego, ordenar por relevancia (desc) y luego por fecha (más reciente primero)
+    # y quedarse con los max_per_game primeros
+    limited: list[NewsItem] = []
+    for game_items in by_game.values():
+        if len(game_items) <= max_per_game:
+            limited.extend(game_items)
+            continue
+
+        # Ordenar: primero por relevancia (desc), luego por fecha (más reciente primero)
+        sorted_items = sorted(
+            game_items,
+            key=lambda x: (x.relevance, x.published_at),
+            reverse=True,
+        )
+        limited.extend(sorted_items[:max_per_game])
+
+    return limited
+
+
 class Pipeline:
-    """Orquesta fetch → filtro → IA → retención → guardado."""
+    """Orquesta fetch -> filtro -> IA -> retención -> guardado."""
 
     def __init__(self, sources: SourcesConfig, games: GamesConfig, limits: Limits):
         self.sources = sources
@@ -65,9 +97,15 @@ class Pipeline:
         filtered = self._filter(fetched)
         # Clustering: agrupar por historia y seleccionar representante
         clustered = cluster_and_select_representatives(filtered)
-        logger.info("Clustering: %d items → %d historias", len(filtered), len(clustered))
+        logger.info("Clustering: %d items -> %d historias", len(filtered), len(clustered))
+
         enriched = list(self._enrich_with_ai(clustered))
-        retained = apply_retention(enriched, max_age_days=14, max_total=200)
+
+        # Límite por juego: evitar que un solo juego monopolice el digest
+        limited = _limit_stories_per_game(enriched, self.limits.max_stories_per_game)
+        logger.info("Límite por juego (%d): %d -> %d historias", self.limits.max_stories_per_game, len(enriched), len(limited))
+
+        retained = apply_retention(limited, max_age_days=14, max_total=200, max_per_game=self.limits.max_stories_per_game)
         save_digest(retained)
         self._save_games_config()
 
@@ -201,7 +239,7 @@ class Pipeline:
                         self._consecutive_ai_errors += 1
                         if self._consecutive_ai_errors >= self.ollama.MAX_CONSECUTIVE_ERRORS:
                             logger.warning(
-                                "Ollama: %d AIError consecutivos → switch a Groq y reintento",
+                                "Ollama: %d AIError consecutivos -> switch a Groq y reintento",
                                 self._consecutive_ai_errors,
                             )
                             self.current_client = self.groq
@@ -215,14 +253,14 @@ class Pipeline:
                     if self.current_client is self.groq:
                         logger.critical("Fallo crítico en Groq: %s", exc)
                         raise
-                    logger.warning("Ollama infra: %s → switch a Groq", exc)
+                    logger.warning("Ollama infra: %s -> switch a Groq", exc)
                     self.current_client = self.groq
                     continue
                 logger.exception("Error inesperado en IA")
                 return None
 
     def _save_games_config(self) -> None:
-        """Guarda el mapeo nombre→logo→platform para el frontend."""
+        """Guarda el mapeo nombre->logo->platform para el frontend."""
         games_data = []
         for rule in self._games.include:
             entry: dict = {"name": rule.name, "logo": rule.logo}

@@ -17,6 +17,7 @@ from .models import Language
 
 DEFAULT_MAX_ITEMS_PER_SOURCE = 20
 DEFAULT_TIMEOUT_SECONDS = 15
+DEFAULT_MAX_STORIES_PER_GAME = 5
 
 
 class ConfigError(Exception):
@@ -95,6 +96,7 @@ class Limits:
 
     max_items_per_source: int = DEFAULT_MAX_ITEMS_PER_SOURCE
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
+    max_stories_per_game: int = DEFAULT_MAX_STORIES_PER_GAME
 
 
 @dataclass(frozen=True, slots=True)
@@ -334,6 +336,9 @@ def _parse_limits(raw: Any, path: Path) -> Limits:
         ),
         timeout_seconds=_positive_int(
             raw, "timeout_segundos", DEFAULT_TIMEOUT_SECONDS, path
+        ),
+        max_stories_per_game=_positive_int(
+            raw, "max_stories_por_juego", DEFAULT_MAX_STORIES_PER_GAME, path
         ),
     )
 

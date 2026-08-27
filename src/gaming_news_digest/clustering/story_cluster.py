@@ -1,15 +1,15 @@
-"""Clustering de historias para deduplicación semántica a nivel de historia.
+"""Story clustering for semantic deduplication at story level.
 
-Agrupa artículos que cubren el mismo acontecimiento/evento, no solo el mismo juego.
-Usa un enfoque determinista y ligero sin dependencias pesadas:
+Groups articles covering the same event/happening, not just the same game.
+Uses a deterministic, lightweight approach without heavy dependencies:
 
-1. URL exacta (capa 0 - deduplicación exacta)
-2. Juego + entidades clave del título (capa 1)
-3. Similitud de palabras clave relevantes (capa 2)
-4. Similitud de títulos (Jaccard/overlap) (capa 3)
-4. Ventana temporal 24-48h (capa 4)
+1. Exact URL (layer 0 - exact deduplication)
+2. Game + key title entities (layer 1)
+3. Relevant keyword similarity (layer 2)
+4. Title similarity (Jaccard/overlap) (layer 3)
+4. Temporal window 24-48h (layer 4)
 
-El resultado son StoryClusters con un artículo representativo por cluster.
+Result: StoryClusters with one representative article per cluster.
 """
 
 import re
@@ -18,50 +18,39 @@ from datetime import datetime
 
 from ..models import FetchedItem
 
-# Palabras vacías que no aportan a la similitud semántica
+# English stop words that don't contribute to semantic similarity
 STOP_WORDS = {
-    "a", "al", "ante", "bajo", "cabe", "con", "contra", "de", "desde", "durante",
-    "en", "entre", "hacia", "hasta", "mediante", "para", "por", "según", "sin",
-    "so", "sobre", "tras", "versus", "vía", "y", "e", "ni", "o", "u", "que",
-    "el", "la", "lo", "los", "las", "un", "una", "unos", "unas", "del", "se", "su", "sus", "le", "les", "me", "te", "nos", "os", "mi", "tu", "nuestro",
-    "vuestro", "suyo", "este", "esta", "estos", "estas", "ese", "esa", "esos",
-    "esas", "aquel", "aquella", "aquellos", "aquellas", "cual", "cuales", "quien", "quienes", "cuando", "donde", "como", "porque", "si", "sí", "no",
-    "también", "más", "menos", "muy", "mucho", "poco", "todo", "toda", "todos",
-    "todas", "otro", "otra", "otros", "otras", "mismo", "misma", "mismos",
-    "mismas", "tal", "tales", "tanto", "tanta", "tantos", "tantas", "nuevo",
-    "nueva", "nuevos", "nuevas", "gran", "grande", "grandes", "buen",
-    "buena", "buenos", "buenas", "mal", "mala", "malos", "malas", "primer",
-    "primera", "primeros", "primeras", "último", "última", "últimos", "últimas"
+    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "from", "up", "about", "into", "through", "during", "before", "after", "above", "below", "between", "among", "around", "against", "along", "across", "behind", "beyond", "beneath", "beside", "despite", "except", "inside", "outside", "within", "without",
+    "i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves",
+    "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "will", "would", "should", "could", "ought", "can", "may", "might", "must", "shall", "if", "because", "as", "until", "while", "down", "out", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "just", "don", "now", "d", "ll", "m", "o", "re", "ve", "y", "ain", "aren", "couldn", "didn", "doesn", "hadn", "hasn", "haven", "isn", "ma", "mightn", "mustn", "needn", "shan", "shouldn", "wasn", "weren", "won", "wouldn",
 }
 
-# Palabras clave que indican el tipo de noticia (peso alto para clustering)
+# Keywords indicating event/news type (high weight for clustering)
 EVENT_KEYWORDS = {
-    "anuncio", "anunciado", "anuncia", "anuncian",
-    "lanzamiento", "lanzan", "release", "released",
-    "llegada", "llega", "llegará",
-    "confirmado", "confirma", "confirman", "confirmación",
-    "revelado", "revela", "revelan", "revelación",
-    "filtrado", "filtra", "filtran", "filtración", "leak", "leaks",
-    "retrasado", "retrasa", "retrasan", "retraso", "delay", "delayed",
-    "cancelado", "cancela", "cancelan", "cancelación",
-    "beta", "demo", "acceso anticipado", "early access",
-    "parche", "patch", "actualización", "update", "actualizan",
-    "dlc", "expansión", "expansion", "contenido",
-    "evento", "temporada", "season",
-    "tráiler", "trailer", "gameplay", "imagenes", "capturas",
-    "entrevista", "declaraciones", "dice", "dijo", "comenta",
-    "respuesta", "responde", "responden", "rumor", "rumores", "especulación",
-    "precio", "preorden", "preorder", "reserva",
-    "fecha", "cuando", "sale", "saldrá",
+    "announcement", "announced", "announces", "announcing",
+    "launch", "launches", "launching", "release", "released", "releases", "releasing",
+    "arrival", "arrives", "arriving", "debut", "debuts",
+    "confirmation", "confirmed", "confirms", "confirming",
+    "reveal", "revealed", "reveals", "revealing", "leak", "leaks", "leaked", "leaking",
+    "delay", "delayed", "delays", "delaying", "postponed", "postpones",
+    "cancelled", "cancels", "cancellation",
+    "beta", "demo", "early access", "early-access",
+    "patch", "patches", "patched", "update", "updates", "updated",
+    "dlc", "expansion", "content",
+    "event", "season",
+    "trailer", "trailers", "gameplay", "images", "screenshots", "screenshot",
+    "interview", "statement", "said", "says", "comment", "comments",
+    "response", "responds", "responded", "rumor", "rumors", "speculation",
+    "price", "pricing", "preorder", "pre-order", "date", "when",
 }
 
-# Palabras que indican ruido/ruido en el título
+# Words indicating noise/non-news content in titles
 NOISE_WORDS = {
-    "opinión", "opinion", "análisis", "analisis", "review", "reseña",
-    "impresiones", "impresion", "probamos", "probado", "manos a",
-    "guía", "guia", "guías", "guias", "trucos", "tips", "consejos",
-    "mejores", "peores", "ranking", "top", "lista", "comparativa",
-    "versus", "vs", "comparación", "comparacion",
+    "opinion", "analysis", "review", "impressions", "impression", "hands-on", "played", "tested",
+    "guide", "guides", "tips", "tricks", "advice", "strategy",
+    "best", "worst", "ranking", "top", "list", "comparison", "roundup",
+    "versus", "vs", "compare",
+    "preview", "first look", "first impressions",
 }
 
 
@@ -128,17 +117,132 @@ def word_overlap_similarity(text1: str, text2: str) -> float:
     return jaccard_similarity(words1, words2)
 
 
+# Game name normalization map - maps variations to canonical form
+GAME_ALIASES = {
+    "grand theft auto": "gta",
+    "gta": "gta",
+    "call of duty": "cod",
+    "cod": "cod",
+    "red dead redemption": "rdr",
+    "rdr": "rdr",
+    "final fantasy": "ff",
+    "ff": "ff",
+    "the legend of zelda": "zelda",
+    "zelda": "zelda",
+    "elden ring": "eldenring",
+    "eldenring": "eldenring",
+    "baldur's gate": "bg",
+    "baldurs gate": "bg",
+    "bg3": "bg",
+    "cyberpunk": "cyberpunk",
+    "cp2077": "cyberpunk",
+    "witcher": "witcher",
+    "the witcher": "witcher",
+    "assassin's creed": "ac",
+    "assassins creed": "ac",
+    "ac": "ac",
+    "far cry": "farcry",
+    "farcry": "farcry",
+    "battlefield": "bf",
+    "bf": "bf",
+    "halo": "halo",
+    "destiny": "destiny",
+    "destiny2": "destiny2",
+    "destiny 2": "destiny2",
+    "minecraft": "minecraft",
+    "roblox": "roblox",
+    "fortnite": "fortnite",
+    "apex legends": "apex",
+    "apex": "apex",
+    "overwatch": "overwatch",
+    "ow": "overwatch",
+    "valorant": "valorant",
+    "league of legends": "lol",
+    "lol": "lol",
+    "dota": "dota",
+    "dota2": "dota",
+    "counter-strike": "cs",
+    "counterstrike": "cs",
+    "cs2": "cs",
+    "csgo": "cs",
+    "pubg": "pubg",
+    "playerunknown": "pubg",
+    "fifa": "fifa",
+    "ea sports fc": "fifa",
+    "ea fc": "fifa",
+    "madden": "madden",
+    "nba 2k": "nba2k",
+    "nba2k": "nba2k",
+    "elder scrolls": "tes",
+    "skyrim": "tes",
+    "fallout": "fallout",
+    "mass effect": "me",
+    "dragon age": "da",
+    "dragonage": "da",
+    "divinity": "dos",
+    "divinity original sin": "dos",
+    "xenoblade": "xenoblade",
+    "xenogears": "xenogears",
+    "chron trigger": "chronotrigger",
+    "chronotrigger": "chronotrigger",
+    "final fantasy vii": "ff7",
+    "ff7": "ff7",
+    "final fantasy xiv": "ff14",
+    "ffxiv": "ff14",
+    "ff14": "ff14",
+    "kingdom hearts": "kh",
+    "kh": "kh",
+    "persona": "persona",
+    "persona 5": "p5",
+    "p5": "p5",
+    "persona 3": "p3",
+    "p3": "p3",
+    "persona 4": "p4",
+    "p4": "p4",
+    "metroid": "metroid",
+    "metroid prime": "metroidprime",
+    "metroidprime": "metroidprime",
+    "pikmin": "pikmin",
+    "splatoon": "splatoon",
+    "animal crossing": "ac",
+    "new horizons": "ac",
+    "starfield": "starfield",
+    "baldur's gate 3": "bg3",
+    "sea of thieves": "sot",
+    "sot": "sot",
+    "hell divers": "helldivers",
+    "helldivers": "helldivers",
+    "hell divers 2": "helldivers2",
+    "helldivers 2": "helldivers2",
+}
+
+def normalize_game_name(game: str) -> str:
+    """Normalize game name to canonical form."""
+    if not game:
+        return ""
+    normalized = game.lower().strip()
+    # Check aliases
+    for alias, canonical in GAME_ALIASES.items():
+        if alias in normalized:
+            return canonical
+    return normalized
+
+
 def extract_entities(title: str, body: str) -> set[str]:
-    """Extrae entidades clave: nombres de juegos, personajes, eventos."""
+    """Extract key entities: game names, characters, events."""
     entities = set()
     text = f"{title} {body}".lower()
 
-    # Patrones comunes de entidades en videojuegos
-    # Números romanos y números de versión
+    # Normalize game names from known aliases
+    for alias, canonical in GAME_ALIASES.items():
+        if alias in text:
+            entities.add(canonical)
+
+    # Version numbers (v1.0, 2.0, etc.)
     entities.update(re.findall(r"\b(v?\d+(\.\d+)?)\b", text))
-    # Siglas comunes
+    # Acronyms (2-5 uppercase letters)
     entities.update(re.findall(r"\b[A-Z]{2,5}\b", text.upper()))
-    # Palabras capitalizadas (posibles nombres propios)
+    # Capitalized words (potential proper nouns)
     entities.update(re.findall(r"\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})*\b", title))
 
     return entities
@@ -222,7 +326,7 @@ def items_are_same_story(item1: FetchedItem, item2: FetchedItem, time_window_hou
 
     # Similitud combinada
     combined = (kw_sim * 0.5 + ent_sim * 0.3 + title_sim * 0.2)
-    return combined >= 0.45
+    return combined >= 0.2
 
 
 def cluster_items(items: list[FetchedItem], time_window_hours: int = 48) -> list[StoryCluster]:

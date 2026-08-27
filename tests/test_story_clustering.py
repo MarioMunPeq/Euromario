@@ -44,28 +44,28 @@ def make_item(
 
 
 class TestExtractKeywords:
-    def test_extrae_palabras_clave_evento(self):
-        text = "GTA 6 anunciado oficialmente con fecha de lanzamiento"
+    def test_extracts_event_keywords(self):
+        text = "GTA 6 officially announced with launch date"
         kw = extract_keywords(text)
-        assert "anunciado" in kw
-        assert "lanzamiento" in kw
-        assert "oficialmente" in kw  # no es stop word
+        assert "announced" in kw
+        assert "launch" in kw
+        assert "officially" in kw  # not a stop word
 
-    def test_filtra_stop_words(self):
-        text = "El juego de la semana"
+    def test_filters_stop_words(self):
+        text = "The game of the week"
         kw = extract_keywords(text)
-        assert "juego" in kw
-        assert "semana" in kw
-        assert "el" not in kw
-        assert "de" not in kw
-        assert "la" not in kw
+        assert "game" in kw
+        assert "week" in kw
+        assert "the" not in kw
+        assert "of" not in kw
+        assert "the" not in kw  # duplicate check
 
-    def test_filtra_palabras_ruido(self):
-        text = "Opinión: Análisis del juego"
+    def test_filters_noise_words(self):
+        text = "Opinion: Analysis of the game"
         kw = extract_keywords(text)
-        assert "opinión" not in kw
-        assert "análisis" not in kw
-        assert "juego" in kw
+        assert "opinion" not in kw
+        assert "analysis" not in kw
+        assert "game" in kw
 
 
 class TestNormalizeTitle:
@@ -112,117 +112,117 @@ class TestExtractEntities:
 
 
 class TestItemsAreSameStory:
-    def test_url_exacta_mismo(self):
-        item1 = make_item("GTA 6 anunciado", "https://eurogamer.net/gta6", hours_ago=1)
-        item2 = make_item("GTA 6 confirmado", "https://eurogamer.net/gta6", hours_ago=2)
+    def test_same_url(self):
+        item1 = make_item("GTA 6 announced", "https://eurogamer.net/gta6", hours_ago=1)
+        item2 = make_item("GTA 6 confirmed", "https://eurogamer.net/gta6", hours_ago=2)
         assert items_are_same_story(item1, item2) is True
 
-    def test_mismo_anuncio_distintas_fuentes(self):
+    def test_same_announcement_different_sources(self):
         item1 = make_item(
-            "Rockstar anuncia GTA 6 para 2025",
+            "Rockstar announces GTA 6 for 2025",
             "https://eurogamer.net/gta6-announced",
             hours_ago=2,
             source_name="Eurogamer",
         )
         item2 = make_item(
-            "Rockstar confirma GTA 6 para 2025",
+            "Rockstar confirms GTA 6 for 2025",
             "https://ign.com/gta6-announced",
             hours_ago=3,
             source_name="IGN",
         )
-        # Mismo juego, palabras clave similares (anuncia/confirma, GTA 6), ventana temporal OK
+        # Same game, similar keywords (announces/confirms, GTA 6), time window OK
         assert items_are_same_story(item1, item2) is True
 
-    def test_distintos_acontecimientos_mismo_juego(self):
+    def test_different_events_same_game(self):
         item1 = make_item(
-            "GTA 6 se lanza en 2025",
+            "GTA 6 launches in 2025",
             "https://eurogamer.net/gta6-launch",
             hours_ago=24,
         )
         item2 = make_item(
-            "GTA Online recibe nueva actualización",
+            "GTA Online receives new update",
             "https://ign.com/gta-online-update",
             hours_ago=25,
         )
-        # Mismo juego, pero eventos distintos (lanzamiento vs actualización online)
+        # Same game, but different events (launch vs online update)
         assert items_are_same_story(item1, item2) is False
 
-    def test_fuera_ventana_temporal_no_agrupa(self):
-        item1 = make_item("GTA 6 anunciado", "https://a.com/1", hours_ago=1)
-        item2 = make_item("GTA 6 confirmado", "https://b.com/2", hours_ago=72)  # 72h > 48h
+    def test_outside_time_window_no_group(self):
+        item1 = make_item("GTA 6 announced", "https://a.com/1", hours_ago=1)
+        item2 = make_item("GTA 6 confirmed", "https://b.com/2", hours_ago=72)  # 72h > 48h
         assert items_are_same_story(item1, item2) is False
 
-    def test_diferentes_juegos_no_agrupa(self):
-        item1 = make_item("GTA 6 anunciado", "https://a.com/1", game="Grand Theft Auto", hours_ago=1)
-        item2 = make_item("GTA 6 confirmado", "https://b.com/2", game="Call of Duty", hours_ago=2)
+    def test_different_games_no_group(self):
+        item1 = make_item("GTA 6 announced", "https://a.com/1", game="Grand Theft Auto", hours_ago=1)
+        item2 = make_item("GTA 6 confirmed", "https://b.com/2", game="Call of Duty", hours_ago=2)
         assert items_are_same_story(item1, item2) is False
 
-    def test_titulos_similitudes_parciales_no_agrupa(self):
-        item1 = make_item("GTA 6 se lanza en 2025", "https://a.com/1", hours_ago=1)
-        item2 = make_item("FIFA 24 se lanza en 2024", "https://b.com/2", game="FIFA 24", hours_ago=2)
+    def test_partial_title_similarity_no_group(self):
+        item1 = make_item("GTA 6 launches in 2025", "https://a.com/1", hours_ago=1)
+        item2 = make_item("FIFA 24 launches in 2024", "https://b.com/2", game="FIFA 24", hours_ago=2)
         assert items_are_same_story(item1, item2) is False
 
 
 class TestSelectRepresentative:
-    def test_prefiere_con_imagen(self):
+    def test_prefers_with_image(self):
         item1 = make_item("GTA 6", "https://a.com/1", hours_ago=2, image_url=None)
         item2 = make_item("GTA 6", "https://a.com/2", hours_ago=1, image_url="https://img.com/img.jpg")
         rep = select_representative([item1, item2])
         assert rep.image_url is not None
 
-    def test_sin_imagenes_el_mas_reciente(self):
+    def test_without_images_most_recent(self):
         item1 = make_item("GTA 6", "https://a.com/1", hours_ago=3)
         item2 = make_item("GTA 6", "https://a.com/2", hours_ago=1)
         rep = select_representative([item1, item2])
         assert rep.url == "https://a.com/2"
 
-    def test_un_solo_item(self):
+    def test_single_item(self):
         item = make_item("GTA 6", "https://a.com/1", hours_ago=1)
         rep = select_representative([item])
         assert rep == item
 
 
 class TestClusterItems:
-    def test_agrupa_mismo_anuncio_distintas_fuentes(self):
+    def test_groups_same_announcement_different_sources(self):
         items = [
-            make_item("Rockstar anuncia GTA 6", "https://eurogamer.net/1", hours_ago=1, source_name="Eurogamer"),
-            make_item("Rockstar confirma GTA 6", "https://ign.com/1", hours_ago=2, source_name="IGN"),
-            make_item("Rockstar revela GTA 6", "https://pcgamer.com/1", hours_ago=2, source_name="PC Gamer"),
+            make_item("Rockstar announces GTA 6", "https://eurogamer.net/1", hours_ago=1, source_name="Eurogamer"),
+            make_item("Rockstar confirms GTA 6", "https://ign.com/1", hours_ago=2, source_name="IGN"),
+            make_item("Rockstar reveals GTA 6", "https://pcgamer.com/1", hours_ago=2, source_name="PC Gamer"),
         ]
         clusters = cluster_items(items)
         assert len(clusters) == 1
         assert clusters[0].count == 3
 
-    def test_no_agrupa_diferentes_acontecimientos(self):
+    def test_does_not_group_different_events(self):
         items = [
-            make_item("GTA 6 se lanza en 2025", "https://a.com/1", hours_ago=1),
-            make_item("GTA Online nueva actualización", "https://b.com/1", hours_ago=2),
-            make_item("GTA 6 trailer mañana", "https://c.com/1", hours_ago=3),
+            make_item("GTA 6 launches in 2025", "https://a.com/1", hours_ago=1),
+            make_item("GTA Online receives new update", "https://b.com/1", hours_ago=2),
+            make_item("GTA 6 trailer tomorrow", "https://c.com/1", hours_ago=3),
         ]
         clusters = cluster_items(items)
-        # Deben ser 3 clusters distintos (lanzamiento, actualización online, trailer)
-        assert len(clusters) >= 2  # Al menos 2 clusters distintos
+        # Should be at least 2 clusters (launch, online update, trailer)
+        assert len(clusters) >= 2
 
-    def test_no_agrupa_fuera_ventana_temporal(self):
+    def test_no_group_outside_time_window(self):
         items = [
-            make_item("GTA 6 anunciado", "https://a.com/1", hours_ago=1),
-            make_item("GTA 6 confirmado", "https://b.com/1", hours_ago=72),  # 72h > 48h
-        ]
-        clusters = cluster_items(items)
-        assert len(clusters) == 2
-
-    def test_no_agrupa_diferentes_juegos(self):
-        items = [
-            make_item("GTA 6 anunciado", "https://a.com/1", game="Grand Theft Auto", hours_ago=1),
-            make_item("GTA 6 confirmado", "https://b.com/2", game="Call of Duty", hours_ago=2),
+            make_item("GTA 6 announced", "https://a.com/1", hours_ago=1),
+            make_item("GTA 6 confirmed", "https://b.com/1", hours_ago=72),  # 72h > 48h
         ]
         clusters = cluster_items(items)
         assert len(clusters) == 2
 
-    def test_conserva_urls_individuales(self):
+    def test_different_games_no_group(self):
         items = [
-            make_item("GTA 6 anunciado", "https://eurogamer.net/1", hours_ago=1),
-            make_item("GTA 6 confirmado", "https://ign.com/1", hours_ago=2),
+            make_item("GTA 6 announced", "https://a.com/1", game="Grand Theft Auto", hours_ago=1),
+            make_item("GTA 6 confirmed", "https://b.com/2", game="Call of Duty", hours_ago=2),
+        ]
+        clusters = cluster_items(items)
+        assert len(clusters) == 2
+
+    def test_preserves_individual_urls(self):
+        items = [
+            make_item("GTA 6 announced", "https://eurogamer.net/1", hours_ago=1),
+            make_item("GTA 6 confirmed", "https://ign.com/1", hours_ago=2),
         ]
         clusters = cluster_items(items)
         assert len(clusters) == 1
@@ -230,29 +230,29 @@ class TestClusterItems:
         assert "https://eurogamer.net/1" in urls
         assert "https://ign.com/1" in urls
 
-    def test_cluster_tiene_representante_unico(self):
+    def test_cluster_has_single_representative(self):
         items = [
-            make_item("GTA 6 anunciado", "https://a.com/1", hours_ago=1, image_url=None),
-            make_item("GTA 6 confirmado", "https://b.com/1", hours_ago=2, image_url="https://img.jpg"),
+            make_item("GTA 6 announced", "https://a.com/1", hours_ago=1, image_url=None),
+            make_item("GTA 6 confirmed", "https://b.com/1", hours_ago=2, image_url="https://img.jpg"),
         ]
         clusters = cluster_items(items)
         assert len(clusters) == 1
         assert clusters[0].representative.image_url is not None
 
-    def test_no_pierde_noticias(self):
+    def test_no_lost_news(self):
         items = [
-            make_item("GTA 6 anunciado", "https://a.com/1", hours_ago=1),
-            make_item("FIFA 24 lanzado", "https://b.com/1", game="FIFA 24", hours_ago=2),
-            make_item("Call of Duty nuevo", "https://c.com/1", game="Call of Duty", hours_ago=3),
+            make_item("GTA 6 announced", "https://a.com/1", hours_ago=1),
+            make_item("FIFA 24 launched", "https://b.com/1", game="FIFA 24", hours_ago=2),
+            make_item("Call of Duty new", "https://c.com/1", game="Call of Duty", hours_ago=3),
         ]
         clusters = cluster_items(items)
         total_items = sum(c.count for c in clusters)
         assert total_items == 3
 
-    def test_cluster_guarda_metadatos(self):
+    def test_cluster_preserves_metadata(self):
         items = [
-            make_item("GTA 6 anunciado", "https://a.com/1", hours_ago=1, source_name="Eurogamer"),
-            make_item("GTA 6 confirmado", "https://b.com/1", hours_ago=2, source_name="IGN"),
+            make_item("GTA 6 announced", "https://a.com/1", hours_ago=1, source_name="Eurogamer"),
+            make_item("GTA 6 confirmed", "https://b.com/1", hours_ago=2, source_name="IGN"),
         ]
         clusters = cluster_items(items)
         cluster = clusters[0]
@@ -263,20 +263,20 @@ class TestClusterItems:
 
 
 class TestClusterAndSelectRepresentatives:
-    def test_devuelve_solo_representantes(self):
+    def test_returns_only_representatives(self):
         items = [
-            make_item("GTA 6 anunciado", "https://a.com/1", hours_ago=1, image_url=None),
-            make_item("GTA 6 confirmado", "https://b.com/1", hours_ago=2, image_url="https://img.jpg"),
-            make_item("FIFA 24 lanzado", "https://c.com/1", game="FIFA 24", hours_ago=1),
+            make_item("GTA 6 announced", "https://a.com/1", hours_ago=1, image_url=None),
+            make_item("GTA 6 confirmed", "https://b.com/1", hours_ago=2, image_url="https://img.jpg"),
+            make_item("FIFA 24 launched", "https://c.com/1", game="FIFA 24", hours_ago=1),
         ]
         reps = cluster_and_select_representatives(items)
         assert len(reps) == 2  # 1 cluster GTA 6 + 1 FIFA 24
         assert any(r.image_url for r in reps)
 
-    def test_articulo_sin_agrupar_se_mantiene(self):
+    def test_ungrouped_item_preserved(self):
         items = [
-            make_item("Noticia única", "https://a.com/1", game="Juego Único", hours_ago=1),
+            make_item("Unique news", "https://a.com/1", game="Unique Game", hours_ago=1),
         ]
         reps = cluster_and_select_representatives(items)
         assert len(reps) == 1
-        assert reps[0].title == "Noticia única"
+        assert reps[0].title == "Unique news"

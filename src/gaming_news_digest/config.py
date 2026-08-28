@@ -19,6 +19,7 @@ DEFAULT_MAX_ITEMS_PER_SOURCE = 20
 DEFAULT_MAX_ITEMS_PER_SOURCE_REDDIT = 0  # 0 = sin límite (usa todo lo que devuelva el RSS)
 DEFAULT_TIMEOUT_SECONDS = 15
 DEFAULT_MAX_STORIES_PER_GAME = 8
+DEFAULT_MAX_STORIES_PER_GAME_REDDIT = 15
 
 
 class ConfigError(Exception):
@@ -99,6 +100,7 @@ class Limits:
     max_items_per_source_reddit: int = DEFAULT_MAX_ITEMS_PER_SOURCE_REDDIT
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
     max_stories_per_game: int = DEFAULT_MAX_STORIES_PER_GAME
+    max_stories_per_game_reddit: int = DEFAULT_MAX_STORIES_PER_GAME_REDDIT
 
 
 @dataclass(frozen=True, slots=True)
@@ -344,6 +346,9 @@ def _parse_limits(raw: Any, path: Path) -> Limits:
         ),
         max_stories_per_game=_positive_int(
             raw, "max_stories_por_juego", DEFAULT_MAX_STORIES_PER_GAME, path
+        ),
+        max_stories_per_game_reddit=_positive_int(
+            raw, "max_stories_por_juego_reddit", DEFAULT_MAX_STORIES_PER_GAME_REDDIT, path
         ),
     )
 

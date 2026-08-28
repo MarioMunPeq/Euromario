@@ -300,8 +300,10 @@ def test_limite_por_juego_se_aplica_antes_de_la_ia(monkeypatch):
 
     pipeline.run()
 
-    assert len(seen_enriched) == 8  # solo los supervivientes pasan por la IA
+    # Pre-límite ahora es 12 (8 + 4), así que 12 items pasan a IA
+    assert len(seen_enriched) == 12
     assert len(saved) == 1
+    # Post-límite sigue siendo 8
     assert len(saved[0]) == 8
 
 
@@ -379,9 +381,10 @@ def test_media_respeta_pre_limite_antes_de_ia(monkeypatch):
 
     pipeline.run()
 
-    # Solo 8 items de medios deben llegar a la IA (pre-límite aplicado)
-    assert len(seen_enriched) == 8, f"Esperados 8 items en IA, got {len(seen_enriched)}"
+    # Pre-límite ahora es 12 (8 + 4), así que 12 items pasan a IA
+    assert len(seen_enriched) == 12, f"Esperados 12 items en IA, got {len(seen_enriched)}"
     assert len(saved) == 1
+    # Post-límite sigue siendo 8
     assert len(saved[0]) == 8
 
 

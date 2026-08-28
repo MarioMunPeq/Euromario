@@ -92,6 +92,56 @@ def _limit_stories_per_game(
     return limited
 
 
+def _limit_stories_per_game_separate(
+    items: list[FetchedItem | NewsItem],
+    media_limit: int,
+    reddit_limit: int,
+) -> list[FetchedItem | NewsItem]:
+    """Aplica límites separados por juego para medios y Reddit (post-IA).
+
+    - Medios/Steam: límite media_limit
+    - Reddit: límite reddit_limit (típicamente más alto para rumores)
+    """
+    if media_limit <= 0 and reddit_limit <= 0:
+        return items
+
+    # Agrupar por juego
+    by_game: dict[str, list[FetchedItem | NewsItem]] = defaultdict(list)
+    for item in items:
+        by_game[item.game].append(item)
+
+    limited: list[NewsItem] = []
+    for game_items in by_game.values():
+        reddit_items = [it for it in game_items if getattr(it.source, "type", None) is SourceType.REDDIT]
+        other_items = [it for it in game_items if getattr(it.source, "type", None) is not SourceType.REDDIT]
+
+        # Aplicar límite a medios
+        if other_items:
+            if len(other_items) <= media_limit:
+                limited.extend(other_items)
+            else:
+                sorted_items = sorted(
+                    other_items,
+                    key=lambda x: (getattr(x, "relevance", 0), x.published_at),
+                    reverse=True,
+                )
+                limited.extend(sorted_items[:media_limit])
+
+        # Aplicar límite a Reddit
+        if reddit_items:
+            if len(reddit_items) <= reddit_limit:
+                limited.extend(reddit_items)
+            else:
+                sorted_items = sorted(
+                    reddit_items,
+                    key=lambda x: (getattr(x, "relevance", 0), x.published_at),
+                    reverse=True,
+                )
+                limited.extend(sorted_items[:reddit_limit])
+
+    return limited
+
+
 class Pipeline:
     """Orquesta fetch -> filtro -> límite por juego -> IA -> límite -> retención -> guardado."""
 
@@ -150,15 +200,17 @@ class Pipeline:
         # Límite por juego ANTES de la IA: los candidatos que exceden el cap por
         # juego jamás se publicarían; se descartan primero (orden determinista por
         # actualidad; la relevancia aún no existe) y la IA solo se gasta en las
-        # historias supervivientes (p. ej. 62 -> ~9 llamadas).
+        # historias supervivientes.
         # Reddit (rumores/leaks) se salta este pre-límite para que no se pierda
         # contenido antes de la IA.
+        # Nota: límite de medios aumentado a 12 para permitir más historias.
+        media_prelimit = self.limits.max_stories_per_game + 4
         prelimited = _limit_stories_per_game(
-            clustered, self.limits.max_stories_per_game, skip_reddit_before_ai=True
+            clustered, media_prelimit, skip_reddit_before_ai=True
         )
         logger.info(
-            "Pre-límite por juego (%d) antes de IA (Reddit sin límite): %d -> %d historias",
-            self.limits.max_stories_per_game,
+            "Pre-límite por juego (media=%d, Reddit sin límite) antes de IA: %d -> %d historias",
+            media_prelimit,
             len(clustered),
             len(prelimited),
         )
@@ -167,10 +219,16 @@ class Pipeline:
 
         # Re-aplicar el límite por juego TRAS la IA (relevancia + fecha): conserva
         # el ranking relevancia→fecha exacto y garantiza el cap sobre los supervivientes.
-        limited = _limit_stories_per_game(enriched, self.limits.max_stories_per_game)
+        # Usar límite propio para Reddit (más alto) y general para medios/Steam.
+        limited = _limit_stories_per_game_separate(
+            enriched,
+            media_limit=self.limits.max_stories_per_game,
+            reddit_limit=self.limits.max_stories_per_game_reddit,
+        )
         logger.info(
-            "Límite por juego (%d) tras IA: %d -> %d historias",
+            "Límite por juego tras IA (media=%d, reddit=%d): %d -> %d historias",
             self.limits.max_stories_per_game,
+            self.limits.max_stories_per_game_reddit,
             len(enriched),
             len(limited),
         )

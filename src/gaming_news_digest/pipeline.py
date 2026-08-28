@@ -5,6 +5,7 @@ import re
 import time
 from collections import defaultdict
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 
 import requests
 
@@ -32,6 +33,68 @@ from gaming_news_digest.storage.json_store import save_digest, save_games_config
 from gaming_news_digest.storage.retention import apply_retention
 
 logger = logging.getLogger(__name__)
+
+# Fallback seguro para items que fallan la IA
+_SAFE_FALLBACK = {
+    "summary": None,
+    "relevance": 1,
+    "category": "rumor",
+}
+
+
+# ============================================================
+# Diagnóstico: estadísticas por etapa (Reddit vs Media/Steam)
+# ============================================================
+
+@dataclass
+class StageStats:
+    """Estadísticas de una etapa del pipeline separadas por fuente."""
+    total: int = 0
+    reddit: int = 0
+    media_steam: int = 0
+    reddit_subs: dict[str, int] = field(default_factory=dict)
+    reddit_titles: list[str] = field(default_factory=list)  # primeros N títulos para diagnóstico
+
+    def add(self, item: FetchedItem | NewsItem) -> None:
+        self.total += 1
+        if getattr(item.source, "type", None) is SourceType.REDDIT:
+            self.reddit += 1
+            sub = getattr(item.source, "subreddit", "unknown")
+            self.reddit_subs[sub] = self.reddit_subs.get(sub, 0) + 1
+            if len(self.reddit_titles) < 10:
+                self.reddit_titles.append(item.title)
+        else:
+            self.media_steam += 1
+
+    def log(self, stage: str) -> None:
+        logger.info(
+            "=== %s === Total=%d | Reddit=%d | Media/Steam=%d",
+            stage, self.total, self.reddit, self.media_steam
+        )
+        if self.reddit_subs:
+            for sub, cnt in self.reddit_subs.items():
+                logger.info("  Reddit r/%s: %d items", sub, cnt)
+        if self.reddit_titles:
+            for i, title in enumerate(self.reddit_titles):
+                logger.info("  Reddit[%d]: %s", i + 1, title)
+
+    @staticmethod
+    def log_separator() -> None:
+        logger.info("=" * 60)
+
+
+def _split_by_source(items: list[FetchedItem | NewsItem]) -> tuple[list, list]:
+    """Separa items en (reddit_items, media_steam_items)."""
+    reddit = [it for it in items if getattr(it.source, "type", None) is SourceType.REDDIT]
+    media = [it for it in items if getattr(it.source, "type", None) is not SourceType.REDDIT]
+    return reddit, media
+
+
+def _count_by_source(items: list[FetchedItem | NewsItem]) -> dict:
+    """Devuelve conteo {'total': N, 'reddit': N, 'media_steam': N}."""
+    reddit, media = _split_by_source(items)
+    return {"total": len(items), "reddit": len(reddit), "media_steam": len(media)}
+
 
 # Fallback seguro para items que fallan la IA
 _SAFE_FALLBACK = {
@@ -193,47 +256,83 @@ class Pipeline:
         
         fetched = self._fetch_all()
         filtered = self._filter(fetched)
-        # Clustering: agrupar por historia y seleccionar representante
+        
+        # Diagnóstico CLUSTERING
+        StageStats.log_separator()
         clustered = cluster_and_select_representatives(filtered)
-        logger.info("Clustering: %d items -> %d historias", len(filtered), len(clustered))
+        stats_filtered = _count_by_source(filtered)
+        stats_clustered = _count_by_source(clustered)
+        logger.info(
+            "DIAGNÓSTICO CLUSTERING: in=%d (reddit=%d, media=%d) -> out=%d (reddit=%d, media=%d) | grupos reducidos: %d",
+            stats_filtered["total"], stats_filtered["reddit"], stats_filtered["media_steam"],
+            stats_clustered["total"], stats_clustered["reddit"], stats_clustered["media_steam"],
+            stats_filtered["total"] - stats_clustered["total"]
+        )
+        StageStats.log_separator()
 
-        # Límite por juego ANTES de la IA: los candidatos que exceden el cap por
-        # juego jamás se publicarían; se descartan primero (orden determinista por
-        # actualidad; la relevancia aún no existe) y la IA solo se gasta en las
-        # historias supervivientes.
-        # Reddit (rumores/leaks) se salta este pre-límite para que no se pierda
-        # contenido antes de la IA.
-        # Nota: límite de medios aumentado a 12 para permitir más historias.
+        # Límite por juego ANTES de la IA
         media_prelimit = self.limits.max_stories_per_game + 4
         prelimited = _limit_stories_per_game(
             clustered, media_prelimit, skip_reddit_before_ai=True
         )
+        
+        # Diagnóstico PRE-LÍMITE
+        stats_pre = _count_by_source(prelimited)
         logger.info(
-            "Pre-límite por juego (media=%d, Reddit sin límite) antes de IA: %d -> %d historias",
-            media_prelimit,
-            len(clustered),
-            len(prelimited),
+            "DIAGNÓSTICO PRE-LÍMITE: total=%d (reddit=%d, media=%d) | Reddit bypassed: SÍ | Media limit: %d",
+            stats_pre["total"], stats_pre["reddit"], stats_pre["media_steam"], media_prelimit
         )
+        StageStats.log_separator()
 
+        # IA
         enriched = list(self._enrich_with_ai(prelimited))
+        
+        # Diagnóstico IA
+        stats_enriched = _count_by_source(enriched)
+        logger.info(
+            "DIAGNÓSTICO IA: total=%d (reddit=%d, media=%d)",
+            stats_enriched["total"], stats_enriched["reddit"], stats_enriched["media_steam"]
+        )
+        StageStats.log_separator()
 
-        # Re-aplicar el límite por juego TRAS la IA (relevancia + fecha): conserva
-        # el ranking relevancia→fecha exacto y garantiza el cap sobre los supervivientes.
-        # Usar límite propio para Reddit (más alto) y general para medios/Steam.
+        # Post-límite
         limited = _limit_stories_per_game_separate(
             enriched,
             media_limit=self.limits.max_stories_per_game,
             reddit_limit=self.limits.max_stories_per_game_reddit,
         )
+        
+        # Diagnóstico POST-LÍMITE
+        stats_limited = _count_by_source(limited)
         logger.info(
-            "Límite por juego tras IA (media=%d, reddit=%d): %d -> %d historias",
-            self.limits.max_stories_per_game,
-            self.limits.max_stories_per_game_reddit,
-            len(enriched),
-            len(limited),
+            "DIAGNÓSTICO POST-LÍMITE: total=%d (reddit=%d, media=%d) | pre-límite reddit=%d -> post-límite reddit=%d | límite reddit: %d",
+            stats_limited["total"], stats_limited["reddit"], stats_limited["media_steam"],
+            stats_pre["reddit"], stats_limited["reddit"], self.limits.max_stories_per_game_reddit
         )
+        StageStats.log_separator()
 
+        # Retención
         retained = apply_retention(limited, max_age_hours=48, max_total=200, max_per_game=self.limits.max_stories_per_game)
+        
+        # Diagnóstico FINAL
+        stats_final = _count_by_source(retained)
+        logger.info("=" * 60)
+        logger.info("=== DIAGNÓSTICO FINAL REDDIT ===")
+        logger.info("  Fetched: %d", _count_by_source(fetched)["reddit"])
+        logger.info("  After clustering: %d", _count_by_source(clustered)["reddit"])
+        logger.info("  Before AI: %d", stats_pre["reddit"])
+        logger.info("  AI processed: %d", stats_enriched["reddit"])
+        logger.info("  After post-limit: %d", stats_limited["reddit"])
+        logger.info("  Final digest: %d", stats_final["reddit"])
+        logger.info("=== DIAGNÓSTICO FINAL MEDIA/STEAM ===")
+        logger.info("  Fetched: %d", _count_by_source(fetched)["media_steam"])
+        logger.info("  After clustering: %d", _count_by_source(clustered)["media_steam"])
+        logger.info("  Before AI: %d", stats_pre["media_steam"])
+        logger.info("  AI processed: %d", stats_enriched["media_steam"])
+        logger.info("  After post-limit: %d", stats_limited["media_steam"])
+        logger.info("  Final digest: %d", stats_final["media_steam"])
+        logger.info("=" * 60)
+
         save_digest(retained)
         self._save_games_config()
 
@@ -263,7 +362,11 @@ class Pipeline:
             if index < len(reddit_subs) - 1:
                 time.sleep(REDDIT_REQUEST_INTERVAL_SECONDS)
 
-        logger.info("Total fetched: %d items", len(items))
+        # Diagnóstico FETCH
+        stats = StageStats()
+        for item in items:
+            stats.add(item)
+        stats.log("DIAGNÓSTICO FETCH")
         return items
 
     def _filter(self, items: list[FetchedItem]) -> list[FetchedItem]:
@@ -288,6 +391,25 @@ class Pipeline:
                     game_id=item.game_id,
                 )
                 kept.append(item)
+        
+        # Diagnóstico FILTRADO
+        stats_in = StageStats()
+        for item in items:
+            stats_in.add(item)
+        stats_out = StageStats()
+        for item in kept:
+            stats_out.add(item)
+        logger.info(
+            "DIAGNÓSTICO FILTRO: in=%d (reddit=%d, media=%d) -> out=%d (reddit=%d, media=%d) | rechazados: total=%d, reddit=%d, media=%d",
+            stats_in.total, stats_in.reddit, stats_in.media_steam,
+            stats_out.total, stats_out.reddit, stats_out.media_steam,
+            stats_in.total - stats_out.total,
+            stats_in.reddit - stats_out.reddit,
+            stats_in.media_steam - stats_out.media_steam
+        )
+        if stats_out.reddit_titles:
+            for i, title in enumerate(stats_out.reddit_titles):
+                logger.info("  Filtro Reddit[%d]: %s", i + 1, title)
         return kept
 
     def _is_excluded(self, item: FetchedItem) -> bool:
@@ -300,6 +422,19 @@ class Pipeline:
         return False
 
     def _enrich_with_ai(self, items: list[FetchedItem]) -> Iterator[NewsItem]:
+        # Contadores para diagnóstico IA
+        ai_stats = {
+            "total": 0,
+            "reddit_total": 0,
+            "media_total": 0,
+            "reddit_cache": 0,
+            "media_cache": 0,
+            "reddit_new": 0,
+            "media_new": 0,
+            "reddit_fallback": 0,
+            "media_fallback": 0,
+        }
+        
         for i, item in enumerate(items):
             if self.current_client is self.groq and i > 0:
                 time.sleep(1)  # rate limit: 1 req/s para Groq free tier
@@ -307,18 +442,29 @@ class Pipeline:
             # Verificar caché: si ya tenemos resultado de IA para esta URL, reutilizarlo
             from gaming_news_digest.models import normalize_url
             cache_key = normalize_url(item.url)
+            is_reddit = getattr(item.source, "type", None) is SourceType.REDDIT
+            ai_stats["total"] += 1
+            if is_reddit:
+                ai_stats["reddit_total"] += 1
+            else:
+                ai_stats["media_total"] += 1
+
             cached = self._ai_cache.get(cache_key)
             if cached is not None:
-                logger.info(
-                    "Item '%s' (fuente=%s): reutilizando resultado de IA caché",
-                    item.title, item.source.name
-                )
+                if is_reddit:
+                    ai_stats["reddit_cache"] += 1
+                else:
+                    ai_stats["media_cache"] += 1
                 ai_data = cached
                 is_fallback = cached["is_fallback"]
             else:
                 ai_data = self._summarize_with_fallback(item)
                 is_fallback = ai_data is None
-                if is_fallback:  # fallback seguro documentado
+                if is_fallback:
+                    if is_reddit:
+                        ai_stats["reddit_fallback"] += 1
+                    else:
+                        ai_stats["media_fallback"] += 1
                     logger.info(
                         "Item '%s' (fuente=%s): summary=null por fallback IA",
                         item.title,
@@ -333,13 +479,17 @@ class Pipeline:
                         "category": ai_data["category"],
                         "is_fallback": False,
                     }
+                    if is_reddit:
+                        ai_stats["reddit_new"] += 1
+                    else:
+                        ai_stats["media_new"] += 1
 
             # is_verified = True para medios oficiales y Steam, False para Reddit
-            is_verified = item.source.type != SourceType.REDDIT
+            is_verified = not is_reddit
             # Regla determinista aprobada: todo item de subreddit es un rumor;
             # sobreescribe lo que haya devuelto el modelo (fix RUMORS/Reddit).
             category = ai_data["category"]
-            if item.source.type is SourceType.REDDIT:
+            if is_reddit:
                 category = Category.RUMOR.value
             try:
                 yield NewsItem(
@@ -368,6 +518,21 @@ class Pipeline:
                     exc,
                 )
                 continue
+        
+        # Log diagnóstico IA al final
+        logger.info(
+            "DIAGNÓSTICO IA PROCESAMIENTO: total=%d (reddit=%d, media=%d) | cache: reddit=%d, media=%d | new IA: reddit=%d, media=%d | fallback: reddit=%d, media=%d",
+            ai_stats["total"],
+            ai_stats["reddit_total"],
+            ai_stats["media_total"],
+            ai_stats["reddit_cache"],
+            ai_stats["media_cache"],
+            ai_stats["reddit_new"],
+            ai_stats["media_new"],
+            ai_stats["reddit_fallback"],
+            ai_stats["media_fallback"],
+        )
+        StageStats.log_separator()
 
     def _summarize_with_fallback(self, item) -> dict | None:
         """

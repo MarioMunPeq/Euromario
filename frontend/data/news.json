@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-28T04:19:25.658394Z",
+  "generated_at": "2026-08-28T09:15:24.773135Z",
   "total": 104,
   "news": [
     {
@@ -778,8 +778,8 @@
     },
     {
       "id": "5f20f7d6826361b0",
-      "title": "Chinese Pok├®mon-like Open-World Game With 15 million Players Is Set to Launch Globally",
-      "summary": "El juego Roco Kingdom, un juego de mundo abierto similar a Pok├®mon, se lanzar├í mundialmente en una versi├│n beta cerrada en octubre.",
+      "title": "Chinese Pokémon-like Open-World Game With 15 million Players Is Set to Launch Globally",
+      "summary": "El juego Roco Kingdom, un juego de mundo abierto similar a Pokémon, se lanzará mundialmente en una versión beta cerrada en octubre.",
       "url": "https://www.polygon.com/roco-kingdom-closed-beta-global-launch/",
       "source": "Polygon",
       "source_type": "media",
@@ -833,7 +833,7 @@
     {
       "id": "567a01bb8fc4d78f",
       "title": "Rockstar Games Releases Official Response to 'Heartbreaking' GTA 6 Leaks",
-      "summary": "Rockstar Games responde p├║blicamente a las 'desafortunadas' revelaciones de GTA 6",
+      "summary": "Rockstar Games responde públicamente a las 'desafortunadas' revelaciones de GTA 6",
       "url": "https://www.polygon.com/rockstar-games-officially-responds-to-gta-6-leaks/",
       "source": "Polygon",
       "source_type": "media",
@@ -897,15 +897,16 @@
       "published_at": "2026-08-26T03:33:01Z",
       "fetched_at": "2026-08-28T04:09:08Z",
       "relevance": 4,
-      "category": "lanzamiento",
+      "category": "rumor",
       "image": null,
       "author": "/u/Silly-Milly-420",
-      "is_verified": false
+      "is_verified": false,
+      "source_subreddit": "gamingleaksandrumours"
     },
     {
       "id": "2a708bf5c02253d8",
       "title": "Rainbow Six Tactics Features Optional Permadeath, Ironman Mode",
-      "summary": "Ubisoft anuncia Rainbow Six Tactics, un juego de estrategia en tiempo real con modos de juego desafiantes, incluyendo una opci├│n de muerte permanente.",
+      "summary": "Ubisoft anuncia Rainbow Six Tactics, un juego de estrategia en tiempo real con modos de juego desafiantes, incluyendo una opción de muerte permanente.",
       "url": "https://www.ign.com/articles/rainbow-six-tactics-interview-optional-permadeath-ironman-mode",
       "source": "IGN",
       "source_type": "media",
@@ -923,7 +924,7 @@
     {
       "id": "2db099c235bcc745",
       "title": "Battle royale goes grunge: there's a new PUBG game and it's set in the '90s",
-      "summary": "PUBG lanz├│ un nuevo juego llamado Ded.net, que combina gameplay de disparos con progresi├│n roguelita en un entorno grunge de los '90s.",
+      "summary": "PUBG lanzó un nuevo juego llamado Ded.net, que combina gameplay de disparos con progresión roguelita en un entorno grunge de los '90s.",
       "url": "https://www.pcgamer.com/games/battle-royale/battle-royale-goes-grunge-theres-a-new-pubg-game-and-its-set-in-the-90s/",
       "source": "PC Gamer",
       "source_type": "media",
@@ -941,7 +942,7 @@
     {
       "id": "771dab836c64869e",
       "title": "Cyberpunk 2077 Commodore Computer Premieres at Gamescom, and It's Up for Preorder Now",
-      "summary": "La Commodore 64 se ha lanzado como parte del juego Cyberpunk 2077 en Gamescom, y est├í disponible para preordenar ahora",
+      "summary": "La Commodore 64 se ha lanzado como parte del juego Cyberpunk 2077 en Gamescom, y está disponible para preordenar ahora",
       "url": "https://www.ign.com/articles/cyberpunk-2077-commodore-computer-reveal-gamescom-2026",
       "source": "IGN",
       "source_type": "media",
@@ -977,7 +978,7 @@
     {
       "id": "b828b56ea4dc7efa",
       "title": "The next game from Hoyoverse sure looks like someone put Elden Ring's clothes on Monster Hunter",
-      "summary": "Hoyoverse anuncia su pr├│ximo juego, que recuerda a Elden Ring con un estilo similar a Monster Hunter.",
+      "summary": "Hoyoverse anuncia su próximo juego, que recuerda a Elden Ring con un estilo similar a Monster Hunter.",
       "url": "https://www.pcgamer.com/games/action/the-next-game-from-hoyoverse-sure-looks-like-someone-put-elden-rings-clothes-on-monster-hunter/",
       "source": "PC Gamer",
       "source_type": "media",
@@ -1031,7 +1032,7 @@
     {
       "id": "e9ebef5a14fa0e57",
       "title": "I attempted to become a professional driver in a GTA 5 where every car had no friction",
-      "summary": "Un jugador de GTA 5 intent├│ conducir como un conductor profesional, pero cada veh├¡culo ten├¡a cero fricci├│n, lo que hizo que la experiencia fuera imposible.",
+      "summary": "Un jugador de GTA 5 intentó conducir como un conductor profesional, pero cada vehículo tenía cero fricción, lo que hizo que la experiencia fuera imposible.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/i-attempted-to-become-a-professional-driver-in-a-gta-5-where-every-car-had-no-friction/",
       "source": "PC Gamer",
       "source_type": "media",
@@ -1067,7 +1068,7 @@
     {
       "id": "d8c2c2ca9d15b736",
       "title": "Call of Duty: Modern Warfare 4 Beta Pushes Unplanned Update to Address Fan Feedback",
-      "summary": "Infinity Ward empuja actualizaci├│n no prevista para Call of Duty: Modern Warfare 4 beta para abordar comentarios de los fans.",
+      "summary": "Infinity Ward empuja actualización no prevista para Call of Duty: Modern Warfare 4 beta para abordar comentarios de los fans.",
       "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-beta-pushes-unplanned-update-to-address-fan-feedback",
       "source": "IGN",
       "source_type": "media",
@@ -1085,7 +1086,7 @@
     {
       "id": "589f3419476acbfb",
       "title": "'GTA 6' Hacker's New Leak Is Total Rage Bait For Rockstar",
-      "summary": "Un hacker ha lanzado una nueva versi├│n de GTA 6, criticando las decisiones de Rockstar sobre la venta del juego.",
+      "summary": "Un hacker ha lanzado una nueva versión de GTA 6, criticando las decisiones de Rockstar sobre la venta del juego.",
       "url": "https://www.polygon.com/gta-6-leak-game-store-physical-discs-cyberleek-rockstar/",
       "source": "Polygon",
       "source_type": "media",
@@ -1121,7 +1122,7 @@
     {
       "id": "29ccd2bed2a55c5d",
       "title": "GTA 6 leaker goes full cornball in newest videos, insists 'using crypto is the only way'",
-      "summary": "Un leaker de GTA 6 ha estado compartiendo contenido en sus canales de YouTube, lo que ha generado controversia entre los fans del juego. El leaker afirma que el uso de criptomonedas es la ├║nica forma de progresar en el juego.",
+      "summary": "Un leaker de GTA 6 ha estado compartiendo contenido en sus canales de YouTube, lo que ha generado controversia entre los fans del juego. El leaker afirma que el uso de criptomonedas es la única forma de progresar en el juego.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/gta-6-leaker-goes-full-cornball-in-newest-videos-insists-using-crypto-is-the-only-way/",
       "source": "PC Gamer",
       "source_type": "media",
@@ -1139,7 +1140,7 @@
     {
       "id": "ca872b04f8a771ad",
       "title": "NBA 2K27 Is Teasing a GTA 6-Themed Event in Collaboration with Rockstar Games",
-      "summary": "NBA 2K27 anuncia una colaboraci├│n con Rockstar Games para un evento GTA 6, generando especulaci├│n entre los fans.",
+      "summary": "NBA 2K27 anuncia una colaboración con Rockstar Games para un evento GTA 6, generando especulación entre los fans.",
       "url": "https://www.ign.com/articles/nba-2k27-is-teasing-a-gta-6-themed-event-in-collaboration-with-rockstar-games",
       "source": "IGN",
       "source_type": "media",
@@ -1175,7 +1176,7 @@
     {
       "id": "c15f1de8a3ca8421",
       "title": "GTA 6's Incredible Beach Leak Just Proved Rockstar's Doubters Wrong In Under Two Minutes",
-      "summary": "Se ha filtrado un tr├íiler de GTA 6 que muestra una gran densidad de NPCs, desafiando las dudas de los fans sobre la capacidad de Rockstar para cumplir con sus promesas.",
+      "summary": "Se ha filtrado un tráiler de GTA 6 que muestra una gran densidad de NPCs, desafiando las dudas de los fans sobre la capacidad de Rockstar para cumplir con sus promesas.",
       "url": "https://www.polygon.com/gta-6-beach-leak-reddit-cyberleek-memes-npc-density/",
       "source": "Polygon",
       "source_type": "media",
@@ -1211,7 +1212,7 @@
     {
       "id": "de40481e022d5d5d",
       "title": "Rockstar Responds to GTA 6 Leaks: 'Employees Are Angry'",
-      "summary": "Rockstar respondi├│ a las filtraciones de GTA 6, afirmando que los empleados est├ín enojados",
+      "summary": "Rockstar respondió a las filtraciones de GTA 6, afirmando que los empleados están enojados",
       "url": "https://www.polygon.com/gta-6-leaks-rockstar-response/",
       "source": "Polygon",
       "source_type": "media",
@@ -1229,7 +1230,7 @@
     {
       "id": "18c3698901de299b",
       "title": "Despite being a Switch 2 exclusive, The Duskbloods closed network test had more applications than Elden Ring Nightreign",
-      "summary": "El juego The Duskbloods, exclusivo de Switch 2, atrajo m├ís solicitudes de jugadores que Elden Ring Nightreign, a pesar de estar disponible solo en una plataforma.",
+      "summary": "El juego The Duskbloods, exclusivo de Switch 2, atrajo más solicitudes de jugadores que Elden Ring Nightreign, a pesar de estar disponible solo en una plataforma.",
       "url": "https://www.eurogamer.net/the-duskbloods-closed-network-test-more-applications-nightreign",
       "source": "Eurogamer",
       "source_type": "media",
@@ -1247,7 +1248,7 @@
     {
       "id": "518535f827885de9",
       "title": "As Take-Two seeks IP addresses and phone numbers of thousands in GTA 6 subpoena, Discord says it's not been served the order just yet",
-      "summary": "Take-Two busca informaci├│n personal de miles de usuarios de GTA 6 a trav├®s de un subpoena, pero Discord afirma que a├║n no ha sido notificado.",
+      "summary": "Take-Two busca información personal de miles de usuarios de GTA 6 a través de un subpoena, pero Discord afirma que aún no ha sido notificado.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/as-take-two-seeks-ip-addresses-and-phone-numbers-of-thousands-in-gta-6-subpoena-discord-says-its-not-been-served-the-order-just-yet/",
       "source": "PC Gamer",
       "source_type": "media",
@@ -1319,7 +1320,7 @@
     {
       "id": "fedeefc056e0516c",
       "title": "GTA 6 Leak Subpoena: Discord Says It Will 'Evaluate the Validity and Scope Before Responding'",
-      "summary": "Discord niega haber sido servido una orden de busca relacionada con el leak de GTA 6, prometi├®ndole evaluar la validez y alcance antes de responder.",
+      "summary": "Discord niega haber sido servido una orden de busca relacionada con el leak de GTA 6, prometiéndole evaluar la validez y alcance antes de responder.",
       "url": "https://www.ign.com/articles/gta-6-leak-subpoena-discord-says-it-will-evaluate-the-validity-and-scope-before-responding",
       "source": "IGN",
       "source_type": "media",
@@ -1355,7 +1356,7 @@
     {
       "id": "025923db788c2727",
       "title": "Persona Comes to Beard Papa's With Special 30th Anniversary Collaboration",
-      "summary": "Beard Papa's colabora con Persona para celebrar el 30┬░ aniversario de la serie RPG con cream puffs especiales",
+      "summary": "Beard Papa's colabora con Persona para celebrar el 30° aniversario de la serie RPG con cream puffs especiales",
       "url": "https://www.ign.com/articles/persona-comes-to-beard-papas-with-special-30th-anniversary-collaboration",
       "source": "IGN",
       "source_type": "media",
@@ -1373,7 +1374,7 @@
     {
       "id": "f6a879d16dd93ec7",
       "title": "Call of Duty: Modern Warfare 4 Devs Vow to Update Captain Price After Botched Haircut Goes Viral",
-      "summary": "Activision y Infinity Ward prometen actualizar el cabello de Captain Price en Call of Duty: Modern Warfare 4 despu├®s de que una foto de su peinado desastrado se volvi├│ viral",
+      "summary": "Activision y Infinity Ward prometen actualizar el cabello de Captain Price en Call of Duty: Modern Warfare 4 después de que una foto de su peinado desastrado se volvió viral",
       "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-devs-vow-to-update-captain-price-after-botched-haircut-goes-viral",
       "source": "IGN",
       "source_type": "media",
@@ -1391,7 +1392,7 @@
     {
       "id": "5fa09217df46c3b2",
       "title": "Latest GTA 6 leak confirms full dong",
-      "summary": "Una fuente confiable ha confirmado que el juego Grand Theft Auto 6 est├í en desarrollo con un contenido completo",
+      "summary": "Una fuente confiable ha confirmado que el juego Grand Theft Auto 6 está en desarrollo con un contenido completo",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/latest-gta-6-leak-confirms-full-dong/",
       "source": "PC Gamer",
       "source_type": "media",
@@ -1427,7 +1428,7 @@
     {
       "id": "94aad741c8fa3b42",
       "title": "Call of Duty: Modern Warfare 4 Adds New Dynamic Cosmetic Options for Certain Characters Like Ghost",
-      "summary": "Call of Duty: Modern Warfare 4 agrega opciones din├ímicas de atuendo para ciertos personajes",
+      "summary": "Call of Duty: Modern Warfare 4 agrega opciones dinámicas de atuendo para ciertos personajes",
       "url": "https://www.ign.com/articles/call-of-duty-modern-warfare-4-adds-new-dynamic-cosmetic-options-for-certain-characters-like-ghost",
       "source": "IGN",
       "source_type": "media",
@@ -1445,7 +1446,7 @@
     {
       "id": "70330e017ba7b27b",
       "title": "I turned car friction off in GTA 5. Help",
-      "summary": "Jugador de GTA 5 encuentra una forma de reducir la fricci├│n del veh├¡culo, lo que permite acelerar a velocidades extremadamente altas.",
+      "summary": "Jugador de GTA 5 encuentra una forma de reducir la fricción del vehículo, lo que permite acelerar a velocidades extremadamente altas.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/i-turned-car-friction-off-in-gta-5-help/",
       "source": "PC Gamer",
       "source_type": "media",
@@ -1463,7 +1464,7 @@
     {
       "id": "47607091f094c180",
       "title": "I turned car friction off in GTA 5. Help",
-      "summary": "Un jugador de GTA 5 encuentra una forma de reducir la fricci├│n del veh├¡culo, lo que permite una mayor velocidad y maniobrabilidad.",
+      "summary": "Un jugador de GTA 5 encuentra una forma de reducir la fricción del vehículo, lo que permite una mayor velocidad y maniobrabilidad.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228676107",
       "source": "Steam · Grand Theft Auto",
       "source_type": "steam",
@@ -1481,7 +1482,7 @@
     {
       "id": "c2708573eb7e370e",
       "title": "Former Rockstar dev says the GTA 6 leaks are a 'nothing burger': 'There won't be much damage'",
-      "summary": "Un ex empleado de Rockstar afirma que las noticias de GTA 6 son un 'bocadillo' y que no causar├ín mucho da├▒o.",
+      "summary": "Un ex empleado de Rockstar afirma que las noticias de GTA 6 son un 'bocadillo' y que no causarán mucho daño.",
       "url": "https://www.pcgamer.com/games/grand-theft-auto/former-rockstar-dev-says-the-gta-6-leaks-are-a-nothing-burger-there-wont-be-much-damage/",
       "source": "PC Gamer",
       "source_type": "media",
@@ -1517,7 +1518,7 @@
     {
       "id": "8926b4fc8a8f746b",
       "title": "This week in PC games: Gamescom and GTA 6 fight for our attention, but don't forget Folk Emerging, MGS4 and the horror game about balancing a cake",
-      "summary": "La semana de los juegos de PC est├í llena de noticias, incluyendo el estreno de GTA 6 y Gamescom, as├¡ como la salida de Folk Emerging y MGS4.",
+      "summary": "La semana de los juegos de PC está llena de noticias, incluyendo el estreno de GTA 6 y Gamescom, así como la salida de Folk Emerging y MGS4.",
       "url": "https://www.rockpapershotgun.com/this-week-in-pc-games-gamescom-and-gta-6-fight-for-attention-but-dont-forget-folk-emerging-mgs4-and-the-horror-game-about-balancing-a-cake",
       "source": "Rock Paper Shotgun",
       "source_type": "media",
@@ -1535,7 +1536,7 @@
     {
       "id": "8b8303066f661177",
       "title": "Call of Duty: Modern Warfare 4 Switch 2 physical version is seemingly a code-in-box",
-      "summary": "La versi├│n f├¡sica de Call of Duty: Modern Warfare 4 para Nintendo Switch 2 es posible que contenga un c├│digo de c├│digo en el caj├│n",
+      "summary": "La versión física de Call of Duty: Modern Warfare 4 para Nintendo Switch 2 es posible que contenga un código de código en el cajón",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-switch-2-code-in-box",
       "source": "Eurogamer",
       "source_type": "media",
@@ -1553,7 +1554,7 @@
     {
       "id": "3ad5a894b22fb394",
       "title": "Persona 6 anunciado oficialmente para 2027",
-      "summary": "Atlus confirma el desarrollo de la pr├│xima entrega principal de la saga Persona con tr├íiler cinematogr├ífico.",
+      "summary": "Atlus confirma el desarrollo de la próxima entrega principal de la saga Persona con tráiler cinematográfico.",
       "url": "https://www.ign.com/articles/persona-6-announced",
       "source": "IGN",
       "source_type": "media",
@@ -1571,7 +1572,7 @@
     {
       "id": "391cf49c65f41fd0",
       "title": "Elden Ring: Shadow of the Erdtree ya disponible",
-      "summary": "La esperada expansi├│n del GOTY 2022 llega con nuevas ├íreas, jefes y armas.",
+      "summary": "La esperada expansión del GOTY 2022 llega con nuevas áreas, jefes y armas.",
       "url": "https://www.eurogamer.net/elden-ring-shadow-erdtree-released",
       "source": "Eurogamer",
       "source_type": "media",
@@ -1589,7 +1590,7 @@
     {
       "id": "73cb3ba153a306da",
       "title": "Call of Duty: Modern Warfare 4 beta's first weekend numbers are in, and they're good - just not as high as Modern Warfare 2",
-      "summary": "Los n├║meros del primer fin de semana de la beta de Call of Duty: Modern Warfare 4 son prometedores, aunque no alcanzan los niveles de la beta de Modern Warfare 2.",
+      "summary": "Los números del primer fin de semana de la beta de Call of Duty: Modern Warfare 4 son prometedores, aunque no alcanzan los niveles de la beta de Modern Warfare 2.",
       "url": "https://www.eurogamer.net/call-of-duty-modern-warfare-4-beta-weekend-one-steam-numbers",
       "source": "Eurogamer",
       "source_type": "media",
@@ -1607,7 +1608,7 @@
     {
       "id": "23b0a0022e423954",
       "title": "Cyberpunk 2077: Parche 2.2 llega con metro y nuevo contenido",
-      "summary": "CD Projekt RED lanza actualizaci├│n masiva con sistema de metro, nuevos gigs y mejoras de rendimiento.",
+      "summary": "CD Projekt RED lanza actualización masiva con sistema de metro, nuevos gigs y mejoras de rendimiento.",
       "url": "https://store.steampowered.com/news/app/1091500/view/12345",
       "source": "Steam",
       "source_type": "steam",
@@ -1625,7 +1626,7 @@
     {
       "id": "c52d741057e336a0",
       "title": "Starfield: Shattered Space ya tiene fecha de lanzamiento",
-      "summary": "Bethesda confirma la primera gran expansi├│n de Starfield para octubre con nueva historia y ubicaciones.",
+      "summary": "Bethesda confirma la primera gran expansión de Starfield para octubre con nueva historia y ubicaciones.",
       "url": "https://www.pcgamer.com/starfield-shattered-space-release-date",
       "source": "PC Gamer",
       "source_type": "media",
@@ -1642,8 +1643,8 @@
     },
     {
       "id": "4ec620b121222b99",
-      "title": "Baldur's Gate 3: Parche 7 a├▒ade modo foto y cross-play",
-      "summary": "Larian Studios lanza actualizaci├│n masiva con cross-play entre PC/Mac/PS5 y modo foto completo.",
+      "title": "Baldur's Gate 3: Parche 7 añade modo foto y cross-play",
+      "summary": "Larian Studios lanza actualización masiva con cross-play entre PC/Mac/PS5 y modo foto completo.",
       "url": "https://store.steampowered.com/news/app/1086940/view/98765",
       "source": "Steam",
       "source_type": "steam",
@@ -1660,7 +1661,7 @@
     },
     {
       "id": "6a6ea4ec2771c8a0",
-      "title": "Hollow Knight: Silksong - Nuevo tr├íiler en Gamescom",
+      "title": "Hollow Knight: Silksong - Nuevo tráiler en Gamescom",
       "summary": "Team Cherry muestra gameplay extendido de Silksong con nuevas habilidades y jefes.",
       "url": "https://www.rockpapershotgun.com/hollow-knight-silksong-gamescom-trailer",
       "source": "Rock Paper Shotgun",
@@ -1678,8 +1679,8 @@
     },
     {
       "id": "094f41f5d575a1c3",
-      "title": "Final Fantasy VII Rebirth: An├ílisis - Una secuela maestra",
-      "summary": "An├ílisis profundo de la segunda parte del remake: combate, historia y mundo abierto.",
+      "title": "Final Fantasy VII Rebirth: Análisis - Una secuela maestra",
+      "summary": "Análisis profundo de la segunda parte del remake: combate, historia y mundo abierto.",
       "url": "https://www.eurogamer.net/final-fantasy-vii-rebirth-review",
       "source": "Eurogamer",
       "source_type": "media",
@@ -1715,7 +1716,7 @@
     {
       "id": "ccf4edc2f8a6b8a5",
       "title": "Is this the end of the GTA 6 leaks? Take-Two's legal crusade appears to shut down the hubs behind them",
-      "summary": "La campa├▒a legal de Take-Two contra los hubs de GTA 6 parece haber detenido las filtraciones, aunque las actualizaciones siguen llegando.",
+      "summary": "La campaña legal de Take-Two contra los hubs de GTA 6 parece haber detenido las filtraciones, aunque las actualizaciones siguen llegando.",
       "url": "https://www.eurogamer.net/gta-6-cyberleek-website-down",
       "source": "Eurogamer",
       "source_type": "media",
@@ -1751,7 +1752,7 @@
     {
       "id": "50729d48df3f3219",
       "title": "GTA 6 leaker hunt is on, as Rockstar owners Take-Two file subpoenas asking Microsoft and Discord for records",
-      "summary": "Take-Two, la empresa madre de Rockstar, busca identificar al o los hackers detr├ís del estallido de la leak de GTA 6, y ha solicitado a Microsoft y Discord que compartan registros de cuentas involucradas.",
+      "summary": "Take-Two, la empresa madre de Rockstar, busca identificar al o los hackers detrás del estallido de la leak de GTA 6, y ha solicitado a Microsoft y Discord que compartan registros de cuentas involucradas.",
       "url": "https://www.rockpapershotgun.com/gta-6-leaker-hunt-is-on-as-rockstar-owners-take-two-file-subpoenas-asking-microsoft-and-discord-for-records",
       "source": "Rock Paper Shotgun",
       "source_type": "media",
@@ -1769,7 +1770,7 @@
     {
       "id": "e1fafad2a8c1e63b",
       "title": "Today in GTA 5 mods: Turning Franklin into a walking car-cannon",
-      "summary": "Un mod de GTA 5 permite a Franklin convertirse en un ca├▒├│n de coche, generando reacciones divertidas y sorprendidas entre los jugadores.",
+      "summary": "Un mod de GTA 5 permite a Franklin convertirse en un cañón de coche, generando reacciones divertidas y sorprendidas entre los jugadores.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228666298",
       "source": "Steam · Grand Theft Auto",
       "source_type": "steam",
@@ -1787,7 +1788,7 @@
     {
       "id": "e980ac53b1bfa59b",
       "title": "I modded GTA 5's NPCs to be punishable for their crimes, and also much more polite",
-      "summary": "Un modder de GTA 5 ha creado NPCs que pueden ser castigados por sus delitos y tambi├®n son m├ís educados",
+      "summary": "Un modder de GTA 5 ha creado NPCs que pueden ser castigados por sus delitos y también son más educados",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1841579228663306",
       "source": "Steam · Grand Theft Auto",
       "source_type": "steam",
@@ -1805,7 +1806,7 @@
     {
       "id": "2cd4b945598da5f1",
       "title": "I modded GTA 5 into a life-sim RPG with mining, foraging, a mini-economy, and the ability to fall asleep in the middle of the road",
-      "summary": "Un modder de GTA 5 cre├│ una versi├│n de vida-s├¡mula RPG con minera, recolecci├│n y econom├¡a propia, dejando al juego en un estado de transici├│n entre realidad y ficci├│n.",
+      "summary": "Un modder de GTA 5 creó una versión de vida-símula RPG con minera, recolección y economía propia, dejando al juego en un estado de transición entre realidad y ficción.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1840944183789401",
       "source": "Steam · Grand Theft Auto",
       "source_type": "steam",
@@ -1823,7 +1824,7 @@
     {
       "id": "500d5bb5432e602d",
       "title": "I'm modding GTA 5 every day until it becomes GTA 6 or breaks, starting with a new vehicle and enough missiles to level a city block",
-      "summary": "Un modder de GTA 5 anuncia su plan de crear un juego modificado que lo haga equivalente a GTA 6 o lo destruya, comenzando con un nuevo veh├¡culo y suficientes municiones para destruir una ciudad entera.",
+      "summary": "Un modder de GTA 5 anuncia su plan de crear un juego modificado que lo haga equivalente a GTA 6 o lo destruya, comenzando con un nuevo vehículo y suficientes municiones para destruir una ciudad entera.",
       "url": "https://steamstore-a.akamaihd.net/news/externalpost/PC Gamer/1840944183786681",
       "source": "Steam · Grand Theft Auto",
       "source_type": "steam",

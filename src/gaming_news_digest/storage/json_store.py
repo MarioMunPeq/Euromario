@@ -6,6 +6,7 @@ Incluye merge con histórico existente y escritura atómica (tmp + os.replace).
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -15,10 +16,44 @@ logger = logging.getLogger(__name__)
 
 DATA_PATH = Path("frontend/data/news.json")
 
+#: Captura el subreddit del nombre de fuente plano "Reddit · r/<sub>".
+_SUBREDDIT_RE = re.compile(r"(?:^|\s)r/([A-Za-z0-9_]+)", re.IGNORECASE)
+
 #: Corrupción histórica de codificación detectada en ``source.name`` de
 #: ejecuciones viejas: el punto medio "·" (U+00B7) quedó escrito como "┬À".
 _LEGACY_MOJIBAKE = "┬À"
 _INTERPUNCT = "·"
+
+#: Mojibake histórico de acentos: resúmenes y títulos de la era en español
+#: (items rastreados 2026-08-25/26) quedaron con bytes UTF-8 de acentos
+#: decodificados como CP850. Se firma por caracteres de caja U+2500–U+257F
+#: ("├", "│", "║"...): p. ej. "ó" (bytes 0xC3 0xB3) llegó como "├│".
+_BOX_DRAWING_START = 0x2500
+_BOX_DRAWING_END = 0x2580
+
+
+def _has_box_mojibake(text: str) -> bool:
+    return any(
+        _BOX_DRAWING_START <= ord(ch) < _BOX_DRAWING_END for ch in text
+    )
+
+
+def _repair_cp850_mojibake(text: str) -> str:
+    """Repara acentos destrozados por decodificación CP850 de bytes UTF-8.
+
+    Solo actúa si el texto lleva la marca inequívoca (caracteres de caja)
+    y el round-trip inverso cp850→utf-8 es limpio; si algo falla o deja
+    restos, devuelve el original. La migración nunca inventa texto.
+    """
+    if not _has_box_mojibake(text):
+        return text
+    try:
+        repaired = text.encode("cp850").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return text
+    if _has_box_mojibake(repaired):
+        return text
+    return repaired
 
 
 def _make_digest_data(items: list[NewsItem]) -> dict[str, Any]:
@@ -99,10 +134,24 @@ def _migrate_legacy_item(item: dict) -> dict:
     - ``author`` / ``game_id`` / ``is_verified`` ausentes → ``None``/``False``.
     - Destrozado de codificación "┬À" en ``source.name`` → "·" (reparación
       determinista del punto medio histórico).
+    - Mojibake CP850 en ``title``/``summary``/``source.name`` (acentos
+      decodificados como caracteres de caja) → round-trip inverso cp850→utf-8.
     - Formato histórico ``source`` anidado → plano ``source`` + ``source_type`` (+ ``source_subreddit`` para Reddit).
     - ``image_url`` → ``image``.
     """
     migrated = dict(item)
+
+    # Mojibake CP850 en campos de texto de la era en español (fix aprobado).
+    for field in ("title", "summary"):
+        value = migrated.get(field)
+        if isinstance(value, str):
+            repaired = _repair_cp850_mojibake(value)
+            if repaired != value:
+                logger.info(
+                    "Migración: %s con mojibake CP850 reparado", field
+                )
+                migrated[field] = repaired
+
     source = migrated.get("source")
     if isinstance(source, dict) and isinstance(source.get("name"), str):
         # Extraer campos del source anidado y convertir a formato plano
@@ -116,10 +165,25 @@ def _migrate_legacy_item(item: dict) -> dict:
                 source_name.replace(_LEGACY_MOJIBAKE, _INTERPUNCT),
             )
             source_name = source_name.replace(_LEGACY_MOJIBAKE, _INTERPUNCT)
+        source_name = _repair_cp850_mojibake(source_name)
         migrated["source"] = source_name
         migrated["source_type"] = source_type
         if source_subreddit:
             migrated["source_subreddit"] = source_subreddit
+    elif isinstance(source, str):
+        repaired = _repair_cp850_mojibake(source)
+        if repaired != source:
+            logger.info("Migración: source.name con mojibake CP850 reparado")
+            migrated["source"] = repaired
+        # Fuentes reddit planas antiguas nunca serializaron su subreddit
+        # ("source_subreddit"); sin él el `Source` no se puede reconstruir y
+        # el item se descartaría. Se vuelve a derivar del nombre (determinista).
+        if migrated.get("source_type") == "reddit" and not migrated.get(
+            "source_subreddit"
+        ):
+            match = _SUBREDDIT_RE.search(migrated["source"])
+            if match:
+                migrated["source_subreddit"] = match.group(1)
 
     if not str(migrated.get("fetched_at") or "").strip():
         fallback = migrated.get("published_at")

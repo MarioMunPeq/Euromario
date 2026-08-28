@@ -279,9 +279,12 @@ class NewsItem:
     def to_dict(self) -> dict:
         """Serializa según el contrato JSON documentado en CONTRIBUTING.md.
 
-        Formato plano: source (string) + source_type (enum) en vez de objeto anidado.
+        Formato plano: source (string) + source_type (enum) en vez de objeto
+        anidado. ``source_subreddit`` solo aparece para fuentes reddit (sin
+        él no se podría reconstruir una ``Source`` de tipo reddit al recargar,
+        y el item se descartaría en el merge).
         """
-        return {
+        serialized = {
             "id": self.id,
             "title": self.title,
             "summary": self.summary,
@@ -299,6 +302,9 @@ class NewsItem:
             "author": self.author,
             "is_verified": self.is_verified,
         }
+        if self.source.subreddit is not None:
+            serialized["source_subreddit"] = self.source.subreddit
+        return serialized
 
     @classmethod
     def from_dict(cls, data: dict) -> "NewsItem":

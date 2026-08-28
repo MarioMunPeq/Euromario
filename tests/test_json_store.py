@@ -9,6 +9,8 @@ import pytest
 
 from gaming_news_digest.models import NewsItem, Source
 from gaming_news_digest.storage.json_store import (
+    _migrate_legacy_item,
+    _repair_cp850_mojibake,
     load_existing_digest,
     merge_and_retain,
     save_digest,
@@ -194,7 +196,107 @@ class TestMergeAndRetain:
         assert all("New" in it.title for it in merged)
 
 
-class TestSaveDigest:
+class TestMigracionMojibake:
+    def test_mojibake_cp850_reparado_en_title_y_summary(self):
+        # Construir el mojibake real: bytes UTF-8 de acentos decodificados CP850
+        mojibake_title = "Pokémon se lanza".encode().decode("cp850")
+        mojibake_summary = "se lanzará con una única versión".encode().decode("cp850")
+        assert "Pokémon" not in mojibake_title  # sanity: era corrupta
+
+        raw = {
+            "id": "abc",
+            "title": mojibake_title,
+            "summary": mojibake_summary,
+            "url": "https://example.com/x",
+            "source": "IGN",
+            "source_type": "media",
+            "game": "Pokemon",
+            "language": "es",
+            "published_at": "2026-08-25T10:00:00Z",
+            "fetched_at": "2026-08-25T10:05:00Z",
+            "relevance": 3,
+            "category": "actualizacion",
+        }
+        migrated = _migrate_legacy_item(raw)
+
+        assert migrated["title"] == "Pokémon se lanza"
+        assert migrated["summary"] == "se lanzará con una única versión"
+
+    def test_reparacion_no_toca_texto_limpio(self):
+        assert _repair_cp850_mojibake("Texto sin mojibake") == "Texto sin mojibake"
+        assert _repair_cp850_mojibake("INGRESAR") == "INGRESAR"
+
+    def test_reparacion_intacta_si_falla_roundtrip(self):
+        # "├" (U+251C) codifica a 0xC3, un byte UTF-8 truncado: el decode
+        # falla y la migración devuelve el original (no inventa nada).
+        assert _repair_cp850_mojibake("├") == "├"
+
+    def test_migracion_tambien_repara_source_plano(self):
+        mojibake_source = "Thómas".encode().decode("cp850")
+        raw = {
+            "id": "abc",
+            "title": "Titulo",
+            "summary": "Resumen",
+            "url": "https://example.com/x",
+            "source": mojibake_source,
+            "source_type": "media",
+            "game": "Persona",
+            "language": "es",
+            "published_at": "2026-08-25T10:00:00Z",
+            "fetched_at": "2026-08-25T10:05:00Z",
+            "relevance": 3,
+            "category": "actualizacion",
+        }
+        migrated = _migrate_legacy_item(raw)
+        assert migrated["source"] == "Thómas"
+
+    def test_reddit_plano_sin_subreddit_recupera_subreddit_del_nombre(self):
+        # Las fuentes reddit planas antiguas nunca serializaron source_subreddit;
+        # la migración debe volver a derivarlo para que Source no se descarte.
+        raw = {
+            "id": "abc",
+            "title": "Titulo",
+            "summary": "Resumen",
+            "url": "https://example.com/x",
+            "source": "Reddit · r/gamingleaksandrumours",
+            "source_type": "reddit",
+            "game": "Persona",
+            "language": "en",
+            "published_at": "2026-08-25T10:00:00Z",
+            "fetched_at": "2026-08-25T10:05:00Z",
+            "relevance": 3,
+            "category": "lanzamiento",
+        }
+
+        migrated = _migrate_legacy_item(raw)
+
+        assert migrated["source_subreddit"] == "gamingleaksandrumours"
+
+    def test_roundtrip_reddit_conserva_subreddit_y_no_se_descarta(self):
+        # El contrato debe serializar source_subreddit para reddit: sin él el
+        # item se descartaría en el merge (Source de reddit exige subreddit).
+        item = NewsItem(
+            title="GTA VI leak",
+            url="https://reddit.com/r/gamingleaksandrumours/comments/1",
+            source=Source(
+                name="Reddit · r/gamingleaksandrumours",
+                type="reddit",
+                subreddit="gamingleaksandrumours",
+            ),
+            game="Grand Theft Auto",
+            language="en",
+            published_at=datetime.now(timezone.utc),
+            fetched_at=datetime.now(timezone.utc),
+            relevance=3,
+            category="rumor",
+            summary="Leak reportado.",
+        )
+
+        data = item.to_dict()
+
+        assert data["source_subreddit"] == "gamingleaksandrumours"
+        loaded = NewsItem.from_dict(data)
+        assert loaded.source.subreddit == "gamingleaksandrumours"
     def test_escritura_atomica_crea_archivo(self, tmp_path):
         import gaming_news_digest.storage.json_store as js
         original = js.DATA_PATH

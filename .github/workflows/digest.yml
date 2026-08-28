@@ -2,7 +2,7 @@ name: Pipeline de noticias
 
 on:
   schedule:
-    - cron: "0 * * * *" # cada hora
+    - cron: "17 * * * *" # cada hora (minuto no puntual para evitar cola de scheduling de GH Actions)
   workflow_dispatch:
 
 permissions:

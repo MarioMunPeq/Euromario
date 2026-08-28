@@ -153,22 +153,26 @@ const DARK_BG_SVGS = new Set([
   'pubg', 'rainbow-six', 'roblox', 'super-mario', 'zelda',
 ]);
 
+const TILES_MOBILE_MQL = window.matchMedia('(max-width: 768px)');
+
 function renderGameTiles(games) {
   const allTile = `
-    <button type="button" class="game-tile active" data-game="" aria-pressed="true">
+    <button type="button" class="game-tile" data-game="" aria-pressed="false">
       <div class="game-tile__icon game-tile__icon--all">
         <img src="assets/icons/all.svg" alt="" width="20" height="20" loading="lazy"/>
       </div>
       <span class="game-tile__name">All</span>
     </button>`;
 
-  const gameTiles = games.map(game => {
+  const createTile = (game, isClone = false, cloneIndex = 0) => {
     const logo = state.gameLogos[game];
+    const dataAttr = isClone ? `data-game-clone="${escapeHtml(game)}" data-clone-index="${cloneIndex}"` : `data-game="${escapeHtml(game)}"`;
+    const ariaPressed = 'false';
     if (logo) {
       const slug = logo.split('/').pop().replace('.svg', '');
       const darkClass = DARK_BG_SVGS.has(slug) ? ' img--dark' : '';
       return `
-        <button type="button" class="game-tile" data-game="${escapeHtml(game)}" aria-pressed="false">
+        <button type="button" class="game-tile" ${dataAttr} aria-pressed="${ariaPressed}">
           <div class="game-tile__image${darkClass}">
             <img src="${escapeHtml(logo)}" alt="${escapeHtml(game)}" loading="lazy"/>
           </div>
@@ -176,13 +180,22 @@ function renderGameTiles(games) {
         </button>`;
     }
     return `
-      <button type="button" class="game-tile" data-game="${escapeHtml(game)}" aria-pressed="false">
+      <button type="button" class="game-tile" ${dataAttr} aria-pressed="${ariaPressed}">
         <div class="game-tile__icon">
           ${getGameInitial(game)}
         </div>
         <span class="game-tile__name">${escapeHtml(game)}</span>
       </button>`;
-  }).join('');
+  };
+
+  const gameTiles = games.map(game => createTile(game, false)).join('');
+
+  if (TILES_MOBILE_MQL.matches && games.length > 0) {
+    const cloneCount = Math.min(3, games.length);
+    const firstClones = games.slice(0, cloneCount).map((g, i) => createTile(g, true, i)).join('');
+    const lastClones = games.slice(-cloneCount).map((g, i) => createTile(g, true, -(cloneCount - i))).join('');
+    return lastClones + allTile + gameTiles + firstClones;
+  }
 
   return allTile + gameTiles;
 }
@@ -249,12 +262,12 @@ function renderAllTiles(newsItems, games) {
   });
 
   // Game click handlers (single-select)
-  els.filterGames.querySelectorAll('[data-game]').forEach(tile => {
+  els.filterGames.querySelectorAll('[data-game], [data-game-clone]').forEach(tile => {
     tile.addEventListener('click', () => {
-      const game = tile.dataset.game;
+      const game = tile.dataset.game || tile.dataset.gameClone;
       const wasActive = tile.classList.contains('active');
 
-      els.filterGames.querySelectorAll('[data-game]').forEach(t => {
+      els.filterGames.querySelectorAll('[data-game], [data-game-clone]').forEach(t => {
         t.classList.remove('active');
         t.setAttribute('aria-pressed', 'false');
       });
@@ -262,12 +275,19 @@ function renderAllTiles(newsItems, games) {
       if (wasActive || game === '') {
         state.filters.game = null;
         const allBtn = els.filterGames.querySelector('[data-game=""]');
-        allBtn.classList.add('active');
-        allBtn.setAttribute('aria-pressed', 'true');
+        if (allBtn) {
+          allBtn.classList.add('active');
+          allBtn.setAttribute('aria-pressed', 'true');
+        }
       } else {
         state.filters.game = game;
         tile.classList.add('active');
         tile.setAttribute('aria-pressed', 'true');
+        // Also update any clones of this game
+        els.filterGames.querySelectorAll(`[data-game-clone="${escapeHtml(game)}"]`).forEach(clone => {
+          clone.classList.add('active');
+          clone.setAttribute('aria-pressed', 'true');
+        });
       }
       applyFilters();
       pushUrl();
@@ -276,10 +296,8 @@ function renderAllTiles(newsItems, games) {
 }
 
 // ============================================================
-// Game Tiles Mobile Carousel (focused/active scale effect)
+// Game Tiles Mobile Carousel (infinite loop + center selection)
 // ============================================================
-
-const TILES_MOBILE_MQL = window.matchMedia('(max-width: 768px)');
 
 function setupGameTileCarousel() {
   const container = els.filterGames;
@@ -287,10 +305,24 @@ function setupGameTileCarousel() {
 
   let rafId = 0;
   let activeTile = null;
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartScrollLeft = 0;
+  let animationId = null;
 
-  const update = () => {
-    rafId = 0;
+  const getRealGameName = (tile) => {
+    return tile.dataset.game || tile.dataset.gameClone || '';
+  };
 
+  const selectCenterGame = (game) => {
+    if (state.filters.game === game) return;
+    state.filters.game = game || null;
+    applyFilters();
+    pushUrl();
+    syncFilterUIFromState();
+  };
+
+  const updateActiveTile = () => {
     if (!TILES_MOBILE_MQL.matches || container.scrollWidth <= container.clientWidth + 1) {
       if (activeTile) {
         activeTile.classList.remove('is-active');
@@ -314,18 +346,89 @@ function setupGameTileCarousel() {
     if (best !== activeTile) {
       if (activeTile) activeTile.classList.remove('is-active');
       activeTile = best;
-      if (activeTile) activeTile.classList.add('is-active');
+      if (activeTile) {
+        activeTile.classList.add('is-active');
+        const game = getRealGameName(activeTile);
+        selectCenterGame(game);
+      }
     }
   };
 
-  const schedule = () => {
-    if (!rafId) rafId = requestAnimationFrame(update);
+  const scheduleUpdate = () => {
+    if (!rafId) rafId = requestAnimationFrame(updateActiveTile);
   };
 
-  container.addEventListener('scroll', schedule, { passive: true });
-  window.addEventListener('resize', schedule);
-  if (TILES_MOBILE_MQL.addEventListener) TILES_MOBILE_MQL.addEventListener('change', schedule);
-  schedule();
+  const handleScrollWrap = () => {
+    const scrollLeft = container.scrollLeft;
+    const maxScroll = container.scrollWidth - container.clientWidth;
+    const tileWidth = 96 + 8; // tile width + gap (from CSS)
+    const cloneCount = 3;
+    const singleSetWidth = tileWidth * (cloneCount + 1); // clones + all tile
+    
+    // If we're in the first clone zone (scrolled left past the real start)
+    if (scrollLeft < singleSetWidth) {
+      container.scrollLeft += singleSetWidth * cloneCount;
+    }
+    // If we're in the last clone zone (scrolled right past the real end)
+    else if (scrollLeft > maxScroll - singleSetWidth) {
+      container.scrollLeft -= singleSetWidth * cloneCount;
+    }
+  };
+
+  const onScroll = () => {
+    handleScrollWrap();
+    scheduleUpdate();
+  };
+
+  // Touch/drag handling for snap
+  const onPointerDown = (e) => {
+    if (e.button !== 0 && e.pointerType !== 'touch') return;
+    isDragging = true;
+    dragStartX = e.clientX || (e.touches && e.touches[0].clientX);
+    dragStartScrollLeft = container.scrollLeft;
+    container.style.scrollBehavior = 'auto';
+    container.setPointerCapture?.(e.pointerId);
+  };
+
+  const onPointerMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    if (clientX === undefined) return;
+    const delta = dragStartX - clientX;
+    container.scrollLeft = dragStartScrollLeft + delta;
+  };
+
+  const onPointerUp = (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    container.releasePointerCapture?.(e.pointerId);
+    container.style.scrollBehavior = 'smooth';
+    // Snap to nearest center after drag ends
+    requestAnimationFrame(() => {
+      scheduleUpdate();
+    });
+  };
+
+  container.addEventListener('scroll', onScroll, { passive: true });
+  container.addEventListener('pointerdown', onPointerDown);
+  container.addEventListener('pointermove', onPointerMove);
+  container.addEventListener('pointerup', onPointerUp);
+  container.addEventListener('pointerleave', onPointerUp);
+  container.addEventListener('pointercancel', onPointerUp);
+  
+  window.addEventListener('resize', scheduleUpdate);
+  if (TILES_MOBILE_MQL.addEventListener) TILES_MOBILE_MQL.addEventListener('change', scheduleUpdate);
+  
+  // Initial position: center the "All" tile
+  const allTile = container.querySelector('[data-game=""]');
+  if (allTile) {
+    const containerRect = container.getBoundingClientRect();
+    const tileRect = allTile.getBoundingClientRect();
+    container.scrollLeft = tileRect.left + tileRect.width / 2 - containerRect.left - container.clientWidth / 2;
+  }
+  
+  scheduleUpdate();
 }
 
 // ============================================================
@@ -550,9 +653,10 @@ function applyFilters() {
 }
 
 function syncFilterUIFromState() {
-  els.filterGames.querySelectorAll('[data-game]').forEach(tile => {
-    const game = tile.dataset.game;
-    const isActive = game === '' ? !state.filters.game : state.filters.game === game;
+  const currentGame = state.filters.game || '';
+  els.filterGames.querySelectorAll('[data-game], [data-game-clone]').forEach(tile => {
+    const game = tile.dataset.game || tile.dataset.gameClone || '';
+    const isActive = game === currentGame;
     tile.classList.toggle('active', isActive);
     tile.setAttribute('aria-pressed', String(isActive));
   });

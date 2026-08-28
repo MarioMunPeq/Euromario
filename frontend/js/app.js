@@ -306,23 +306,41 @@ function setupGameTileCarousel() {
   let rafId = 0;
   let activeTile = null;
   let isDragging = false;
+  let isProgrammaticScroll = false;
   let dragStartX = 0;
   let dragStartScrollLeft = 0;
-  let animationId = null;
+
+  const TILE_WIDTH = 104; // 96px tile + 8px gap (from CSS)
+  const CLONE_COUNT = 3;
 
   const getRealGameName = (tile) => {
     return tile.dataset.game || tile.dataset.gameClone || '';
   };
 
-  const selectCenterGame = (game) => {
-    if (state.filters.game === game) return;
-    state.filters.game = game || null;
-    applyFilters();
-    pushUrl();
-    syncFilterUIFromState();
+  const getRealGameCount = () => {
+    return container.querySelectorAll('[data-game]:not([data-game=""])').length;
   };
 
-  const updateActiveTile = () => {
+  const getRealSectionWidth = () => {
+    // Real section = "All" tile (1) + real game tiles (N)
+    return TILE_WIDTH * (1 + getRealGameCount());
+  };
+
+  const getLeftCloneZoneEnd = () => {
+    // Left clones (lastClones) = CLONE_COUNT tiles
+    return TILE_WIDTH * CLONE_COUNT;
+  };
+
+  const getRightCloneZoneStart = () => {
+    // Real section starts after left clones
+    const realStart = getLeftCloneZoneEnd();
+    // Real section width
+    const realWidth = getRealSectionWidth();
+    // Right clone zone starts after real section
+    return realStart + realWidth;
+  };
+
+  const updateActiveTileVisual = () => {
     if (!TILES_MOBILE_MQL.matches || container.scrollWidth <= container.clientWidth + 1) {
       if (activeTile) {
         activeTile.classList.remove('is-active');
@@ -346,37 +364,45 @@ function setupGameTileCarousel() {
     if (best !== activeTile) {
       if (activeTile) activeTile.classList.remove('is-active');
       activeTile = best;
-      if (activeTile) {
-        activeTile.classList.add('is-active');
-        const game = getRealGameName(activeTile);
-        selectCenterGame(game);
-      }
+      if (activeTile) activeTile.classList.add('is-active');
     }
   };
 
   const scheduleUpdate = () => {
-    if (!rafId) rafId = requestAnimationFrame(updateActiveTile);
+    if (!rafId) rafId = requestAnimationFrame(updateActiveTileVisual);
   };
 
-  const handleScrollWrap = () => {
+  const wrapIfNeeded = () => {
     const scrollLeft = container.scrollLeft;
     const maxScroll = container.scrollWidth - container.clientWidth;
-    const tileWidth = 96 + 8; // tile width + gap (from CSS)
-    const cloneCount = 3;
-    const singleSetWidth = tileWidth * (cloneCount + 1); // clones + all tile
-    
-    // If we're in the first clone zone (scrolled left past the real start)
-    if (scrollLeft < singleSetWidth) {
-      container.scrollLeft += singleSetWidth * cloneCount;
+    const leftZoneEnd = getLeftCloneZoneEnd();
+    const rightZoneStart = getRightCloneZoneStart();
+    const realWidth = getRealSectionWidth();
+
+    let newScrollLeft = null;
+
+    // If in left clone zone (before real content), jump forward
+    if (scrollLeft < leftZoneEnd) {
+      newScrollLeft = scrollLeft + realWidth;
     }
-    // If we're in the last clone zone (scrolled right past the real end)
-    else if (scrollLeft > maxScroll - singleSetWidth) {
-      container.scrollLeft -= singleSetWidth * cloneCount;
+    // If in right clone zone (after real content), jump backward
+    else if (scrollLeft > rightZoneStart) {
+      newScrollLeft = scrollLeft - realWidth;
+    }
+
+    if (newScrollLeft !== null && newScrollLeft !== scrollLeft) {
+      isProgrammaticScroll = true;
+      container.style.scrollBehavior = 'auto';
+      container.scrollLeft = newScrollLeft;
+      // Reset flag after scroll event fires
+      requestAnimationFrame(() => {
+        isProgrammaticScroll = false;
+      });
     }
   };
 
   const onScroll = () => {
-    handleScrollWrap();
+    if (isProgrammaticScroll) return;
     scheduleUpdate();
   };
 
@@ -399,15 +425,62 @@ function setupGameTileCarousel() {
     container.scrollLeft = dragStartScrollLeft + delta;
   };
 
+  const selectCenterGameAfterSnap = () => {
+    // Find tile closest to center after snap completes
+    const centerX = container.getBoundingClientRect().left + container.clientWidth / 2;
+    let best = null;
+    let bestDist = Infinity;
+    for (const tile of container.querySelectorAll('.game-tile')) {
+      const rect = tile.getBoundingClientRect();
+      const dist = Math.abs(rect.left + rect.width / 2 - centerX);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = tile;
+      }
+    }
+
+    if (best) {
+      const game = getRealGameName(best);
+      if (state.filters.game !== game) {
+        state.filters.game = game || null;
+        applyFilters();
+        pushUrl();
+        syncFilterUIFromState();
+      }
+      // Update visual active state to match
+      if (activeTile) activeTile.classList.remove('is-active');
+      activeTile = best;
+      if (activeTile) activeTile.classList.add('is-active');
+    }
+  };
+
   const onPointerUp = (e) => {
     if (!isDragging) return;
     isDragging = false;
     container.releasePointerCapture?.(e.pointerId);
     container.style.scrollBehavior = 'smooth';
-    // Snap to nearest center after drag ends
-    requestAnimationFrame(() => {
-      scheduleUpdate();
-    });
+
+    // Wait for CSS scroll-snap to complete, then wrap if needed and select center
+    // Use scrollend event if available, otherwise fallback to timeout
+    const handleSnapComplete = () => {
+      container.removeEventListener('scrollend', handleSnapComplete);
+      wrapIfNeeded();
+      selectCenterGameAfterSnap();
+    };
+
+    if ('onscrollend' in container) {
+      container.addEventListener('scrollend', handleSnapComplete, { once: true });
+      // Fallback timeout in case scrollend doesn't fire
+      setTimeout(() => {
+        container.removeEventListener('scrollend', handleSnapComplete);
+        handleSnapComplete();
+      }, 500);
+    } else {
+      setTimeout(() => {
+        wrapIfNeeded();
+        selectCenterGameAfterSnap();
+      }, 400);
+    }
   };
 
   container.addEventListener('scroll', onScroll, { passive: true });
@@ -416,18 +489,24 @@ function setupGameTileCarousel() {
   container.addEventListener('pointerup', onPointerUp);
   container.addEventListener('pointerleave', onPointerUp);
   container.addEventListener('pointercancel', onPointerUp);
-  
+
   window.addEventListener('resize', scheduleUpdate);
   if (TILES_MOBILE_MQL.addEventListener) TILES_MOBILE_MQL.addEventListener('change', scheduleUpdate);
-  
-  // Initial position: center the "All" tile
+
+  // Initial position: center the "All" tile (without triggering wrap)
   const allTile = container.querySelector('[data-game=""]');
   if (allTile) {
     const containerRect = container.getBoundingClientRect();
     const tileRect = allTile.getBoundingClientRect();
-    container.scrollLeft = tileRect.left + tileRect.width / 2 - containerRect.left - container.clientWidth / 2;
+    const targetScrollLeft = tileRect.left + tileRect.width / 2 - containerRect.left - container.clientWidth / 2;
+    isProgrammaticScroll = true;
+    container.style.scrollBehavior = 'auto';
+    container.scrollLeft = targetScrollLeft;
+    requestAnimationFrame(() => {
+      isProgrammaticScroll = false;
+    });
   }
-  
+
   scheduleUpdate();
 }
 

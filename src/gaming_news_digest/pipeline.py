@@ -42,7 +42,7 @@ _SAFE_FALLBACK = {
 
 
 def _limit_stories_per_game(
-    items: list[FetchedItem | NewsItem], max_per_game: int
+    items: list[FetchedItem | NewsItem], max_per_game: int, *, skip_reddit_before_ai: bool = False
 ) -> list[FetchedItem | NewsItem]:
     """Limita el número de historias por juego por relevancia y actualidad.
 
@@ -51,6 +51,9 @@ def _limit_stories_per_game(
     ``getattr(item, "relevance", 0)`` ordena solo por fecha mientras la
     relevancia no existe y conserva el ranking exacto relevancia→fecha una
     vez la IA la asignó.
+
+    Si ``skip_reddit_before_ai`` es True, los items de SourceType.REDDIT
+    no se limitan en la fase ANTES de la IA (sí en la posterior).
     """
     if max_per_game <= 0:
         return items
@@ -64,17 +67,27 @@ def _limit_stories_per_game(
     # y quedarse con los max_per_game primeros
     limited: list[NewsItem] = []
     for game_items in by_game.values():
-        if len(game_items) <= max_per_game:
-            limited.extend(game_items)
-            continue
+        # Separar items de Reddit si se debe saltar el pre-límite
+        if skip_reddit_before_ai:
+            reddit_items = [it for it in game_items if getattr(it.source, "type", None) is SourceType.REDDIT]
+            other_items = [it for it in game_items if getattr(it.source, "type", None) is not SourceType.REDDIT]
+        else:
+            reddit_items = []
+            other_items = game_items
 
-        # Ordenar: primero por relevancia (desc), luego por fecha (más reciente primero)
-        sorted_items = sorted(
-            game_items,
-            key=lambda x: (getattr(x, "relevance", 0), x.published_at),
-            reverse=True,
-        )
-        limited.extend(sorted_items[:max_per_game])
+        # Aplicar límite solo a los items no-Reddit (o a todos si no se salta)
+        if len(other_items) <= max_per_game:
+            limited.extend(other_items)
+        else:
+            sorted_items = sorted(
+                other_items,
+                key=lambda x: (getattr(x, "relevance", 0), x.published_at),
+                reverse=True,
+            )
+            limited.extend(sorted_items[:max_per_game])
+
+        # Los items de Reddit siempre pasan (en pre-límite) o se limitan (en post-límite)
+        limited.extend(reddit_items)
 
     return limited
 
@@ -98,9 +111,36 @@ class Pipeline:
         self.groq = GroqClient()  # puede lanzar ValueError si no hay API key
         self.current_client: AIClient = self.ollama
         self._consecutive_ai_errors = 0
+        self._ai_cache: dict[str, dict] = {}  # url -> {summary, relevance, category, is_fallback}
+
+    def _load_ai_cache(self) -> None:
+        """Carga el digest existente y construye caché de resultados de IA por URL.
+        
+        Solo cachea items con summary no-None (procesados exitosamente por IA).
+        """
+        from gaming_news_digest.storage.json_store import load_existing_digest
+        existing = load_existing_digest()
+        cached = 0
+        for item in existing:
+            if item.summary is not None and item.summary.strip():
+                # Usar la URL normalizada como clave de caché
+                from gaming_news_digest.models import normalize_url
+                key = normalize_url(item.url)
+                self._ai_cache[key] = {
+                    "summary": item.summary,
+                    "relevance": item.relevance,
+                    "category": item.category,
+                    "is_fallback": item.summary_is_fallback,
+                }
+                cached += 1
+        if cached:
+            logger.info("Caché de IA cargado: %d items con summary reutilizable", cached)
 
     def run(self) -> None:
         """Ejecuta el pipeline completo y guarda el digest."""
+        # Cargar caché de IA ANTES de fetch/filtrado para reutilizar resultados previos
+        self._load_ai_cache()
+        
         fetched = self._fetch_all()
         filtered = self._filter(fetched)
         # Clustering: agrupar por historia y seleccionar representante
@@ -111,9 +151,13 @@ class Pipeline:
         # juego jamás se publicarían; se descartan primero (orden determinista por
         # actualidad; la relevancia aún no existe) y la IA solo se gasta en las
         # historias supervivientes (p. ej. 62 -> ~9 llamadas).
-        prelimited = _limit_stories_per_game(clustered, self.limits.max_stories_per_game)
+        # Reddit (rumores/leaks) se salta este pre-límite para que no se pierda
+        # contenido antes de la IA.
+        prelimited = _limit_stories_per_game(
+            clustered, self.limits.max_stories_per_game, skip_reddit_before_ai=True
+        )
         logger.info(
-            "Pre-límite por juego (%d) antes de IA: %d -> %d historias",
+            "Pre-límite por juego (%d) antes de IA (Reddit sin límite): %d -> %d historias",
             self.limits.max_stories_per_game,
             len(clustered),
             len(prelimited),
@@ -201,15 +245,37 @@ class Pipeline:
         for i, item in enumerate(items):
             if self.current_client is self.groq and i > 0:
                 time.sleep(1)  # rate limit: 1 req/s para Groq free tier
-            ai_data = self._summarize_with_fallback(item)
-            is_fallback = ai_data is None
-            if is_fallback:  # fallback seguro documentado
+
+            # Verificar caché: si ya tenemos resultado de IA para esta URL, reutilizarlo
+            from gaming_news_digest.models import normalize_url
+            cache_key = normalize_url(item.url)
+            cached = self._ai_cache.get(cache_key)
+            if cached is not None:
                 logger.info(
-                    "Item '%s' (fuente=%s): summary=null por fallback IA",
-                    item.title,
-                    item.source.name,
+                    "Item '%s' (fuente=%s): reutilizando resultado de IA caché",
+                    item.title, item.source.name
                 )
-                ai_data = _SAFE_FALLBACK
+                ai_data = cached
+                is_fallback = cached["is_fallback"]
+            else:
+                ai_data = self._summarize_with_fallback(item)
+                is_fallback = ai_data is None
+                if is_fallback:  # fallback seguro documentado
+                    logger.info(
+                        "Item '%s' (fuente=%s): summary=null por fallback IA",
+                        item.title,
+                        item.source.name,
+                    )
+                    ai_data = _SAFE_FALLBACK
+                # Guardar en caché para futuras ejecuciones (solo si no es fallback)
+                elif not is_fallback:
+                    self._ai_cache[cache_key] = {
+                        "summary": ai_data["summary"],
+                        "relevance": ai_data["relevance"],
+                        "category": ai_data["category"],
+                        "is_fallback": False,
+                    }
+
             # is_verified = True para medios oficiales y Steam, False para Reddit
             is_verified = item.source.type != SourceType.REDDIT
             # Regla determinista aprobada: todo item de subreddit es un rumor;
@@ -252,11 +318,13 @@ class Pipeline:
         """
         while True:
             try:
+                source_type = item.source.type.value
                 result = self.current_client.summarize(
                     title=item.title,
                     body=item.body_text or "",
                     source_language=item.language.value if item.language else "en",
                     game=item.game or "",
+                    source_type=source_type,
                 )
                 self._consecutive_ai_errors = 0
                 return {

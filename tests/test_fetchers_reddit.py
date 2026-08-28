@@ -14,7 +14,7 @@ from gaming_news_digest.models import SourceType
 FIXTURES = Path(__file__).parent / "fixtures"
 NOW = datetime(2026, 8, 23, 12, 0, tzinfo=timezone.utc)
 SUBREDDIT = Subreddit(name="gamingleaks")
-LIMITS = Limits(max_items_per_source=10, timeout_seconds=5)
+LIMITS = Limits(max_items_per_source=10, max_items_per_source_reddit=0, timeout_seconds=5)
 
 
 def load_fixture(name: str) -> bytes:
@@ -96,7 +96,20 @@ class TestPeticionHttp:
         fake_session.route(
             "gamingleaks", FakeResponse(load_fixture("reddit_sample.rss"))
         )
-        limits = Limits(max_items_per_source=1, timeout_seconds=5)
+        # Límite general (media/steam) de 1
+        limits = Limits(max_items_per_source=1, max_items_per_source_reddit=0, timeout_seconds=5)
+
+        result = fetch_subreddit(SUBREDDIT, limits, session=fake_session, now=NOW)
+
+        # Reddit usa max_items_per_source_reddit=0 -> no trunca, devuelve 2
+        assert len(result) == 2
+
+    def test_reddit_limite_propio_si_configurado(self, fake_session):
+        """Si max_items_per_source_reddit > 0, aplica ese límite."""
+        fake_session.route(
+            "gamingleaks", FakeResponse(load_fixture("reddit_sample.rss"))
+        )
+        limits = Limits(max_items_per_source=10, max_items_per_source_reddit=1, timeout_seconds=5)
 
         result = fetch_subreddit(SUBREDDIT, limits, session=fake_session, now=NOW)
 

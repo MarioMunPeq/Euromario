@@ -19,8 +19,14 @@ class OllamaClient(AIClient):
         body: str,
         source_language: str,
         game: str,
+        source_type: str = "media",
     ) -> "AISummary":
-        prompt = self._build_prompt(title, body, source_language, game)
+        # Truncar body a 2000 chars para evitar prompts excesivamente largos
+        max_body = 2000
+        if len(body) > max_body:
+            body = body[:max_body] + "..."
+        
+        prompt = self._build_prompt(title, body, source_language, game, source_type)
 
         for attempt in range(self.MAX_RETRIES + 1):
             try:
@@ -38,7 +44,7 @@ class OllamaClient(AIClient):
                 response.raise_for_status()
                 payload = response.json()
                 raw = payload.get("response", "")
-                return self._validate_response(raw)
+                return self._validate_response(raw, source_type)
             except requests.Timeout as exc:
                 raise TimeoutError("Ollama timeout") from exc
             except requests.ConnectionError as exc:
@@ -53,14 +59,19 @@ class OllamaClient(AIClient):
                 continue
         raise AIError("Agotados reintentos en Ollama")
 
-    def _build_prompt(self, title: str, body: str, source_language: str, game: str) -> str:
+    def _build_prompt(self, title: str, body: str, source_language: str, game: str, source_type: str) -> str:
+        # Para Reddit no pedimos categoría (se fuerza a "rumor" externamente)
+        if source_type == "reddit":
+            category_instruction = ""
+        else:
+            category_instruction = '- "category": "lanzamiento" | "actualizacion" | "rumor" | "analisis"\n'
+        
         return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
 Add value beyond the title: include ONE concrete, checkable detail found in the article body (a number, a date, a price, a version, a platform, a name, or a direct quote) that is NOT already in the title. Never merely rephrase the title with fewer words. Only use details actually present in the body — never invent facts. If the body has no usable extra detail, close with the most specific confirmed fact.
 Return ONLY valid JSON with these exact keys:
 - "summary": str (1-2 lines, always written in English, regardless of the article's original language)
 - "relevance": int (1-5; 5 = major announcement of a followed saga)
-- "category": "lanzamiento" | "actualizacion" | "rumor" | "analisis"
-- "language": "en" (the summary must always be written in English)
+{category_instruction}- "language": "en" (the summary must always be written in English)
 
 Title: {title}
 Body: {body}

@@ -36,9 +36,15 @@ reddit:
     - nombre: gamingleaksandrumours
       etiqueta: rumores
   # Subreddits de sagas concretas: se añadirán según crezca la lista de inclusión
+  # Reddit (r/gamingleaksandrumours) es una fuente especial de rumores/leaks:
+  # - No usa el límite general max_items_por_fuente; recoge todo lo que devuelva el RSS.
+  # - Se salta el pre-límite por juego (max_stories_por_juego) antes de la IA.
+  # - El post-límite tras la IA SÍ se aplica.
+  # - Categoría forzada a "rumor", is_verified=False.
 
 limites:
   max_items_por_fuente: 20
+  max_items_por_fuente_reddit: 0  # 0 = sin límite (usa todo lo que devuelva el RSS)
   timeout_segundos: 15
   max_stories_por_juego: 8
 

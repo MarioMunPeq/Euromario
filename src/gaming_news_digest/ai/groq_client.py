@@ -33,7 +33,12 @@ class GroqClient(AIClient):
         body: str,
         source_language: str,
         game: str,
+        source_type: str = "media",
     ) -> "AISummary":
+        # Truncar body a 2000 chars para evitar prompts excesivamente largos
+        max_body = 2000
+        if len(body) > max_body:
+            body = body[:max_body] + "..."
 
         for attempt in range(self.MAX_RETRIES + 1):
             try:
@@ -46,8 +51,8 @@ class GroqClient(AIClient):
                     json={
                         "model": self.model,
                         "messages": [
-                            {"role": "system", "content": self._system_prompt()},
-                            {"role": "user", "content": self._user_prompt(title, body, game, source_language)},
+                            {"role": "system", "content": self._system_prompt(source_type)},
+                            {"role": "user", "content": self._user_prompt(title, body, game, source_language, source_type)},
                         ],
                         "temperature": 0.1,
                         "max_tokens": 300,
@@ -57,7 +62,7 @@ class GroqClient(AIClient):
                 response.raise_for_status()
                 payload = response.json()
                 raw = payload["choices"][0]["message"]["content"]
-                return self._validate_response(raw)
+                return self._validate_response(raw, source_type)
             except requests.Timeout as exc:
                 raise TimeoutError("Groq timeout") from exc
             except requests.ConnectionError as exc:
@@ -76,21 +81,13 @@ class GroqClient(AIClient):
                 continue
         raise AIError("Agotados reintentos en Groq")
 
-    def _build_prompt(self, title: str, body: str, source_language: str, game: str) -> str:
-        return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
-Add value beyond the title: include ONE concrete, checkable detail found in the article body (a number, a date, a price, a version, a platform, a name, or a direct quote) that is NOT already in the title. Never merely rephrase the title with fewer words. Only use details actually present in the body — never invent facts. If the body has no usable extra detail, close with the most specific confirmed fact.
-Return ONLY valid JSON with these exact keys:
-- "summary": str (1-2 lines, always written in English, regardless of the article's original language)
-- "relevance": int (1-5; 5 = major announcement of a followed saga)
-- "category": "lanzamiento" | "actualizacion" | "rumor" | "analisis"
-- "language": "en" (the summary must always be written in English)
-
-Title: {title}
-Body: {body}
-Game: {game}
-Source language: {source_language}"""
-
-    def _system_prompt(self) -> str:
+    def _system_prompt(self, source_type: str) -> str:
+        if source_type == "reddit":
+            category_instruction = ""
+        else:
+            category_instruction = (
+                '"category" ("lanzamiento"|"actualizacion"|"rumor"|"analisis"), '
+            )
         return (
             "You are a video game news editor. Summarize the news in 1-2 short lines, "
             "ALWAYS WRITTEN IN ENGLISH. The summary must be in English regardless of the "
@@ -104,9 +101,23 @@ Source language: {source_language}"""
             "Return ONLY valid JSON with these exact keys: "
             '"summary" (str, 1-2 lines, always in English), '
             '"relevance" (int 1-5; 5 = major announcement of a followed saga), '
-            '"category" ("lanzamiento"|"actualizacion"|"rumor"|"analisis"), '
+            f'{category_instruction}'
             '"language" ("en").'
         )
 
-    def _user_prompt(self, title: str, body: str, game: str, source_language: str) -> str:
-        return f"Title: {title}\nBody: {body}\nGame: {game}\nSource language: {source_language}"
+    def _user_prompt(self, title: str, body: str, game: str, source_language: str, source_type: str) -> str:
+        if source_type == "reddit":
+            category_key = ""
+        else:
+            category_key = '"category": str, '
+        return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
+Add value beyond the title: include ONE concrete, checkable detail found in the article body (a number, a date, a price, a version, a platform, a name, or a direct quote) that is NOT already in the title. Never merely rephrase the title with fewer words. Only use details actually present in the body — never invent facts. If the body has no usable extra detail, close with the most specific confirmed fact.
+Return ONLY valid JSON with these exact keys:
+- "summary": str (1-2 lines, always written in English, regardless of the article's original language)
+- "relevance": int (1-5; 5 = major announcement of a followed saga)
+{category_key}- "language": "en" (the summary must always be written in English)
+
+Title: {title}
+Body: {body}
+Game: {game}
+Source language: {source_language}"""

@@ -16,6 +16,7 @@ import yaml
 from .models import Language
 
 DEFAULT_MAX_ITEMS_PER_SOURCE = 20
+DEFAULT_MAX_ITEMS_PER_SOURCE_REDDIT = 0  # 0 = sin límite (usa todo lo que devuelva el RSS)
 DEFAULT_TIMEOUT_SECONDS = 15
 DEFAULT_MAX_STORIES_PER_GAME = 8
 
@@ -95,6 +96,7 @@ class Limits:
     """Límites de descarga por ejecución."""
 
     max_items_per_source: int = DEFAULT_MAX_ITEMS_PER_SOURCE
+    max_items_per_source_reddit: int = DEFAULT_MAX_ITEMS_PER_SOURCE_REDDIT
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
     max_stories_per_game: int = DEFAULT_MAX_STORIES_PER_GAME
 
@@ -334,6 +336,9 @@ def _parse_limits(raw: Any, path: Path) -> Limits:
         max_items_per_source=_positive_int(
             raw, "max_items_por_fuente", DEFAULT_MAX_ITEMS_PER_SOURCE, path
         ),
+        max_items_per_source_reddit=_positive_int(
+            raw, "max_items_por_fuente_reddit", DEFAULT_MAX_ITEMS_PER_SOURCE_REDDIT, path
+        ),
         timeout_seconds=_positive_int(
             raw, "timeout_segundos", DEFAULT_TIMEOUT_SECONDS, path
         ),
@@ -345,9 +350,15 @@ def _parse_limits(raw: Any, path: Path) -> Limits:
 
 def _positive_int(raw: dict, key: str, default: int, path: Path) -> int:
     value = raw.get(key, default)
-    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise ConfigError(
-            f"{path}: 'limites.{key}' debe ser un entero positivo, no {value!r}"
+            f"{path}: 'limites.{key}' debe ser un entero no negativo, no {value!r}"
+        )
+    # max_items_por_fuente no puede ser 0 (no tiene sentido para medios/steam)
+    # max_items_por_fuente_reddit SÍ puede ser 0 (significa "sin límite")
+    if key == "max_items_por_fuente" and value == 0:
+        raise ConfigError(
+            f"{path}: 'limites.{key}' debe ser un entero positivo, no 0"
         )
     return value
 

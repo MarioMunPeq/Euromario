@@ -70,7 +70,12 @@ def fetch_subreddit(
         item = _build_item(entry, source, now)
         if item is not None:
             items.append(item)
-    return tuple(items[: limits.max_items_per_source])
+    
+    # Reddit usa su propio límite (0 = sin límite, usa todo el RSS)
+    reddit_limit = limits.max_items_per_source_reddit
+    if reddit_limit > 0:
+        return tuple(items[:reddit_limit])
+    return tuple(items)
 
 
 def _build_item(entry, source: Source, now: datetime) -> FetchedItem | None:

@@ -47,22 +47,26 @@ class AIClient(ABC):
         body: str,
         source_language: str,          # "es" o "en"
         game: str,                     # juego canónico que matcheó
+        source_type: str = "media",    # "media", "steam", "reddit"
     ) -> "AISummary":
         """Resume, clasifica y puntúa una noticia.
 
         Lanza AIError si no puede producir salida válida tras reintentos.
         Lanza ConnectionError / TimeoutError / requests.HTTPError
         para errores de infraestructura (manejados por el pipeline).
+        
+        Para source_type="reddit", la categoría se fuerza a "rumor" externamente
+        y el cliente puede omitir pedirla al modelo.
         """
         ...
 
-    def _validate_response(self, raw: str) -> "AISummary":
+    def _validate_response(self, raw: str, source_type: str = "media") -> "AISummary":
         """Parsea y valida la respuesta JSON cruda del modelo."""
         import json
         import re
 
-        # Strip<think> blocks (Qwen thinking mode)
-        cleaned = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+        # Strip think blocks (Qwen thinking mode)
+        cleaned = re.sub(r"think.*?think", "", raw, flags=re.DOTALL).strip()
 
         try:
             data = json.loads(cleaned)
@@ -70,9 +74,16 @@ class AIClient(ABC):
             raise AIError(f"JSON inválido: {exc}", raw_response=raw) from exc
 
         # Campos obligatorios
-        for field in ("summary", "relevance", "category", "language"):
+        for field in ("summary", "relevance", "language"):
             if field not in data:
                 raise AIError(f"Campo obligatorio ausente: {field}", raw_response=raw)
+
+        # Category: obligatoria excepto para Reddit (se fuerza externamente)
+        if source_type != "reddit":
+            if "category" not in data:
+                raise AIError("Campo obligatorio ausente: category", raw_response=raw)
+        else:
+            data["category"] = "rumor"  # valor por defecto para validación
 
         # Relevance 1-5
         rel = data["relevance"]

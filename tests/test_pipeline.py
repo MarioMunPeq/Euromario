@@ -10,10 +10,10 @@ from gaming_news_digest.models import FetchedItem, NewsItem, Source
 from gaming_news_digest.pipeline import Pipeline
 
 
-def make_item(title="Noticia", body="Cuerpo", game="Persona", lang="en"):
+def make_item(title="Noticia", body="Cuerpo", game="Persona", lang="en", url_suffix=""):
     return FetchedItem(
         title=title,
-        url="https://test.com",
+        url=f"https://test.com/{url_suffix or title}",
         source=Source(name="Test", type="media"),
         published_at=datetime(2026, 8, 23, 12, 0, tzinfo=timezone.utc),
         fetched_at=datetime(2026, 8, 23, 12, 5, tzinfo=timezone.utc),
@@ -72,12 +72,13 @@ def test_ollama_ok_groq_no_usado():
         make_ai_summary("ok2", 2, Category.RUMOR),
     ]
     pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
     pipeline.ollama = ollama
     pipeline.groq = Mock()
     pipeline.current_client = ollama
     pipeline._consecutive_ai_errors = 0
 
-    items = [make_item(f"N{i}", f"c{i}") for i in range(2)]
+    items = [make_item(f"N{i}", f"c{i}", url_suffix=f"item{i}") for i in range(2)]
     results = list(pipeline._enrich_with_ai(items))
 
     assert len(results) == 2
@@ -94,6 +95,7 @@ def test_reddit_siempre_rumor_sobreescribe_a_la_ia():
         "El reveal puede estar en camino", 4, Category.LAUNCH
     )
     pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
     pipeline.ollama = ollama
     pipeline.groq = Mock()
     pipeline.current_client = ollama
@@ -114,6 +116,7 @@ def test_media_no_se_sobreescribe_por_regla_reddit():
         "Lanzamiento confirmado", 5, Category.LAUNCH
     )
     pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
     pipeline.ollama = ollama
     pipeline.groq = Mock()
     pipeline.current_client = ollama
@@ -133,6 +136,7 @@ def test_ai_error_item_fallback_seguro_continua():
         make_ai_summary("ok", 3, Category.UPDATE),
     ]
     pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
     pipeline.ollama = ollama
     pipeline.groq = Mock()
     pipeline.current_client = ollama
@@ -161,6 +165,7 @@ def test_tres_ai_error_consecutivos_switch_a_groq():
     groq.summarize.return_value = make_ai_summary("groq ok", 5, Category.LAUNCH)
 
     pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
     pipeline.ollama = ollama
     pipeline.groq = groq
     pipeline.current_client = ollama
@@ -185,12 +190,13 @@ def test_groq_ai_error_no_aborta_pipeline():
         make_ai_summary("ok4", 1, Category.RUMOR),  # extra por si acaso
     ]
     pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
     pipeline.ollama = Mock()
     pipeline.groq = groq
     pipeline.current_client = groq
     pipeline._consecutive_ai_errors = 0
 
-    items = [make_item("ok1"), make_item("falla groq"), make_item("ok3")]
+    items = [make_item("ok1", url_suffix="ok1"), make_item("falla groq", url_suffix="fail"), make_item("ok3", url_suffix="ok3")]
     results = list(pipeline._enrich_with_ai(items))
 
     assert len(results) == 3
@@ -210,12 +216,13 @@ def test_groq_infra_critico_aborta_con_parcial(monkeypatch):
     ]
 
     pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
     pipeline.ollama = Mock()
     pipeline.groq = groq
     pipeline.current_client = groq
     pipeline._consecutive_ai_errors = 0
 
-    items = [make_item("ok1"), make_item("fallará")]
+    items = [make_item("ok1", url_suffix="ok1"), make_item("fallará", url_suffix="fail")]
     with pytest.raises(ConnectionError):
         list(pipeline._enrich_with_ai(items))
 
@@ -267,6 +274,7 @@ def test_limite_por_juego_se_aplica_antes_de_la_ia(monkeypatch):
     from gaming_news_digest.config import GamesConfig, Limits, SourcesConfig
 
     pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
     pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=8)
     pipeline.sources = SourcesConfig()
     pipeline._games = GamesConfig(include=())
@@ -295,3 +303,123 @@ def test_limite_por_juego_se_aplica_antes_de_la_ia(monkeypatch):
     assert len(seen_enriched) == 8  # solo los supervivientes pasan por la IA
     assert len(saved) == 1
     assert len(saved[0]) == 8
+
+
+def test_reddit_salta_pre_limite_antes_de_ia(monkeypatch):
+    """Los items de Reddit NO se limitan en el pre-límite por juego antes de la IA.
+    Deben pasar todos los items de Reddit aunque excedan max_stories_per_game."""
+    import gaming_news_digest.pipeline as pipe
+    from gaming_news_digest.config import GamesConfig, Limits, SourcesConfig
+
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=8)
+    pipeline.sources = SourcesConfig()
+    pipeline._games = GamesConfig(include=())
+    pipeline._save_games_config = Mock()
+
+    # 15 items de Reddit del mismo juego (exceden el límite de 8)
+    fetched = [make_reddit_item(f"GTA leak {i}", game="Grand Theft Auto") for i in range(15)]
+    monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
+    monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+    monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
+
+    seen_enriched = []
+
+    def fake_enrich(items):
+        seen_enriched.extend(items)
+        for it in items:
+            yield make_news_item(it.title, it.game, relevance=3)
+
+    monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
+
+    saved = []
+    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
+
+    pipeline.run()
+
+    # Todos los 15 items de Reddit deben llegar a la IA (pre-límite saltado)
+    assert len(seen_enriched) == 15, f"Esperados 15 items en IA, got {len(seen_enriched)}"
+    # Pero post-límite tras IA debe reducir a 8
+    assert len(saved) == 1
+    assert len(saved[0]) == 8, f"Post-límite debe reducir a 8, got {len(saved[0])}"
+
+
+def test_media_respeta_pre_limite_antes_de_ia(monkeypatch):
+    """Los items de medios SÍ se limitan en el pre-límite por juego antes de la IA."""
+    import gaming_news_digest.pipeline as pipe
+    from gaming_news_digest.config import GamesConfig, Limits, SourcesConfig
+
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=8)
+    pipeline.sources = SourcesConfig()
+    pipeline._games = GamesConfig(include=())
+    pipeline._save_games_config = Mock()
+
+    # 15 items de MEDIOS del mismo juego (exceden el límite de 8)
+    fetched = [make_item(f"N{i}", game="Persona") for i in range(15)]
+    monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
+    monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+    monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
+
+    seen_enriched = []
+
+    def fake_enrich(items):
+        seen_enriched.extend(items)
+        for it in items:
+            yield make_news_item(it.title, it.game, relevance=3)
+
+    monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
+
+    saved = []
+    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
+
+    pipeline.run()
+
+    # Solo 8 items de medios deben llegar a la IA (pre-límite aplicado)
+    assert len(seen_enriched) == 8, f"Esperados 8 items en IA, got {len(seen_enriched)}"
+    assert len(saved) == 1
+    assert len(saved[0]) == 8
+
+
+def test_reddit_post_limite_despues_de_ia_funciona(monkeypatch):
+    """El post-límite tras la IA SÍ se aplica a Reddit (reduce a max_stories_per_game)."""
+    import gaming_news_digest.pipeline as pipe
+    from gaming_news_digest.config import GamesConfig, Limits, SourcesConfig
+
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=5)
+    pipeline.sources = SourcesConfig()
+    pipeline._games = GamesConfig(include=())
+    pipeline._save_games_config = Mock()
+
+    # 10 items de Reddit del mismo juego
+    fetched = [make_reddit_item(f"Leak {i}", game="Starfield") for i in range(10)]
+    monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
+    monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+    monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
+
+    seen_enriched = []
+
+    def fake_enrich(items):
+        seen_enriched.extend(items)
+        for it in items:
+            yield make_news_item(it.title, it.game, relevance=3)
+
+    monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
+
+    saved = []
+    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
+
+    pipeline.run()
+
+    # 10 items llegan a la IA (pre-límite saltado)
+    assert len(seen_enriched) == 10
+    # Pero post-límite reduce a 5
+    assert len(saved) == 1
+    assert len(saved[0]) == 5

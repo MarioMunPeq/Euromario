@@ -191,9 +191,36 @@ function renderGameTiles(games) {
   const gameTiles = games.map(game => createTile(game, false)).join('');
 
   if (TILES_MOBILE_MQL.matches && games.length > 0) {
-    const cloneCount = Math.min(3, games.length);
-    const firstClones = games.slice(0, cloneCount).map((g, i) => createTile(g, true, i)).join('');
-    const lastClones = games.slice(-cloneCount).map((g, i) => createTile(g, true, -(cloneCount - i))).join('');
+    // Real section for infinite loop: ["All", game1, game2, ..., gameN]
+    // We need clones on both sides that cover at least one viewport width.
+    // Use enough clones so that clone zone >= typical mobile viewport (~400px).
+    // TILE_WIDTH = 104px, so need at least 4 clones. Use min(5, games.length + 1) to include "All".
+    const cloneCount = Math.min(5, games.length + 1);
+
+    // Build real section tiles array for cloning (including "All" as first element)
+    const realSectionGames = ['', ...games]; // '' represents "All"
+
+    const createCloneTile = (game, cloneIndex) => {
+      if (game === '') {
+        // "All" tile clone
+        return `
+          <button type="button" class="game-tile" data-game-clone="" data-clone-index="${cloneIndex}" aria-pressed="false">
+            <div class="game-tile__icon game-tile__icon--all">
+              <img src="assets/icons/all.svg" alt="" width="20" height="20" loading="lazy"/>
+            </div>
+            <span class="game-tile__name">All</span>
+          </button>`;
+      }
+      return createTile(game, true, cloneIndex);
+    };
+
+    // Left clones: last `cloneCount` items of real section
+    const lastClones = realSectionGames.slice(-cloneCount).map((g, i) => createCloneTile(g, -(cloneCount - i))).join('');
+    // Right clones: first `cloneCount` items of real section
+    const firstClones = realSectionGames.slice(0, cloneCount).map((g, i) => createCloneTile(g, i)).join('');
+
+    // DOM order: leftClones + realSection (All + games) + rightClones
+    // But realSection in DOM is: allTile + gameTiles (no "All" in gameTiles)
     return lastClones + allTile + gameTiles + firstClones;
   }
 
@@ -305,7 +332,6 @@ function setupGameTileCarousel() {
 
   // Constants
   const TILE_WIDTH = 104; // 96px tile + 8px gap (from CSS)
-  const CLONE_COUNT = 3;
   const DRAG_THRESHOLD = 8; // px — tap vs drag discrimination
 
   // State
@@ -317,14 +343,33 @@ function setupGameTileCarousel() {
   // Helpers
   const getRealGameName = (tile) => tile.dataset.game || tile.dataset.gameClone || '';
 
-  const getRealGameCount = () =>
-    container.querySelectorAll('[data-game]:not([data-game=""])').length;
+  // Dynamically compute clone zones from DOM structure
+  // Real section = tiles with [data-game] (not clone) = "All" + real games
+  const getRealSectionStart = () => {
+    // First real tile is the "All" button with data-game=""
+    const allTile = container.querySelector('[data-game=""]');
+    if (!allTile) return 0;
+    // Its index among all .game-tile children
+    const tiles = Array.from(container.querySelectorAll('.game-tile'));
+    const index = tiles.indexOf(allTile);
+    return index * TILE_WIDTH;
+  };
 
-  const getRealSectionWidth = () => TILE_WIDTH * (1 + getRealGameCount());
+  const getRealSectionEnd = () => {
+    // Last real tile is the last [data-game] (not clone)
+    const realTiles = container.querySelectorAll('[data-game]:not([data-game=""])');
+    if (realTiles.length === 0) return getRealSectionStart() + TILE_WIDTH;
+    const lastReal = realTiles[realTiles.length - 1];
+    const tiles = Array.from(container.querySelectorAll('.game-tile'));
+    const index = tiles.indexOf(lastReal);
+    return (index + 1) * TILE_WIDTH;
+  };
 
-  const getLeftCloneZoneEnd = () => TILE_WIDTH * CLONE_COUNT;
+  const getRealSectionWidth = () => getRealSectionEnd() - getRealSectionStart();
 
-  const getRightCloneZoneStart = () => getLeftCloneZoneEnd() + getRealSectionWidth();
+  const getLeftCloneZoneEnd = () => getRealSectionStart();
+
+  const getRightCloneZoneStart = () => getRealSectionEnd();
 
   // --- Visual center tracking (runs on scroll, no side effects) ---
   const updateActiveTileVisual = () => {

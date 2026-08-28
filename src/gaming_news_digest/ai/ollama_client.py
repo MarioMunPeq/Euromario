@@ -54,14 +54,14 @@ class OllamaClient(AIClient):
         raise AIError("Agotados reintentos en Ollama")
 
     def _build_prompt(self, title: str, body: str, source_language: str, game: str) -> str:
-        return f"""Eres un editor de noticias de videojuegos. Resume la noticia en 1-2 líneas (en inglés), clasifícala y dale relevancia 1-5.
-Devuelve SOLO JSON válido con estas claves exactas:
-- "summary": str (1-2 líneas, en inglés)
-- "relevance": int (1-5, 5 = anuncio mayor de saga seguida)
+        return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
+Return ONLY valid JSON with these exact keys:
+- "summary": str (1-2 lines, always written in English, regardless of the article's original language)
+- "relevance": int (1-5; 5 = major announcement of a followed saga)
 - "category": "lanzamiento" | "actualizacion" | "rumor" | "analisis"
-- "language": "en" (el resumen siempre se genera en inglés)
+- "language": "en" (the summary must always be written in English)
 
-Título: {title}
-Texto: {body}
-Juego: {game}
-Idioma fuente: {source_language}"""
+Title: {title}
+Body: {body}
+Game: {game}
+Source language: {source_language}"""

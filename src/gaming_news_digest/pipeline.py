@@ -311,8 +311,14 @@ class Pipeline:
         )
         StageStats.log_separator()
 
-        # Retención
-        retained = apply_retention(limited, max_age_hours=48, max_total=200, max_per_game=self.limits.max_stories_per_game)
+        # Retención: Reddit tiene bloque independiente con su propio límite por juego
+        retained = apply_retention(
+            limited,
+            max_age_hours=48,
+            max_total=200,
+            max_per_game=self.limits.max_stories_per_game,
+            max_per_game_reddit=self.limits.max_stories_per_game_reddit,
+        )
         
         # Diagnóstico FINAL
         stats_final = _count_by_source(retained)
@@ -374,9 +380,12 @@ class Pipeline:
         for item in items:
             if self._is_excluded(item):
                 continue
-            accepted, game = self.matcher.match(item.title, item.body_text or "")
-            if accepted:
-                # enriquece con el juego canónico que matcheó
+            
+            is_reddit = getattr(item.source, "type", None) is SourceType.REDDIT
+            
+            if is_reddit:
+                # Reddit: bypass game matching, keep all items that pass technical checks
+                # Assign a generic game name for Reddit items (they'll be properly categorized by AI)
                 item = FetchedItem(
                     title=item.title,
                     url=item.url,
@@ -385,12 +394,30 @@ class Pipeline:
                     fetched_at=item.fetched_at,
                     body_text=item.body_text,
                     language=item.language,
-                    game=game,
+                    game="Reddit Rumors",  # Generic game for Reddit rumors
                     image_url=item.image_url,
                     author=item.author,
                     game_id=item.game_id,
                 )
                 kept.append(item)
+            else:
+                # Media/Steam: apply normal game matching
+                accepted, game = self.matcher.match(item.title, item.body_text or "")
+                if accepted:
+                    item = FetchedItem(
+                        title=item.title,
+                        url=item.url,
+                        source=item.source,
+                        published_at=item.published_at,
+                        fetched_at=item.fetched_at,
+                        body_text=item.body_text,
+                        language=item.language,
+                        game=game,
+                        image_url=item.image_url,
+                        author=item.author,
+                        game_id=item.game_id,
+                    )
+                    kept.append(item)
         
         # Diagnóstico FILTRADO
         stats_in = StageStats()

@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta
 
-from gaming_news_digest.models import NewsItem, Source
+from gaming_news_digest.models import Category, Language, NewsItem, Source
 from gaming_news_digest.storage.retention import apply_retention, utc_now
 
 
@@ -11,13 +11,13 @@ def make_item(title: str, hours_ago: int, game: str = "Persona", now: datetime |
     return NewsItem(
         title=title,
         url=f"https://example.com/{title}",
-        source=Source(name="IGN", type="media"),
+        source=Source(name="Test", type="media"),
         game=game,
-        language="en",
+        language=Language.ENGLISH,
         published_at=base - timedelta(hours=hours_ago),
         fetched_at=base - timedelta(hours=hours_ago),
         relevance=3,
-        category="actualizacion",
+        category=Category.UPDATE,
         summary="Resumen de prueba.",
     )
 
@@ -479,3 +479,183 @@ class TestApplyRetentionPerGame:
         assert rep.image_url == "https://img2.jpg"
 
 
+class TestApplyRetentionReddit:
+    """Tests para el bloque independiente de Reddit (rumores)."""
+
+    def test_reddit_bloque_independiente_no_compite_por_max_total(self):
+        """Reddit items no cuentan para max_total y no se descartan por cap global."""
+        now = utc_now()
+        # 250 items Media distribuidos en 25 juegos (10 cada uno, todos < 48h) + 10 items Reddit
+        # Usar horas 0-9 para cada juego (todos < 48h)
+        media_items = [
+            NewsItem(
+                title=f"Media {game_idx}-{i}",
+                url=f"https://example.com/media{game_idx}-{i}",
+                source=Source(name="IGN", type="media"),
+                game=f"Game{game_idx}",
+                language="en",
+                published_at=now - timedelta(hours=i),  # 0-9 horas para todos
+                fetched_at=now - timedelta(hours=i),
+                relevance=3,
+                category="actualizacion",
+                summary="Resumen.",
+            )
+            for game_idx in range(25)  # 25 juegos
+            for i in range(10)  # 10 por juego = 250 total
+        ]
+        reddit_items = [
+            NewsItem(
+                title=f"Reddit Rumor {i}",
+                url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
+                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                game="Grand Theft Auto",
+                language="en",
+                published_at=now - timedelta(hours=i),
+                fetched_at=now - timedelta(hours=i),
+                relevance=3,
+                category="rumor",
+                summary="Rumor de prueba.",
+            )
+            for i in range(10)
+        ]
+        items = media_items + reddit_items
+        items.reverse()
+
+        # max_total=200, pero Reddit no cuenta para este límite
+        result = apply_retention(items, max_age_hours=48, max_total=200, max_per_game=8, max_per_game_reddit=15, now=now)
+
+        reddit_count = sum(1 for r in result if r.source.type.value == "reddit")
+        media_count = sum(1 for r in result if r.source.type.value != "reddit")
+
+        # Todos los 10 items Reddit deben sobrevivir (bloque independiente)
+        assert reddit_count == 10, f"Esperados 10 Reddit, got {reddit_count}"
+        # Media: max_total=200 mantiene 200, luego max_per_game=8 reduce a 20*8=160 (20 juegos)
+        assert media_count == 160
+        assert len(result) == 170  # 160 media + 10 reddit
+
+    def test_reddit_limite_propio_por_juego_max_per_game_reddit(self):
+        """Reddit respeta su propio límite por juego (max_per_game_reddit=15)."""
+        now = utc_now()
+        reddit_items = [
+            NewsItem(
+                title=f"GTA Rumor {i}",
+                url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
+                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                game="Grand Theft Auto",
+                language="en",
+                published_at=now - timedelta(hours=i),
+                fetched_at=now - timedelta(hours=i),
+                relevance=3,
+                category="rumor",
+                summary="Rumor de prueba.",
+            )
+            for i in range(20)
+        ]
+        items = reddit_items
+        items.reverse()
+
+        # max_per_game_reddit=5, así que solo 5 deben sobrevivir
+        result = apply_retention(items, max_age_hours=48, max_total=200, max_per_game=8, max_per_game_reddit=5, now=now)
+
+        reddit_count = sum(1 for r in result if r.source.type.value == "reddit")
+        assert reddit_count == 5, f"Esperados 5 Reddit (límite 5), got {reddit_count}"
+
+    def test_reddit_sin_limite_por_juego_si_max_per_game_reddit_none_o_cero(self):
+        """Si max_per_game_reddit es None o <=0, no hay límite por juego para Reddit."""
+        now = utc_now()
+        reddit_items = [
+            NewsItem(
+                title=f"GTA Rumor {i}",
+                url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
+                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                game=f"Game{i}",  # 49 juegos diferentes para evitar límite por juego
+                language="en",
+                published_at=now - timedelta(hours=i),  # 0-48 horas (49 items)
+                fetched_at=now - timedelta(hours=i),
+                relevance=3,
+                category="rumor",
+                summary="Rumor de prueba.",
+            )
+            for i in range(49)
+        ]
+        items = reddit_items
+        items.reverse()
+
+        # max_per_game_reddit=0 -> no límite por juego para Reddit
+        result = apply_retention(items, max_age_hours=48, max_total=200, max_per_game=8, max_per_game_reddit=0, now=now)
+
+        reddit_count = sum(1 for r in result if r.source.type.value == "reddit")
+        assert reddit_count == 49, f"Esperados 49 Reddit (0-48h), got {reddit_count}"
+
+    def test_reddit_solo_filtro_edad(self):
+        """Reddit items >48 horas se eliminan, ≤48 horas se conservan (solo filtro edad)."""
+        now = utc_now()
+        reddit_items = [
+            NewsItem(
+                title=f"Rumor {i}",
+                url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
+                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                game="Grand Theft Auto",
+                language="en",
+                published_at=now - timedelta(hours=h),
+                fetched_at=now - timedelta(hours=h),
+                relevance=3,
+                category="rumor",
+                summary="Rumor de prueba.",
+            )
+            for i, h in enumerate([1, 40, 47, 48, 49, 72])
+        ]
+        items = reddit_items
+        items.reverse()
+
+        result = apply_retention(items, max_age_hours=48, max_total=200, max_per_game=8, max_per_game_reddit=15, now=now)
+
+        assert len(result) == 4  # 1, 40, 47, 48 horas se conservan
+        assert all(it.published_at >= now - timedelta(hours=48) for it in result)
+
+    def test_reddit_no_discardado_por_max_total_media_lleno(self):
+        """Reddit items sobreviven aunque Media llene max_total=200."""
+        now = utc_now()
+        # 200 Media items distribuidos en 25 juegos (8 cada uno = 200) + 15 Reddit items
+        media_items = [
+            NewsItem(
+                title=f"Media {game_idx}-{i}",
+                url=f"https://example.com/media{game_idx}-{i}",
+                source=Source(name="IGN", type="media"),
+                game=f"Game{game_idx}",
+                language="en",
+                published_at=now - timedelta(hours=i),  # 0-7 horas para todos
+                fetched_at=now - timedelta(hours=i),
+                relevance=3,
+                category="actualizacion",
+                summary="Resumen.",
+            )
+            for game_idx in range(25)  # 25 juegos
+            for i in range(8)  # 8 por juego = 200 total
+        ]
+        reddit_items = [
+            NewsItem(
+                title=f"Reddit {i}",
+                url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
+                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                game="Grand Theft Auto",
+                language="en",
+                published_at=now - timedelta(hours=i),
+                fetched_at=now - timedelta(hours=i),
+                relevance=3,
+                category="rumor",
+                summary="Rumor.",
+            )
+            for i in range(15)
+        ]
+        items = media_items + reddit_items
+        items.reverse()
+
+        result = apply_retention(items, max_age_hours=48, max_total=200, max_per_game=8, max_per_game_reddit=15, now=now)
+
+        reddit_count = sum(1 for r in result if r.source.type.value == "reddit")
+        media_count = sum(1 for r in result if r.source.type.value != "reddit")
+
+        assert reddit_count == 15, f"Todos 15 Reddit deben sobrevivir, got {reddit_count}"
+        assert media_count == 200, f"Media limitado a 200, got {media_count}"
+        assert len(result) == 215

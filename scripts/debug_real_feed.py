@@ -2,7 +2,8 @@
 import feedparser
 
 # Use the content we just fetched
-content = open('scripts/reddit_gaming_feed.xml', 'rb').read()
+with open('scripts/reddit_gaming_feed.xml', 'rb') as f:
+    content = f.read()
 parsed = feedparser.parse(content)
 
 print(f"Bozo: {parsed.bozo}")

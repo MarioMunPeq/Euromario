@@ -2,7 +2,8 @@
 import feedparser
 
 FIXTURE = "tests/fixtures/reddit_sample.rss"
-content = open(FIXTURE, "rb").read()
+with open(FIXTURE, "rb") as f:
+    content = f.read()
 parsed = feedparser.parse(content)
 
 print(f"Bozo: {parsed.bozo}")

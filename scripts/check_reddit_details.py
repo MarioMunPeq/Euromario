@@ -1,6 +1,7 @@
 import json
 
-d = json.load(open('frontend/data/news.json', 'r', encoding='utf-8'))
+with open('frontend/data/news.json', 'r', encoding='utf-8') as f:
+    d = json.load(f)
 reddit = [i for i in d['news'] if i.get('source', {}).get('type') == 'reddit']
 for i in reddit:
     sub = i['source'].get('subreddit', '?')

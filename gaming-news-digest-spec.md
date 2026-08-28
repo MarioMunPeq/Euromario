@@ -15,7 +15,7 @@ Script en Python que rastrea noticias de videojuegos de múltiples fuentes (medi
 - **Medios especializados** (vía RSS): IGN, Eurogamer, PC Gamer, Polygon, Rock Paper Shotgun (y cualquier otro medio relevante con RSS disponible)
 - **Steam News**: noticias/actualizaciones oficiales de juegos vía Steam News API
 - **Reddit** (vía RSS de subreddits):
-  - r/gamingleaks (rumores generales)
+  - r/gamingleaksandrumours (rumores generales)
   - Subreddits específicos de sagas seguidas, cuando existan y tengan actividad relevante
   - **Importante:** el contenido de Reddit debe mostrarse/marcarse visualmente como una categoría aparte ("Reddit / Rumores"), diferenciada de las noticias de medios oficiales, dejando claro al lector que es contenido no verificado de comunidad.
 - **Idiomas de fuente:** español e inglés, ambos aceptados sin traducir (el resumen se genera en el idioma original de la noticia).
@@ -33,8 +33,8 @@ Script en Python que rastrea noticias de videojuegos de múltiples fuentes (medi
 
 ## 4. Resumen y clasificación (IA)
 
-- **Motor de IA:** modelo local vía Ollama. Modelo candidato: `llama3.2:3b` o `qwen2.5:1.5b` (cuantizados, para viabilidad en CPU sin GPU).
-- **Fallback opcional:** si el tiempo de ejecución en CI se dispara demasiado con el modelo local, usar Groq (API gratuita) como alternativa. Debe ser fácilmente intercambiable (mismo formato de entrada/salida).
+- **Motor de IA:** modelo local vía Ollama. Modelo configurado: `llama3.2:3b` (cuantizado, CPU-only en CI).
+- **Fallback opcional:** Groq (API gratuita) como alternativa de rendimiento en CI. Requiere la variable de entorno `GROQ_API_KEY` (no se carga ningún archivo `.env` automáticamente; la variable debe exportarse en la shell o configurarse como secreto de GitHub Actions). La interfaz de entrada/salida es idéntica (definida en `ai/base.py`), lo que permite el intercambio transparente.
 - **Estilo de resumen:** breve (1-2 líneas), en el idioma original de la fuente (no traducir).
 - **Datos generados por noticia:**
   - Resumen breve
@@ -47,21 +47,24 @@ Script en Python que rastrea noticias de videojuegos de múltiples fuentes (medi
 
 - **Frecuencia:** cada hora, mediante GitHub Actions con cron schedule.
 - **Proceso por ejecución:**
-  1. Rastrear todas las fuentes
-  2. Filtrar según listas de inclusión/exclusión
-  3. Resumir y clasificar con el modelo de IA
-  4. Actualizar el/los archivo(s) de datos (JSON) que consume el frontend
-  5. Commit automático de los datos actualizados al repo
+  1. **Fetch** — rastrear todas las fuentes (RSS medios, Steam News API, RSS Reddit)
+  2. **Filtrado** — aplicar listas de inclusión/exclusión (`config/games.yaml`)
+  3. **Clustering** — agrupar items duplicados por juego
+  4. **Límite por juego (pre-IA)** — aplicar `max_stories_por_juego` (default 8) antes de la IA para evitar llamadas innecesarias; orden por `relevance` (si existe) y `published_at` descendente
+  5. **IA** — resumir y clasificar solo los items que pasan el pre-límite (Ollama → fallback Groq)
+  6. **Límite por juego (post-IA)** — re-aplicar el mismo límite tras la IA usando `relevance` + `published_at`
+  7. **Retención** — limpiar histórico: `max_age_hours=48` (corte inclusivo: `published_at >= now - 48h`) y `max_total=200`
+  8. **Escritura atómica y commit** — si el JSON difiere, escribir `frontend/data/news.json` y commit automático
 
 ---
 
-## 6. Histórico y limpieza de datos
+## 6. Histórico y limpieza de datos (retención)
 
-- No se mantiene histórico permanente completo; solo las noticias más recientes.
-- Limpieza automática cuando se cumpla cualquiera de estas condiciones:
-  - Han pasado 2 semanas desde la noticia más antigua almacenada, **o**
-  - El número total de noticias almacenadas supera las 200
-- (El criterio exacto de limpieza — por antigüedad, por cantidad, o ambos combinados — queda abierto a que la IA que implemente el proyecto proponga la lógica más sencilla y robusta).
+- No se mantiene histórico permanente completo; solo las noticias más recientes dentro de la ventana de retención.
+- Limpieza automática (`storage/retention.py::apply_retention`) cuando se cumpla **cualquiera** de estas condiciones (evaluadas en orden combinado):
+  - **Antigüedad:** la noticia más antigua supera **48 horas** (corte inclusivo: se conserva si `published_at >= now - 48h`; se elimina si `published_at < now - 48h`).
+  - **Cantidad:** el total de noticias almacenadas supera **200** (recorte eliminando primero las más antiguas).
+- Parámetros canónicos: `max_age_hours: int = 48`, `max_total: int = 200`. Ambos límites operan juntos; no se mantiene nada fuera de la ventana de 48h ni por encima de 200 items totales.
 
 ---
 
@@ -72,7 +75,7 @@ Script en Python que rastrea noticias de videojuegos de múltiples fuentes (medi
 - **Estilo visual:** simple pero cuidado — nada "vibecodeado" ni de aspecto genérico/plantilla básica. Debe transmitir calidad de diseño aunque sea minimalista.
 - **Modo oscuro:** por defecto.
 - **Funcionalidad:**
-  - Filtro/búsqueda por juego, categoría y/o fecha
+  - Filtro por juego, categoría y plataforma (NEWS / RUMORS)
   - Distinción visual clara entre noticias de medios oficiales y contenido de Reddit
   - Mostrar resumen, puntuación de relevancia y categoría por noticia
 

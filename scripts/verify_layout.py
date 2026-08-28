@@ -1,5 +1,7 @@
 import asyncio
+
 from playwright.async_api import async_playwright
+
 
 async def test():
     async with async_playwright() as p:
@@ -45,9 +47,9 @@ async def test():
         
         # Check active styles (no bright border)
         active_style = await page.locator('.filters__games .game-tile.active').evaluate(lambda el: {
-            "borderColor": window.getComputedStyle(el).borderColor,
-            "backgroundColor": window.getComputedStyle(el).backgroundColor,
-            "boxShadow": window.getComputedStyle(el).boxShadow
+            "borderColor": el.ownerDocument.defaultView.getComputedStyle(el).borderColor,
+            "backgroundColor": el.ownerDocument.defaultView.getComputedStyle(el).backgroundColor,
+            "boxShadow": el.ownerDocument.defaultView.getComputedStyle(el).boxShadow
         })
         print(f'Active game style: {active_style}')
         

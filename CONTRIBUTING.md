@@ -129,7 +129,7 @@ Ejecutado cada hora por `.github/workflows/digest.yml` (y manualmente con `pytho
 1. **Fetch** — `fetchers/` descarga todas las fuentes declaradas en `config/sources.yaml` (RSS de medios, Steam News por `app_id`, RSS de subreddits). Cada item se normaliza a `NewsItem` y se deduplica por `id` contra lo ya almacenado.
 2. **Filtrado** — `filtering/matcher.py` aplica `config/games.yaml`: entra la noticia que matchea algún juego de inclusión y ninguno de exclusión (la exclusión gana siempre; ver sección 6).
 3. **Resumen y clasificación IA** — `ai/` genera por noticia: `summary`, `relevance` y `category`. Motor por defecto: Ollama local (`ollama_client.py`). Fallback: si Ollama no está disponible, supera el timeout por ítem o acumula demasiados errores, `groq_client.py` asume el resto de la ejecución (misma interfaz definida en `base.py`). Respuestas inválidas → reintento simple → si persiste, la noticia entra sin `summary` (`null`) pero nunca bloquea el pipeline.
-4. **Retención** — `storage/retention.py` limpia el histórico cuando se cumple **cualquiera** de: la noticia más antigua supera **14 días**, o el total supera **200 noticias** (recorte eliminando primero las más antiguas). Ambas condiciones combinadas, evaluadas tras cada merge.
+4. **Retención** — `storage/retention.py` limpia el histórico cuando se cumple **cualquiera** de: la noticia más antigua supera **48 horas**, o el total supera **200 noticias** (recorte eliminando primero las más antiguas). Ambas condiciones combinadas, evaluadas tras cada merge.
 5. **Escritura atómica y commit** — si el JSON resultante difiere del actual, se escribe de forma atómica en `frontend/data/news.json` y el workflow hace commit con el bot `github-actions[bot]` (`chore(datos): actualizar digest automático`). Ese commit toca `frontend/**`, así que dispara automáticamente el redeploy en Pages. Sin cambios → sin commit.
 
 ### Manejo de fechas en los fetchers
@@ -226,7 +226,7 @@ excluir:
 Sin red: los fetchers se testean con fixtures locales (XML/HTML/JSON guardados en `tests/fixtures/`). Los clientes de IA se testean con mocks. Mínimo cubierto:
 
 1. **Matcher** — positivos por nombre y alias; negativos; falsos positivos por subcadena ("gta" dentro de otras palabras); variantes de secuelas (VI/6); prioridad de exclusión sobre inclusión; detección de tema principal vs mención.
-2. **Retención** — recorte por antigüedad (14 días), por cantidad (cap 200), combinados, y casos borde exactamente en el límite.
+2. **Retención** — recorte por antigüedad (48 horas), por cantidad (cap 200), combinados, y casos borde exactamente en el límite.
 3. **`json_store`** — schema válido, orden descendente, id estable y determinista, escritura atómica, no-reescritura si no hay cambios.
 4. **`config`** — carga correcta de YAML válidos y errores claros ante YAML inválido o incompleto.
 5. **Clientes IA (mockeados)** — parseo de respuesta válida, rechazo de respuesta malformada, y activación del fallback Groq ante fallos/timeout de Ollama.

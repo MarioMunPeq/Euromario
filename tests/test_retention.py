@@ -24,7 +24,7 @@ def make_item(title: str, hours_ago: int, game: str = "Persona", now: datetime |
 
 class TestApplyRetention:
     def test_solo_antiguedad(self):
-        """Items >14 días se eliminan, ≤14 días se conservan."""
+        """Items >48 horas se eliminan, ≤48 horas se conservan."""
         now = utc_now()
         items = [
             NewsItem(
@@ -33,20 +33,20 @@ class TestApplyRetention:
                 source=Source(name="IGN", type="media"),
                 game="Persona",
                 language="en",
-                published_at=now - timedelta(days=d),
-                fetched_at=now - timedelta(days=d),
+                published_at=now - timedelta(hours=h),
+                fetched_at=now - timedelta(hours=h),
                 relevance=3,
                 category="actualizacion",
                 summary="Resumen de prueba.",
             )
-            for i, d in enumerate([1, 13, 14, 15, 30])
+            for i, h in enumerate([1, 40, 47, 48, 49, 72])
         ]
         items.reverse()
 
-        result = apply_retention(items, max_age_days=14, max_total=100, now=now)
+        result = apply_retention(items, max_age_hours=48, max_total=100, now=now)
 
-        assert len(result) == 3
-        assert all(it.published_at >= now - timedelta(days=14) for it in result)
+        assert len(result) == 4
+        assert all(it.published_at >= now - timedelta(hours=48) for it in result)
 
     def test_solo_cap(self):
         """Si >max_total, recorta conservando los más nuevos."""
@@ -68,7 +68,7 @@ class TestApplyRetention:
         ]
         items.reverse()
 
-        result = apply_retention(items, max_age_days=365, max_total=200, now=now)
+        result = apply_retention(items, max_age_hours=8760, max_total=200, now=now)
 
         assert len(result) == 200
         assert result[0].title == "Item 204"
@@ -94,7 +94,7 @@ class TestApplyRetention:
         ]
         items.reverse()
 
-        result = apply_retention(items, max_age_days=365, max_total=200, now=now)
+        result = apply_retention(items, max_age_hours=8760, max_total=200, now=now)
 
         assert len(result) == 200
         assert result[0].title == "Item 200"
@@ -121,11 +121,11 @@ class TestApplyRetention:
             )
         items.reverse()
 
-        result = apply_retention(items, max_age_days=14, max_total=200, now=now)
+        result = apply_retention(items, max_age_hours=48, max_total=200, now=now)
 
         assert len(result) <= 200
         assert all(
-            it.published_at >= now - timedelta(days=14)
+            it.published_at >= now - timedelta(hours=48)
             for it in result
         )
 
@@ -134,17 +134,54 @@ class TestApplyRetention:
 
     def test_exactamente_max_total(self):
         now = utc_now()
-        items = [make_item(f"Item {i}", i, now=now) for i in range(200)]
+        items = []
+        for i in range(200):
+            when = now - timedelta(minutes=i)  # todos dentro de la ventana de 48 h
+            items.append(
+                NewsItem(
+                    title=f"Item {i}",
+                    url=f"https://example.com/exacto{i}",
+                    source=Source(name="IGN", type="media"),
+                    game="Persona",
+                    language="en",
+                    published_at=when,
+                    fetched_at=when,
+                    relevance=3,
+                    category="actualizacion",
+                    summary="Resumen de prueba.",
+                )
+            )
         items.reverse()
         result = apply_retention(items, max_total=200, now=now)
         assert len(result) == 200
 
-    def test_exactamente_max_age(self):
+    def test_item_de_47h59m_se_conserva(self):
+        """Un item con 47 h 59 m de antigüedad queda dentro de la ventana
+        de 48 horas y se conserva."""
         now = utc_now()
-        cutoff = now - timedelta(days=14)
         item = NewsItem(
-            title="Edge",
-            url="https://example.com/edge",
+            title="Borde 47h59m",
+            url="https://example.com/4759",
+            source=Source(name="IGN", type="media"),
+            game="Persona",
+            language="en",
+            published_at=now - timedelta(hours=47, minutes=59),
+            fetched_at=now - timedelta(hours=47, minutes=59),
+            relevance=3,
+            category="actualizacion",
+            summary="Resumen de prueba.",
+        )
+        result = apply_retention([item], now=now)
+        assert result == [item]
+
+    def test_item_exactamente_48h_sigue_convencion_boundary(self):
+        """Convención existente: el corte es inclusivo (published_at >= cutoff);
+        un item de exactamente 48 h se conserva."""
+        now = utc_now()
+        cutoff = now - timedelta(hours=48)
+        item = NewsItem(
+            title="Exactamente 48h",
+            url="https://example.com/48h",
             source=Source(name="IGN", type="media"),
             game="Persona",
             language="en",
@@ -154,8 +191,53 @@ class TestApplyRetention:
             category="actualizacion",
             summary="Resumen de prueba.",
         )
-        result = apply_retention([item], max_age_days=14, now=now)
-        assert len(result) == 1
+        result = apply_retention([item], now=now)
+        assert result == [item]
+
+    def test_item_mas_de_48h_se_elimina(self):
+        """Un item con más de 48 h (48 h 1 m) supera la ventana y se elimina."""
+        now = utc_now()
+        item = NewsItem(
+            title="Fuera de ventana",
+            url="https://example.com/fuera",
+            source=Source(name="IGN", type="media"),
+            game="Persona",
+            language="en",
+            published_at=now - timedelta(hours=48, minutes=1),
+            fetched_at=now - timedelta(hours=48, minutes=1),
+            relevance=3,
+            category="actualizacion",
+            summary="Resumen de prueba.",
+        )
+        result = apply_retention([item], now=now)
+        assert result == []
+
+    def test_maximo_200_items_se_mantiene(self):
+        """El máximo de 200 items no cambia: se mantiene el cap con la
+        nueva ventana de 48 horas."""
+        now = utc_now()
+        items = []
+        for i in range(250):
+            when = now - timedelta(minutes=i)  # todos dentro de la ventana de 48 h
+            items.append(
+                NewsItem(
+                    title=f"Item {i}",
+                    url=f"https://example.com/max{i}",
+                    source=Source(name="IGN", type="media"),
+                    game="Persona",
+                    language="en",
+                    published_at=when,
+                    fetched_at=when,
+                    relevance=3,
+                    category="actualizacion",
+                    summary="Resumen de prueba.",
+                )
+            )
+        items.reverse()
+
+        result = apply_retention(items, now=now)
+
+        assert len(result) == 200
 
 
 class TestApplyRetentionPerGame:
@@ -277,8 +359,8 @@ class TestApplyRetentionPerGame:
                 source=Source(name="IGN", type="media"),
                 game="Grand Theft Auto",
                 language="en",
-                published_at=now - timedelta(hours=50),  # más antiguo
-                fetched_at=now - timedelta(hours=50),
+                published_at=now - timedelta(hours=36),  # más antiguo (antes: 50h > ventana 48h)
+                fetched_at=now - timedelta(hours=36),
                 relevance=5,  # alta relevancia
                 category="actualizacion",
                 summary="Resumen.",
@@ -317,7 +399,7 @@ class TestApplyRetentionPerGame:
         """La retención global se aplica primero, luego la por juego."""
         now = utc_now()
         items = []
-        # 10 items GTA (recientes) + 10 items FIFA (antiguos >14 días)
+        # 10 items GTA (recientes) + 10 items FIFA (antiguos >48 horas)
         for i in range(10):
             items.append(
                 NewsItem(
@@ -341,7 +423,7 @@ class TestApplyRetentionPerGame:
                     source=Source(name="IGN", type="media"),
                     game="FIFA 24",
                     language="en",
-                    published_at=now - timedelta(days=20 + i),  # >14 días
+                    published_at=now - timedelta(days=20 + i),  # >48 horas
                     fetched_at=now - timedelta(days=20 + i),
                     relevance=3,
                     category="actualizacion",
@@ -349,8 +431,8 @@ class TestApplyRetentionPerGame:
                 )
             )
 
-        # max_age_days=14 elimina FIFA, max_total=15 limita total, max_per_game=5 limita GTA
-        result = apply_retention(items, max_age_days=14, max_total=15, max_per_game=5, now=now)
+        # max_age_hours=48 elimina FIFA, max_total=15 limita total, max_per_game=5 limita GTA
+        result = apply_retention(items, max_age_hours=48, max_total=15, max_per_game=5, now=now)
         gta_count = sum(1 for r in result if r.game == "Grand Theft Auto")
         fifa_count = sum(1 for r in result if r.game == "FIFA 24")
         assert gta_count == 5  # limitado por max_per_game

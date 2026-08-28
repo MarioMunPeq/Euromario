@@ -136,7 +136,8 @@ def _migrate_legacy_item(item: dict) -> dict:
       determinista del punto medio histórico).
     - Mojibake CP850 en ``title``/``summary``/``source.name`` (acentos
       decodificados como caracteres de caja) → round-trip inverso cp850→utf-8.
-    - Formato histórico ``source`` anidado → plano ``source`` + ``source_type`` (+ ``source_subreddit`` para Reddit).
+    - Formato histórico ``source`` anidado → plano ``source`` + ``source_type``,
+      y ``source_subreddit`` se deriva del nombre cuando falta (Reddit, plano o anidado).
     - ``image_url`` → ``image``.
     """
     migrated = dict(item)
@@ -175,15 +176,20 @@ def _migrate_legacy_item(item: dict) -> dict:
         if repaired != source:
             logger.info("Migración: source.name con mojibake CP850 reparado")
             migrated["source"] = repaired
-        # Fuentes reddit planas antiguas nunca serializaron su subreddit
-        # ("source_subreddit"); sin él el `Source` no se puede reconstruir y
-        # el item se descartaría. Se vuelve a derivar del nombre (determinista).
-        if migrated.get("source_type") == "reddit" and not migrated.get(
-            "source_subreddit"
-        ):
-            match = _SUBREDDIT_RE.search(migrated["source"])
-            if match:
-                migrated["source_subreddit"] = match.group(1)
+
+    # Las fuentes Reddit antiguas (planas o anidadas) podían omitir el
+    # subreddit ("source_subreddit" / "subreddit"); sin él el `Source` no se
+    # puede reconstruir y el item se descartaría por contrato. Se vuelve a
+    # derivar del nombre (reparado) de forma determinista e igual para ambos
+    # formatos históricos.
+    if (
+        migrated.get("source_type") == "reddit"
+        and not migrated.get("source_subreddit")
+        and isinstance(migrated.get("source"), str)
+    ):
+        match = _SUBREDDIT_RE.search(migrated["source"])
+        if match:
+            migrated["source_subreddit"] = match.group(1)
 
     if not str(migrated.get("fetched_at") or "").strip():
         fallback = migrated.get("published_at")

@@ -1,5 +1,6 @@
 """Tests de save_digest: escritura atómica, merge, retención y simulación de crash."""
 
+import hashlib
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -7,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from gaming_news_digest.models import NewsItem, Source
+from gaming_news_digest.models import NewsItem, Source, normalize_url
 from gaming_news_digest.storage.json_store import (
     _migrate_legacy_item,
     _repair_cp850_mojibake,
@@ -260,6 +261,56 @@ class TestMigracionMojibake:
             "url": "https://example.com/x",
             "source": "Reddit · r/gamingleaksandrumours",
             "source_type": "reddit",
+            "game": "Persona",
+            "language": "en",
+            "published_at": "2026-08-25T10:00:00Z",
+            "fetched_at": "2026-08-25T10:05:00Z",
+            "relevance": 3,
+            "category": "lanzamiento",
+        }
+
+        migrated = _migrate_legacy_item(raw)
+
+        assert migrated["source_subreddit"] == "gamingleaksandrumours"
+
+    def test_reddit_anidado_sin_subreddit_recupera_subreddit_y_no_se_descarta(self):
+        # Histórico con source ANIDADO {name, type: reddit} sin el campo
+        # subreddit: la migración también debe derivarlo; sin ello la fuente
+        # viola el contrato y el item se descartaría en el load.
+        url = "https://example.com/x"
+        raw = {
+            "id": hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()[:16],
+            "title": "Titulo",
+            "summary": "Resumen",
+            "url": url,
+            "source": {"name": "Reddit · r/gamingleaksandrumours", "type": "reddit"},
+            "game": "Persona",
+            "language": "en",
+            "published_at": "2026-08-25T10:00:00Z",
+            "fetched_at": "2026-08-25T10:05:00Z",
+            "relevance": 3,
+            "category": "lanzamiento",
+        }
+
+        migrated = _migrate_legacy_item(raw)
+        loaded = NewsItem.from_dict(migrated)
+
+        assert migrated["source_subreddit"] == "gamingleaksandrumours"
+        assert loaded.source.subreddit == "gamingleaksandrumours"
+
+    def test_reddit_anidado_con_subreddit_conserva_el_explicito(self):
+        # Si el subreddit explícito existe en el source anidado, se conserva
+        # (aunque difiera del derivable por el nombre).
+        raw = {
+            "id": "abc",
+            "title": "Titulo",
+            "summary": "Resumen",
+            "url": "https://example.com/x",
+            "source": {
+                "name": "Reddit · r/gamingleaksandrumours",
+                "type": "reddit",
+                "subreddit": "gamingleaksandrumours",
+            },
             "game": "Persona",
             "language": "en",
             "published_at": "2026-08-25T10:00:00Z",

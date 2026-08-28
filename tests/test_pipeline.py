@@ -1,12 +1,12 @@
 """Tests del pipeline con lógica de fallback Ollama→Groq."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock
 
 import pytest
 
 from gaming_news_digest.ai.base import AIError, AISummary, Category, Language
-from gaming_news_digest.models import FetchedItem, Source
+from gaming_news_digest.models import FetchedItem, NewsItem, Source
 from gaming_news_digest.pipeline import Pipeline
 
 
@@ -46,6 +46,22 @@ def make_ai_summary(summary="ok", relevance=3, category=Category.UPDATE, languag
         relevance=relevance,
         category=category,
         language=language,
+    )
+
+
+def make_news_item(title="Noticia", game="Persona", relevance=3, hours_ago=1):
+    published = datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc) - timedelta(hours=hours_ago)
+    return NewsItem(
+        title=title,
+        url=f"https://test.com/{title}",
+        source=Source(name="Test", type="media"),
+        game=game,
+        language="en",
+        published_at=published,
+        fetched_at=published,
+        relevance=relevance,
+        category="actualizacion",
+        summary="Resumen de prueba.",
     )
 
 
@@ -202,3 +218,80 @@ def test_groq_infra_critico_aborta_con_parcial(monkeypatch):
     items = [make_item("ok1"), make_item("fallará")]
     with pytest.raises(ConnectionError):
         list(pipeline._enrich_with_ai(items))
+
+
+def test_limit_por_juego_sin_relevancia_prioriza_lo_mas_reciente():
+    """Antes de la IA (FetchedItem) el cap por juego ordena por fecha; la
+    fila más reciente sobrevive aunque llegue la primera."""
+    from gaming_news_digest.models import FetchedItem
+    from gaming_news_digest.pipeline import _limit_stories_per_game
+
+    def fetched(hours_ago):
+        published = datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc) - timedelta(hours=hours_ago)
+        return FetchedItem(
+            title=f"historia-{hours_ago}",
+            url=f"https://test.com/{hours_ago}",
+            source=Source(name="Test", type="media"),
+            published_at=published,
+            fetched_at=published,
+            body_text="Cuerpo",
+            language="en",
+            game="Persona",
+        )
+
+    older_histories = [fetched(h) for h in range(8, 0, -1)]  # 8 viejas
+    newer = fetched(0)  # la más reciente
+    limited = _limit_stories_per_game(older_histories + [newer], max_per_game=8)
+
+    assert len(limited) == 8
+    assert limited[0].published_at == newer.published_at
+    assert newer in limited
+
+
+def test_limit_por_juego_con_relevancia_prioriza_relevancia():
+    """Tras la IA (NewsItem) el cap conserva la semántica exacta:
+    relevancia desc, luego fecha desc (rank 9 > 8 > 7)."""
+    from gaming_news_digest.pipeline import _limit_stories_per_game
+
+    items = [make_news_item(f"historia-{r}", relevance=r, hours_ago=r) for r in range(5, 0, -1)]
+    limited = _limit_stories_per_game(items, max_per_game=3)
+
+    assert [it.relevance for it in limited] == [5, 4, 3]
+
+
+def test_limite_por_juego_se_aplica_antes_de_la_ia(monkeypatch):
+    """La IA solo se consulta para las historias que superan el pre-límite
+    por juego: las descartadas jamás generan resumen (el gasto de la IA baja
+    de 'todo lo agrupado' a 'solo los supervivientes')."""
+    import gaming_news_digest.pipeline as pipe
+    from gaming_news_digest.config import GamesConfig, Limits, SourcesConfig
+
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=8)
+    pipeline.sources = SourcesConfig()
+    pipeline._games = GamesConfig(include=())
+    pipeline._save_games_config = Mock()
+
+    fetched = [make_item(f"N{i}", game="Persona") for i in range(20)]
+    monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
+    monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+    monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
+
+    seen_enriched = []
+
+    def fake_enrich(items):
+        seen_enriched.extend(items)
+        for it in items:
+            yield make_news_item(it.title, it.game)
+
+    monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
+
+    saved = []
+    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
+
+    pipeline.run()
+
+    assert len(seen_enriched) == 8  # solo los supervivientes pasan por la IA
+    assert len(saved) == 1
+    assert len(saved[0]) == 8

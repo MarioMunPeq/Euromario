@@ -1,7 +1,7 @@
 """Política de retención del histórico.
 
 Se limpia cuando se cumple cualquiera de estas condiciones:
-- la noticia más antigua almacenada supera los 14 días, o
+- la noticia más antigua almacenada supera las 48 horas, o
 - el total de noticias almacenadas supera las 200
 - un juego supera el máximo de historias permitidas
 """
@@ -23,7 +23,7 @@ def utc_now() -> datetime:
 
 def apply_retention(
     items: list[NewsItem],
-    max_age_days: int = 14,
+    max_age_hours: int = 48,
     max_total: int = 200,
     max_per_game: int | None = None,
     now: datetime | None = None,
@@ -32,7 +32,8 @@ def apply_retention(
     Aplica retención sobre lista ORDENADA DESCENDENTE (más nuevo primero).
     Devuelve lista recortada manteniendo orden descendente.
 
-    1. Filtro por antigüedad (corte = ahora - max_age_days)
+    1. Filtro por antigüedad (corte = ahora - max_age_hours):
+       un item se elimina cuando supera las 48 horas (corte inclusivo, >=).
     2. Cap total: conserva los PRIMEROS max_total (los más nuevos)
     3. Cap por juego: si se especifica max_per_game, limita por juego
        priorizando por relevancia y luego por fecha.
@@ -43,7 +44,7 @@ def apply_retention(
     if now is None:
         now = utc_now()
 
-    cutoff = now - timedelta(days=max_age_days)
+    cutoff = now - timedelta(hours=max_age_hours)
     items = [it for it in items if it.published_at >= cutoff]
 
     if len(items) > max_total:

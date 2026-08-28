@@ -72,9 +72,9 @@ incluir:
     aliases: [CP2077]
     logo: null
     platform: [pc, playstation, xbox]
-  - nombre: Final Fantasy VII
-    aliases: [FF7, FFVII]
-    logo: null
+  - nombre: Final Fantasy
+    aliases: [FF]
+    logo: final-fantasy.svg
     platform: [playstation, pc]
   - nombre: Helldivers 2
     aliases: [HD2]

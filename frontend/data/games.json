@@ -97,7 +97,7 @@
     },
     {
       "name": "Cyberpunk 2077",
-      "logo": null,
+      "logo": "cyberpunk.svg",
       "platform": [
         "pc",
         "playstation",
@@ -106,7 +106,7 @@
     },
     {
       "name": "Final Fantasy VII",
-      "logo": null,
+      "logo": "final-fantasy.svg",
       "platform": [
         "playstation",
         "pc"
@@ -114,7 +114,7 @@
     },
     {
       "name": "Helldivers 2",
-      "logo": null,
+      "logo": "helldivers.svg",
       "platform": [
         "pc",
         "playstation"
@@ -122,7 +122,7 @@
     },
     {
       "name": "Starfield",
-      "logo": null,
+      "logo": "starfield.svg",
       "platform": [
         "pc",
         "xbox"

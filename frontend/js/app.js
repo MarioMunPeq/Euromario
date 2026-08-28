@@ -148,22 +148,14 @@ function getSourceSubreddit(item) {
 // ============================================================
 
 const DARK_BG_SVGS = new Set([
-  'baldurs-gate', 'call-of-duty', 'elden-ring', 'god-of-war',
-  'hollow-knight', 'minecraft', 'persona', 'pokemon',
-  'pubg', 'rainbow-six', 'roblox', 'super-mario', 'zelda',
+  'baldurs-gate', 'call-of-duty', 'cyberpunk', 'elden-ring', 'final-fantasy',
+  'god-of-war', 'helldivers', 'hollow-knight', 'minecraft', 'persona', 'pokemon',
+  'pubg', 'rainbow-six', 'roblox', 'starfield', 'super-mario', 'zelda',
 ]);
 
 const TILES_MOBILE_MQL = window.matchMedia('(max-width: 768px)');
 
 function renderGameTiles(games) {
-  const allTile = `
-    <button type="button" class="game-tile" data-game="" aria-pressed="false">
-      <div class="game-tile__icon game-tile__icon--all">
-        <img src="assets/icons/all.svg" alt="" width="20" height="20" loading="lazy"/>
-      </div>
-      <span class="game-tile__name">All</span>
-    </button>`;
-
   const createTile = (game, isClone = false, cloneIndex = 0) => {
     const logo = state.gameLogos[game];
     const dataAttr = isClone ? `data-game-clone="${escapeHtml(game)}" data-clone-index="${cloneIndex}"` : `data-game="${escapeHtml(game)}"`;
@@ -191,40 +183,23 @@ function renderGameTiles(games) {
   const gameTiles = games.map(game => createTile(game, false)).join('');
 
   if (TILES_MOBILE_MQL.matches && games.length > 0) {
-    // Real section for infinite loop: ["All", game1, game2, ..., gameN]
+    // Real section for infinite loop: [game1, game2, ..., gameN] (no "All")
     // We need clones on both sides that cover at least one viewport width.
-    // Use enough clones so that clone zone >= typical mobile viewport (~400px).
-    // TILE_WIDTH = 104px, so need at least 4 clones. Use min(5, games.length + 1) to include "All".
-    const cloneCount = Math.min(5, games.length + 1);
+    // TILE_WIDTH = 104px, so need at least 4 clones. Use min(5, games.length).
+    const cloneCount = Math.min(5, games.length);
 
-    // Build real section tiles array for cloning (including "All" as first element)
-    const realSectionGames = ['', ...games]; // '' represents "All"
+    const createCloneTile = (game, cloneIndex) => createTile(game, true, cloneIndex);
 
-    const createCloneTile = (game, cloneIndex) => {
-      if (game === '') {
-        // "All" tile clone
-        return `
-          <button type="button" class="game-tile" data-game-clone="" data-clone-index="${cloneIndex}" aria-pressed="false">
-            <div class="game-tile__icon game-tile__icon--all">
-              <img src="assets/icons/all.svg" alt="" width="20" height="20" loading="lazy"/>
-            </div>
-            <span class="game-tile__name">All</span>
-          </button>`;
-      }
-      return createTile(game, true, cloneIndex);
-    };
+    // Left clones: last `cloneCount` games
+    const lastClones = games.slice(-cloneCount).map((g, i) => createCloneTile(g, -(cloneCount - i))).join('');
+    // Right clones: first `cloneCount` games
+    const firstClones = games.slice(0, cloneCount).map((g, i) => createCloneTile(g, i)).join('');
 
-    // Left clones: last `cloneCount` items of real section
-    const lastClones = realSectionGames.slice(-cloneCount).map((g, i) => createCloneTile(g, -(cloneCount - i))).join('');
-    // Right clones: first `cloneCount` items of real section
-    const firstClones = realSectionGames.slice(0, cloneCount).map((g, i) => createCloneTile(g, i)).join('');
-
-    // DOM order: leftClones + realSection (All + games) + rightClones
-    // But realSection in DOM is: allTile + gameTiles (no "All" in gameTiles)
-    return lastClones + allTile + gameTiles + firstClones;
+    // DOM order: leftClones + realSection (games) + rightClones
+    return lastClones + gameTiles + firstClones;
   }
 
-  return allTile + gameTiles;
+  return gameTiles;
 }
 
 function renderPlatformTiles(newsItems) {
@@ -289,37 +264,63 @@ function renderAllTiles(newsItems, games) {
   });
 
   // Game click handlers (single-select)
-  els.filterGames.querySelectorAll('[data-game], [data-game-clone]').forEach(tile => {
-    tile.addEventListener('click', () => {
-      const game = tile.dataset.game || tile.dataset.gameClone;
-      const wasActive = tile.classList.contains('active');
+  // On desktop: simple click to filter
+  // On mobile: carousel handles selection, clicks are for tap (no drag)
+  const isMobile = TILES_MOBILE_MQL.matches;
+  if (!isMobile) {
+    // Desktop: attach click handlers directly
+    els.filterGames.querySelectorAll('[data-game]').forEach(tile => {
+      tile.addEventListener('click', () => {
+        const game = tile.dataset.game;
+        const wasActive = tile.classList.contains('active');
 
-      els.filterGames.querySelectorAll('[data-game], [data-game-clone]').forEach(t => {
-        t.classList.remove('active');
-        t.setAttribute('aria-pressed', 'false');
-      });
-
-      if (wasActive || game === '') {
-        state.filters.game = null;
-        const allBtn = els.filterGames.querySelector('[data-game=""]');
-        if (allBtn) {
-          allBtn.classList.add('active');
-          allBtn.setAttribute('aria-pressed', 'true');
-        }
-      } else {
-        state.filters.game = game;
-        tile.classList.add('active');
-        tile.setAttribute('aria-pressed', 'true');
-        // Also update any clones of this game
-        els.filterGames.querySelectorAll(`[data-game-clone="${escapeHtml(game)}"]`).forEach(clone => {
-          clone.classList.add('active');
-          clone.setAttribute('aria-pressed', 'true');
+        els.filterGames.querySelectorAll('[data-game]').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-pressed', 'false');
         });
-      }
-      applyFilters();
-      pushUrl();
+
+        if (wasActive) {
+          state.filters.game = null;
+        } else {
+          state.filters.game = game;
+          tile.classList.add('active');
+          tile.setAttribute('aria-pressed', 'true');
+        }
+        applyFilters();
+        pushUrl();
+      });
     });
-  });
+  } else {
+    // Mobile: attach click handlers that work with carousel (tap without drag)
+    // The carousel's pointer events handle drag/snap/selection
+    // Click handler here is for tap-to-select when not dragging
+    els.filterGames.querySelectorAll('[data-game], [data-game-clone]').forEach(tile => {
+      tile.addEventListener('click', (e) => {
+        // Only handle if not a drag (carousel handles drag-end selection)
+        const game = tile.dataset.game || tile.dataset.gameClone;
+        const wasActive = tile.classList.contains('active');
+
+        els.filterGames.querySelectorAll('[data-game], [data-game-clone]').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-pressed', 'false');
+        });
+
+        if (wasActive) {
+          state.filters.game = null;
+        } else {
+          state.filters.game = game;
+          tile.classList.add('active');
+          tile.setAttribute('aria-pressed', 'true');
+          els.filterGames.querySelectorAll(`[data-game-clone="${escapeHtml(game)}"]`).forEach(clone => {
+            clone.classList.add('active');
+            clone.setAttribute('aria-pressed', 'true');
+          });
+        }
+        applyFilters();
+        pushUrl();
+      });
+    });
+  }
 }
 
 // ============================================================
@@ -329,6 +330,9 @@ function renderAllTiles(newsItems, games) {
 function setupGameTileCarousel() {
   const container = els.filterGames;
   if (!container) return;
+
+  // Only run on mobile
+  if (!TILES_MOBILE_MQL.matches) return;
 
   // Constants
   const TILE_WIDTH = 104; // 96px tile + 8px gap (from CSS)
@@ -344,20 +348,19 @@ function setupGameTileCarousel() {
   const getRealGameName = (tile) => tile.dataset.game || tile.dataset.gameClone || '';
 
   // Dynamically compute clone zones from DOM structure
-  // Real section = tiles with [data-game] (not clone) = "All" + real games
+  // Real section = tiles with [data-game] (not clone) = real games only (no "All")
   const getRealSectionStart = () => {
-    // First real tile is the "All" button with data-game=""
-    const allTile = container.querySelector('[data-game=""]');
-    if (!allTile) return 0;
-    // Its index among all .game-tile children
+    // First real tile is the first game (index 0 after left clones)
+    const realTiles = container.querySelectorAll('[data-game]:not([data-game-clone])');
+    if (realTiles.length === 0) return 0;
     const tiles = Array.from(container.querySelectorAll('.game-tile'));
-    const index = tiles.indexOf(allTile);
+    const index = tiles.indexOf(realTiles[0]);
     return index * TILE_WIDTH;
   };
 
   const getRealSectionEnd = () => {
     // Last real tile is the last [data-game] (not clone)
-    const realTiles = container.querySelectorAll('[data-game]:not([data-game=""])');
+    const realTiles = container.querySelectorAll('[data-game]:not([data-game-clone])');
     if (realTiles.length === 0) return getRealSectionStart() + TILE_WIDTH;
     const lastReal = realTiles[realTiles.length - 1];
     const tiles = Array.from(container.querySelectorAll('.game-tile'));
@@ -562,11 +565,11 @@ function setupGameTileCarousel() {
   window.addEventListener('resize', scheduleUpdate);
   if (TILES_MOBILE_MQL.addEventListener) TILES_MOBILE_MQL.addEventListener('change', scheduleUpdate);
 
-  // --- Initial position: center "All" tile ---
-  const allTile = container.querySelector('[data-game=""]');
-  if (allTile) {
+  // --- Initial position: center first real game ---
+  const firstRealTile = container.querySelector('[data-game]:not([data-game-clone])');
+  if (firstRealTile) {
     const containerRect = container.getBoundingClientRect();
-    const tileRect = allTile.getBoundingClientRect();
+    const tileRect = firstRealTile.getBoundingClientRect();
     const targetScrollLeft = tileRect.left + tileRect.width / 2 - containerRect.left - container.clientWidth / 2;
     isProgrammaticScroll = true;
     container.style.scrollBehavior = 'auto';
@@ -632,15 +635,27 @@ function renderNewsCard(item) {
   const isHighRelevance = item.relevance >= 4;
 
   const sectionLabel = category === 'rumor' ? 'RUMOR' : 'NEWS';
-  const editorialLine = `${sectionLabel} · ${escapeHtml(gameName.toUpperCase())}`;
 
   let mediaHtml;
   if (item.image) {
-    mediaHtml = `<img src="${escapeHtml(item.image)}" alt="" class="news-card__image" loading="lazy"/>`;
+    mediaHtml = `
+      <img src="${escapeHtml(item.image)}" alt="" class="news-card__image" loading="lazy"/>
+      <div class="news-card__overlay">
+        <div class="news-card__overlay-content">
+          <span class="news-card__section">${sectionLabel}</span>
+          <span class="news-card__game">${escapeHtml(gameName.toUpperCase())}</span>
+        </div>
+      </div>`;
   } else {
     mediaHtml = `
       <div class="news-card__placeholder" style="--cat-color: ${catColor}">
         <span class="news-card__placeholder-initials">${escapeHtml(getSourceInitials(getSourceName(item.source, sourceType)))}</span>
+      </div>
+      <div class="news-card__overlay news-card__overlay--placeholder">
+        <div class="news-card__overlay-content">
+          <span class="news-card__section">${sectionLabel}</span>
+          <span class="news-card__game">${escapeHtml(gameName.toUpperCase())}</span>
+        </div>
       </div>`;
   }
 
@@ -665,11 +680,9 @@ function renderNewsCard(item) {
             ${escapeHtml(item.title)}
           </a>
         </h3>
-        ${item.summary ? `<p class="news-card__summary">${escapeHtml(item.summary)}</p>` : ''}
-        <p class="news-card__editorial"><span class="news-card__section">${sectionLabel}</span> · <span class="news-card__game">${escapeHtml(gameName)}</span></p>
+${item.summary ? `<p class="news-card__summary">${escapeHtml(item.summary)}</p>` : ''}
       </div>
-    </article>
-  `;
+    </article>`;
 }
 
 function renderNewsList(items) {

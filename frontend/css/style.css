@@ -266,13 +266,13 @@ input, select, textarea {
 }
 
 .header__nav-btn[aria-checked="true"] {
-  color: var(--cat-lanzamiento);
-  background: var(--cat-lanzamiento-muted, #3fb95018);
+  color: var(--accent);
+  background: var(--accent-muted);
 }
 
 .header__nav-btn[data-section="news"][aria-checked="true"] {
-  color: var(--cat-lanzamiento);
-  background: var(--cat-lanzamiento-muted, #3fb95018);
+  color: var(--accent);
+  background: var(--accent-muted);
 }
 
 .header__nav-btn[data-section="rumors"][aria-checked="true"] {
@@ -1001,6 +1001,19 @@ input, select, textarea {
 
 /* === Content area === */
 
+/* Tinte de sección en la zona de texto (debajo de la imagen):
+   NEWS = azul EUROMARIO (--accent) a 8%, RUMORS = naranja "rumor" a 8%.
+   Visible al comparar cards, pero sobre fondo oscuro mantiene alto contraste.
+   Imagen y borde intactos.
+   Sin soporte de color-mix degrada a transparente (se ve var(--surface)). */
+.news-card[data-category="rumor"] {
+  --card-section-tint: color-mix(in srgb, var(--cat-rumor) 8%, var(--surface));
+}
+
+.news-card:not([data-category="rumor"]) {
+  --card-section-tint: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
 .news-card__content {
   display: flex;
   flex-direction: column;
@@ -1008,6 +1021,7 @@ input, select, textarea {
   padding: var(--space-4) var(--space-5) var(--space-5);
   gap: var(--space-3);
   min-height: 0;
+  background: var(--card-section-tint, var(--surface));
 }
 
 .news-card__meta {

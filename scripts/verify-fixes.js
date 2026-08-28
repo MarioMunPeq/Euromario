@@ -141,6 +141,77 @@ function startServer() {
     await page.screenshot({ path: path.join(__dirname, '..', 'test_imagenes_reales.png') });
     console.log('  Screenshot -> test_imagenes_reales.png');
 
+    // ============================================================
+    // TEST C: Sin footer ni contador/updated en el header
+    // ============================================================
+    console.log('\n=== TEST C: Sin footer ni contador/"actualizado hace X" ===');
+    const noFooter = await page.evaluate(() => {
+      const header = document.querySelector('.header');
+      const headerText = header ? header.innerText : '';
+      return {
+        hasFooter: !!document.querySelector('.footer'),
+        footerLinks: document.querySelectorAll('.footer__link').length,
+        hasHeaderCount: !!document.getElementById('header-count'),
+        hasHeaderUpdated: !!document.getElementById('header-updated'),
+        headerCounter: /\d+\s*(news|noticia)/i.test(headerText),
+        headerUpdatedAgo: /\b(ago|hace)\b/i.test(headerText),
+        headerText: headerText.replace(/\s+/g, ' ').trim(),
+      };
+    });
+    check('sin .footer', !noFooter.hasFooter);
+    check('sin enlace de versión en footer', noFooter.footerLinks === 0);
+    check('sin #header-count', !noFooter.hasHeaderCount);
+    check('sin #header-updated', !noFooter.hasHeaderUpdated);
+    check('header sin contador de noticias', !noFooter.headerCounter);
+    check('header sin "actualizado hace X"', !noFooter.headerUpdatedAgo);
+    console.log(`  header="${noFooter.headerText}"`);
+
+    // ============================================================
+    // TEST D: Favicon + Open Graph + Twitter Card
+    // ============================================================
+    console.log('\n=== TEST D: Favicon, Open Graph y Twitter Card ===');
+    const head = await page.evaluate(async () => {
+      const q = (sel, attr) => {
+        const el = document.querySelector(sel);
+        return el ? el.getAttribute(attr) : null;
+      };
+      const meta = (prop) => q(`meta[property="${prop}"], meta[name="${prop}"]`, 'content');
+      const status = async (href) => {
+        try {
+          const r = await fetch(href, { method: 'HEAD' });
+          return r.status;
+        } catch { return -1; }
+      };
+      return {
+        icons: [...document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]')].map(l => l.getAttribute('href')),
+        ogTitle: meta('og:title'),
+        ogDesc: meta('og:description'),
+        ogUrl: meta('og:url'),
+        ogImage: meta('og:image'),
+        ogType: meta('og:type'),
+        twitterCard: meta('twitter:card'),
+        description: meta('description'),
+        iconStatus: await status('assets/favicon.svg'),
+        pngStatus: await status('assets/favicon-32.png'),
+        bannerStatus: await status('assets/og-banner.png'),
+        icoStatus: await status('favicon.ico'),
+      };
+    });
+    check('favicon svg declarado', head.icons.some(h => h.includes('favicon.svg')), `icons=${JSON.stringify(head.icons)}`);
+    check('favicon png 32 + ico cubiertos', head.icons.some(h => h.includes('favicon-32')) && head.icons.some(h => h === 'favicon.ico'));
+    check('apple-touch-icon presente', head.icons.some(h => h.includes('apple-touch-icon')));
+    check('assets favicon.svg responde 200', head.iconStatus === 200, `status=${head.iconStatus}`);
+    check('assets favicon-32.png responde 200', head.pngStatus === 200, `status=${head.pngStatus}`);
+    check('favicon.ico responde 200', head.icoStatus === 200, `status=${head.icoStatus}`);
+    check('og:title presente', !!head.ogTitle, `title=${head.ogTitle}`);
+    check('og:description presente', !!head.ogDesc);
+    check('og:url es URL canónica', head.ogUrl === 'https://mariomunpeq.github.io/Euromario/', `url=${head.ogUrl}`);
+    check('og:image presente', head.ogImage && head.ogImage.endsWith('/assets/og-banner.png'), `image=${head.ogImage}`);
+    check('og:type website', head.ogType === 'website', `type=${head.ogType}`);
+    check('og-banner.png responde 200', head.bannerStatus === 200, `status=${head.bannerStatus}`);
+    check('twitter:card summary_large_image', head.twitterCard === 'summary_large_image', `card=${head.twitterCard}`);
+    check('meta description presente', !!head.description);
+
   } finally {
     await browser.close();
     server.close();

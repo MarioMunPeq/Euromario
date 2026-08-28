@@ -47,7 +47,7 @@ class GroqClient(AIClient):
                         "model": self.model,
                         "messages": [
                             {"role": "system", "content": self._system_prompt()},
-                            {"role": "user", "content": self._user_prompt(title, body, game)},
+                            {"role": "user", "content": self._user_prompt(title, body, game, source_language)},
                         ],
                         "temperature": 0.1,
                         "max_tokens": 300,
@@ -78,6 +78,7 @@ class GroqClient(AIClient):
 
     def _build_prompt(self, title: str, body: str, source_language: str, game: str) -> str:
         return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
+Add value beyond the title: include ONE concrete, checkable detail found in the article body (a number, a date, a price, a version, a platform, a name, or a direct quote) that is NOT already in the title. Never merely rephrase the title with fewer words. Only use details actually present in the body — never invent facts. If the body has no usable extra detail, close with the most specific confirmed fact.
 Return ONLY valid JSON with these exact keys:
 - "summary": str (1-2 lines, always written in English, regardless of the article's original language)
 - "relevance": int (1-5; 5 = major announcement of a followed saga)
@@ -94,6 +95,12 @@ Source language: {source_language}"""
             "You are a video game news editor. Summarize the news in 1-2 short lines, "
             "ALWAYS WRITTEN IN ENGLISH. The summary must be in English regardless of the "
             "article's original language. "
+            "Add value beyond the title: include ONE concrete, checkable detail found in "
+            "the article body (a number, a date, a price, a version, a platform, a name, "
+            "or a direct quote) that is NOT already in the title. Never merely rephrase "
+            "the title with fewer words. Only use details actually present in the body — "
+            "never invent facts. If the body has no usable extra detail, close with the "
+            "most specific confirmed fact. "
             "Return ONLY valid JSON with these exact keys: "
             '"summary" (str, 1-2 lines, always in English), '
             '"relevance" (int 1-5; 5 = major announcement of a followed saga), '
@@ -101,5 +108,5 @@ Source language: {source_language}"""
             '"language" ("en").'
         )
 
-    def _user_prompt(self, title: str, body: str, game: str) -> str:
-        return f"Title: {title}\nBody: {body}\nGame: {game}"
+    def _user_prompt(self, title: str, body: str, game: str, source_language: str) -> str:
+        return f"Title: {title}\nBody: {body}\nGame: {game}\nSource language: {source_language}"

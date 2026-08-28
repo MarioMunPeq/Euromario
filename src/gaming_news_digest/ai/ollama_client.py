@@ -55,6 +55,7 @@ class OllamaClient(AIClient):
 
     def _build_prompt(self, title: str, body: str, source_language: str, game: str) -> str:
         return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
+Add value beyond the title: include ONE concrete, checkable detail found in the article body (a number, a date, a price, a version, a platform, a name, or a direct quote) that is NOT already in the title. Never merely rephrase the title with fewer words. Only use details actually present in the body — never invent facts. If the body has no usable extra detail, close with the most specific confirmed fact.
 Return ONLY valid JSON with these exact keys:
 - "summary": str (1-2 lines, always written in English, regardless of the article's original language)
 - "relevance": int (1-5; 5 = major announcement of a followed saga)

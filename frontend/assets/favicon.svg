@@ -1,6 +1,13 @@
-<svg fill="#35b8ff" height="800px" width="800px" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-	 viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve">
-<path d="M236.3,65.6c1.2,0,2.7,0.6,4,2.4c-5.8-8.3,6.5-4.7,7.2-12.6c7-5.2,4.5-8.6,6.5-8.8l2.2-1.8c-4.3,1.6-5.8,1.9-7,1.9
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="tile" cx="50%" cy="38%" r="80%">
+      <stop offset="0%" stop-color="#17171B"/>
+      <stop offset="100%" stop-color="#0E0E10"/>
+    </radialGradient>
+  </defs>
+  <rect x="8" y="8" width="496" height="496" rx="112" fill="url(#tile)" stroke="#26262B" stroke-width="8"/>
+  <g transform="translate(96 36) scale(0.625)">
+    <path fill="#35b8ff" d="M236.3,65.6c1.2,0,2.7,0.6,4,2.4c-5.8-8.3,6.5-4.7,7.2-12.6c7-5.2,4.5-8.6,6.5-8.8l2.2-1.8c-4.3,1.6-5.8,1.9-7,1.9
 	c-0.3,0-0.6,0-0.9,0c-0.3,0-0.7,0-1.1,0c-1.5,0-4,0.3-9.9,2.1c-13.5,1-23.2,15.6-27.8,16c-4.7,2.5-4.5,3-3.4,3
 	c0.3,0,0.7-0.1,1.1-0.1c0.4,0,0.7-0.1,1-0.1c1.1,0,0.8,0.5-5.6,3.5c1.5,0.4-11.2,6-11.3,14.8c-0.4,3.4,1,5.7,3.3,5.7
 	c2,0,4.5-1.5,7.2-5.3c9-10.4,28-11.4,36.2-17.7C232.9,68.2,233.9,65.6,236.3,65.6z M190.6,69.1c-0.9,0,0.3-1.1,1.6-2.2
@@ -60,4 +67,7 @@
 	C414,325.7,395,339.5,403.6,354.3z M338.5,159.3c-0.1,0.1-0.1,0.1-0.1,0.2c0.1,0.2,0.2,0.2,0.2,0.2
 	C338.6,159.7,338.6,159.6,338.5,159.3z M256,0C114.6,0,0,114.6,0,256s114.6,256,256,256c141.4,0,256-114.6,256-256S397.4,0,256,0z
 	 M256,492.3C125.5,492.3,19.7,386.5,19.7,256S125.5,19.7,256,19.7S492.3,125.5,492.3,256S386.5,492.3,256,492.3z"/>
+  </g>
+  <ellipse cx="256" cy="202" rx="158" ry="56" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="9"/>
+  <text x="256" y="458" text-anchor="middle" font-family="'Archivo Black', 'Arial Black', 'Arial', sans-serif" font-size="120" font-weight="900" letter-spacing="2" fill="#35b8ff">EUR</text>
 </svg>

@@ -74,8 +74,6 @@ const state = {
 
 const els = {
   title: document.getElementById('app-title'),
-  headerCount: document.getElementById('header-count'),
-  headerUpdated: document.getElementById('header-updated'),
   stateLoading: document.getElementById('state-loading'),
   stateError: document.getElementById('state-error'),
   stateEmpty: document.getElementById('state-empty'),
@@ -83,10 +81,10 @@ const els = {
   errorMessage: document.getElementById('error-message'),
   newsList: document.getElementById('news-list'),
   retryBtn: document.getElementById('retry-btn'),
+  clearFiltersBtn: document.getElementById('clear-filters-btn'),
   filterPlatforms: document.getElementById('filter-platforms'),
   filterGames: document.getElementById('filter-games'),
   headerNavButtons: document.querySelectorAll('.header__nav-btn'),
-  clearFilters: document.getElementById('clear-filters'),
 };
 
 // ============================================================
@@ -99,21 +97,6 @@ function formatDate(date) {
     month: 'short',
     day: 'numeric',
   });
-}
-
-function formatRelativeDate(date) {
-  const now = new Date();
-  const diffMs = now - date;
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  if (diffSec < 60) return 'just now';
-  if (diffMin < 60) return `${diffMin} min ago`;
-  if (diffHour < 24) return `${diffHour}h ago`;
-  if (diffDay < 30) return `${diffDay}d ago`;
-  return formatDate(date);
 }
 
 function escapeHtml(text) {
@@ -293,6 +276,59 @@ function renderAllTiles(newsItems, games) {
 }
 
 // ============================================================
+// Game Tiles Mobile Carousel (focused/active scale effect)
+// ============================================================
+
+const TILES_MOBILE_MQL = window.matchMedia('(max-width: 768px)');
+
+function setupGameTileCarousel() {
+  const container = els.filterGames;
+  if (!container) return;
+
+  let rafId = 0;
+  let activeTile = null;
+
+  const update = () => {
+    rafId = 0;
+
+    if (!TILES_MOBILE_MQL.matches || container.scrollWidth <= container.clientWidth + 1) {
+      if (activeTile) {
+        activeTile.classList.remove('is-active');
+        activeTile = null;
+      }
+      return;
+    }
+
+    const centerX = container.getBoundingClientRect().left + container.clientWidth / 2;
+    let best = null;
+    let bestDist = Infinity;
+    for (const tile of container.querySelectorAll('.game-tile')) {
+      const rect = tile.getBoundingClientRect();
+      const dist = Math.abs(rect.left + rect.width / 2 - centerX);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = tile;
+      }
+    }
+
+    if (best !== activeTile) {
+      if (activeTile) activeTile.classList.remove('is-active');
+      activeTile = best;
+      if (activeTile) activeTile.classList.add('is-active');
+    }
+  };
+
+  const schedule = () => {
+    if (!rafId) rafId = requestAnimationFrame(update);
+  };
+
+  container.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
+  if (TILES_MOBILE_MQL.addEventListener) TILES_MOBILE_MQL.addEventListener('change', schedule);
+  schedule();
+}
+
+// ============================================================
 // Header Section Navigation (NEWS / RUMORS)
 // ============================================================
 
@@ -396,24 +432,6 @@ function renderNewsList(items) {
   setState('content');
 }
 
-function renderStats(data) {
-  const count = data.total ?? data.news?.length ?? 0;
-  const countStr = count.toLocaleString('en');
-  const updatedStr = data.generated_at
-    ? formatDate(new Date(data.generated_at))
-    : '\u2014';
-
-  if (els.headerCount) els.headerCount.textContent = `${countStr} news`;
-  if (els.headerUpdated) {
-    els.headerUpdated.textContent = data.generated_at
-      ? `Updated ${formatRelativeDate(new Date(data.generated_at))}`
-      : '\u2014';
-    els.headerUpdated.dateTime = data.generated_at
-      ? new Date(data.generated_at).toISOString()
-      : '';
-  }
-}
-
 function setAppTitle() {
   if (els.title) {
     els.title.textContent = CONFIG.appTitle;
@@ -434,9 +452,29 @@ function setState(stateName) {
   const stateEl = document.getElementById(`state-${stateName}`);
   if (stateEl) {
     stateEl.hidden = false;
+    if (stateName === 'empty') {
+      els.clearFiltersBtn.hidden = !hasActiveFilters();
+    }
   } else if (stateName === 'content') {
     els.newsList.hidden = false;
   }
+}
+
+function hasActiveFilters() {
+  return Boolean(
+    state.filters.game ||
+    state.filters.platforms.length ||
+    state.filters.section
+  );
+}
+
+function resetFilters() {
+  state.filters.game = null;
+  state.filters.platforms = [];
+  state.filters.section = null;
+  syncFilterUIFromState();
+  applyFilters();
+  pushUrl();
 }
 
 function setLoading(loading) {
@@ -562,18 +600,6 @@ function pushUrl() {
 // Event Handlers
 // ============================================================
 
-function onClearFilters() {
-  state.filters = {
-    game: null,
-    platforms: [],
-    category: null,
-    section: 'news',
-  };
-  syncFilterUIFromState();
-  applyFilters();
-  pushUrl();
-}
-
 function onRetry() {
   clearError();
   loadData();
@@ -649,11 +675,11 @@ async function loadData() {
     const games = [...configNames].sort();
     renderAllTiles(data.news, games);
     initHeaderNav();
+    setupGameTileCarousel();
 
     syncUrlToState();
     syncFilterUIFromState();
     applyFilters();
-    renderStats(data);
     setAppTitle();
   } catch (err) {
     setError(
@@ -675,8 +701,8 @@ async function loadData() {
 function init() {
   setAppTitle();
 
-  els.clearFilters.addEventListener('click', onClearFilters);
   els.retryBtn.addEventListener('click', onRetry);
+  els.clearFiltersBtn.addEventListener('click', resetFilters);
 
   window.addEventListener('popstate', () => {
     syncUrlToState();

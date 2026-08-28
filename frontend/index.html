@@ -4,8 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0A0A0B">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>EuroMario</title>
+  <title>EuroMario — Gaming news, release radar &amp; rumors</title>
+  <meta name="description" content="Daily AI-curated gaming digest: release dates, updates, rumors and analysis from the best sources, in one place.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+  <link rel="shortcut icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="EuroMario">
+  <meta property="og:title" content="EuroMario — Gaming news, release radar &amp; rumors">
+  <meta property="og:description" content="Daily AI-curated gaming digest: release dates, updates, rumors and analysis from the best sources, in one place.">
+  <meta property="og:url" content="https://mariomunpeq.github.io/Euromario/">
+  <meta property="og:image" content="https://mariomunpeq.github.io/Euromario/assets/og-banner.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="EuroMario — Gaming news, release radar &amp; rumors">
+  <meta name="twitter:description" content="Daily AI-curated gaming digest: release dates, updates, rumors and analysis from the best sources, in one place.">
+  <meta name="twitter:image" content="https://mariomunpeq.github.io/Euromario/assets/og-banner.png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,15 +59,73 @@
         <div class="filters__platforms" id="filter-platforms" role="group" aria-label="Platforms"></div>
         <div class="filters__games" id="filter-games" role="group" aria-label="Games"></div>
       </div>
-      <div class="filters__actions">
-        <button type="button" class="btn btn--ghost" id="clear-filters" aria-label="Clear filters">Clear</button>
-      </div>
     </section>
 
     <section class="news-grid" id="news-grid" aria-live="polite" aria-label="News">
-      <div class="state state--loading" id="state-loading" aria-live="assertive" hidden>
-        <div class="spinner" aria-hidden="true"></div>
-        <p>Loading news...</p>
+      <div class="state state--loading" id="state-loading" role="status" aria-live="polite" hidden>
+        <div class="skeleton-grid" aria-hidden="true">
+          <div class="skeleton-card">
+            <div class="skeleton__media"></div>
+            <div class="skeleton__body">
+              <div class="skeleton__line w-40"></div>
+              <div class="skeleton__line w-90"></div>
+              <div class="skeleton__line w-75"></div>
+              <div class="skeleton__line w-60"></div>
+              <div class="skeleton__line w-35"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton__media"></div>
+            <div class="skeleton__body">
+              <div class="skeleton__line w-40"></div>
+              <div class="skeleton__line w-90"></div>
+              <div class="skeleton__line w-75"></div>
+              <div class="skeleton__line w-60"></div>
+              <div class="skeleton__line w-35"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton__media"></div>
+            <div class="skeleton__body">
+              <div class="skeleton__line w-40"></div>
+              <div class="skeleton__line w-90"></div>
+              <div class="skeleton__line w-75"></div>
+              <div class="skeleton__line w-60"></div>
+              <div class="skeleton__line w-35"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton__media"></div>
+            <div class="skeleton__body">
+              <div class="skeleton__line w-40"></div>
+              <div class="skeleton__line w-90"></div>
+              <div class="skeleton__line w-75"></div>
+              <div class="skeleton__line w-60"></div>
+              <div class="skeleton__line w-35"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton__media"></div>
+            <div class="skeleton__body">
+              <div class="skeleton__line w-40"></div>
+              <div class="skeleton__line w-90"></div>
+              <div class="skeleton__line w-75"></div>
+              <div class="skeleton__line w-60"></div>
+              <div class="skeleton__line w-35"></div>
+            </div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton__media"></div>
+            <div class="skeleton__body">
+              <div class="skeleton__line w-40"></div>
+              <div class="skeleton__line w-90"></div>
+              <div class="skeleton__line w-75"></div>
+              <div class="skeleton__line w-60"></div>
+              <div class="skeleton__line w-35"></div>
+            </div>
+          </div>
+        </div>
+        <p class="state__label">Loading news&hellip;</p>
       </div>
       <div class="state state--error" id="state-error" hidden>
         <svg class="error__icon" aria-hidden="true" viewBox="0 0 24 24" width="48" height="48">
@@ -65,18 +144,11 @@
         </svg>
         <h2>No news found</h2>
         <p>No news matches the current filters.</p>
+        <button type="button" class="btn btn--primary" id="clear-filters-btn" hidden>Clear filters</button>
       </div>
       <div class="news-grid__list state" id="news-list" role="list" aria-label="News" hidden></div>
     </section>
   </main>
-
-  <footer class="footer">
-    <div class="footer__inner">
-      <span class="footer__tech">Pipeline: Ollama &rarr; Groq</span>
-      <span class="footer__separator">&middot;</span>
-      <a href="https://github.com/MarioMunPeq/Euromario" target="_blank" rel="noopener" class="footer__link">v0.1.0</a>
-    </div>
-  </footer>
 
   <script src="js/app.js"></script>
 </body>

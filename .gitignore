@@ -33,5 +33,11 @@ Thumbs.db
 # Archivos temporales de debug (screenshots, etc.)
 *.png
 
+# Favicons y banner OG (assets de marca, NO screenshots: se versionan para el deploy)
+!frontend/assets/favicon-16.png
+!frontend/assets/favicon-32.png
+!frontend/assets/apple-touch-icon.png
+!frontend/assets/og-banner.png
+
 # NOTA: frontend/data/*.json se versiona a propósito (lo genera el pipeline
 # en GitHub Actions y lo consume la GitHub Page). No ignorar.

@@ -285,111 +285,7 @@ input, select, textarea {
   outline-offset: 2px;
 }
 
-/* ── Expandable Search ─────────────────────────────────────── */
-
-.header__search {
-  position: relative;
-  flex: 1;
-  max-width: 420px;
-  margin-left: auto;
-}
-
-.header__search-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: color var(--transition-fast), background var(--transition-fast);
-}
-
-.header__search-trigger:hover {
-  color: var(--text);
-  background: var(--surface-hover);
-}
-
-.header__search-trigger:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.header__search-trigger[aria-expanded="true"] {
-  color: var(--accent);
-  background: var(--accent-muted);
-}
-
-.header__search-icon-img {
-  width: 22px;
-  height: 22px;
-  flex-shrink: 0;
-  filter: brightness(0) invert(1);
-  transition: filter var(--transition-fast);
-}
-
-.header__search-trigger:hover .header__search-icon-img,
-.header__search-trigger[aria-expanded="true"] .header__search-icon-img {
-  filter: brightness(0) invert(1) saturate(5) hue-rotate(200deg);
-}
-
-.header__search-field {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  padding: 0 var(--space-3);
-  box-shadow: var(--shadow-md);
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-50%) translateX(10px);
-  transition: opacity var(--transition-base), visibility var(--transition-base), transform var(--transition-base);
-  white-space: nowrap;
-  z-index: 10;
-}
-
-.header__search-field:not([hidden]) {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(-50%) translateX(0);
-}
-
-.header__search-field .header__search-icon-img {
-  color: var(--text-subtle);
-  pointer-events: none;
-}
-
-.header__search-field input {
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: var(--text-sm);
-  padding: var(--space-2) var(--space-1);
-  min-width: 220px;
-  max-width: 360px;
-  outline: none;
-  width: 100%;
-}
-
-.header__search-field input::placeholder {
-  color: var(--text-subtle);
-}
-
-.header__search-field input:focus {
-  outline: none;
-}
-
-/* Responsive */
+/* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .header__inner {
     padding: var(--space-3) var(--space-4);
@@ -399,17 +295,6 @@ input, select, textarea {
   }
   .main {
     padding: var(--space-5) var(--space-4) var(--space-6);
-  }
-}
-
-/* ── Tablet (≤ 1024px) ───────────────────────────────────────── */
-@media (max-width: 1024px) {
-  .header__nav {
-    display: none;
-  }
-  .header__search {
-    max-width: none;
-    min-width: 180px;
   }
 }
 
@@ -466,30 +351,6 @@ input, select, textarea {
     width: 16px;
     height: 16px;
   }
-  .header__search {
-    order: 2;
-    flex: 0 0 auto;
-    max-width: none;
-    margin-left: auto;
-    margin-top: 0;
-    flex-shrink: 0;
-  }
-  .header__search-trigger {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-full);
-    padding: 0;
-  }
-  .header__search-field {
-    right: 0;
-    left: 0;
-    min-width: 0;
-    max-width: calc(100vw - 2rem);
-  }
-  .header__search-field input {
-    min-width: 0;
-    flex: 1;
-  }
   .main {
     padding: var(--space-4) var(--space-4) var(--space-6);
   }
@@ -498,8 +359,11 @@ input, select, textarea {
 /* ── Small Mobile (≤ 480px) ──────────────────────────────────── */
 @media (max-width: 480px) {
   .header__inner {
-    padding: 0 var(--space-3);
-    gap: var(--space-1);
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--header-height);
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-1) var(--space-2);
   }
   .header__title {
     font-size: var(--text-sm);
@@ -509,7 +373,12 @@ input, select, textarea {
     height: 22px;
   }
   .header__nav {
+    flex-basis: 100%;
+    flex-grow: 0;
+    justify-content: center;
+    margin-left: 0;
     gap: var(--space-1);
+    padding-bottom: var(--space-1);
   }
   .header__nav-btn {
     padding: var(--space-1) var(--space-2);
@@ -519,10 +388,6 @@ input, select, textarea {
   .header__nav-icon {
     width: 16px;
     height: 16px;
-  }
-  .header__search-trigger {
-    width: 36px;
-    height: 36px;
   }
 }
 

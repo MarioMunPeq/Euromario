@@ -14,7 +14,6 @@ const CONFIG = {
   gamesUrl: 'data/games.json',
   cacheBustParam: 'v',
   itemsPerPage: 50,
-  debounceMs: 150,
 };
 
 const CATEGORY_LABELS = {
@@ -62,7 +61,6 @@ const state = {
     platforms: [],
     category: null,
     section: 'news',
-    search: '',
   },
   ui: {
     loading: false,
@@ -85,9 +83,6 @@ const els = {
   errorMessage: document.getElementById('error-message'),
   newsList: document.getElementById('news-list'),
   retryBtn: document.getElementById('retry-btn'),
-  search: document.getElementById('search'),
-  searchTrigger: document.querySelector('.header__search-trigger'),
-  searchField: document.querySelector('.header__search-field'),
   filterPlatforms: document.getElementById('filter-platforms'),
   filterGames: document.getElementById('filter-games'),
   headerNavButtons: document.querySelectorAll('.header__nav-btn'),
@@ -97,14 +92,6 @@ const els = {
 // ============================================================
 // Utilities
 // ============================================================
-
-function debounce(fn, ms) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), ms);
-  };
-}
 
 function formatDate(date) {
   return date.toLocaleDateString('en', {
@@ -361,8 +348,8 @@ function renderNewsCard(item) {
   const editorialLine = `${sectionLabel} · ${escapeHtml(gameName.toUpperCase())}`;
 
   let mediaHtml;
-  if (item.image_url) {
-    mediaHtml = `<img src="${escapeHtml(item.image_url)}" alt="" class="news-card__image" loading="lazy"/>`;
+  if (item.image) {
+    mediaHtml = `<img src="${escapeHtml(item.image)}" alt="" class="news-card__image" loading="lazy"/>`;
   } else {
     mediaHtml = `
       <div class="news-card__placeholder" style="--cat-color: ${catColor}">
@@ -478,15 +465,9 @@ function clearError() {
 // ============================================================
 
 function applyFilters() {
-  const { game, platforms, category, search, section } = state.filters;
+  const { game, platforms, category, section } = state.filters;
 
   state.filteredNews = state.allNews.filter(item => {
-    if (search) {
-      const query = search.toLowerCase();
-      const haystack = `${item.title} ${item.summary || ''} ${item.game || ''}`.toLowerCase();
-      if (!haystack.includes(query)) return false;
-    }
-
     if (game) {
       if (!item.game || item.game !== game) return false;
     }
@@ -550,8 +531,6 @@ function syncFilterUIFromState() {
     const isActive = state.filters.section === section;
     btn.setAttribute('aria-checked', String(isActive));
   });
-
-  els.search.value = state.filters.search || '';
 }
 
 // ============================================================
@@ -563,7 +542,6 @@ function filtersToUrlParams() {
   if (state.filters.game) params.set('game', state.filters.game);
   if (state.filters.platforms.length) params.set('platforms', state.filters.platforms.join(','));
   if (state.filters.section) params.set('section', state.filters.section);
-  if (state.filters.search) params.set('q', state.filters.search);
   return params.toString();
 }
 
@@ -572,7 +550,6 @@ function syncUrlToState() {
   state.filters.game = params.get('game') || null;
   state.filters.platforms = params.get('platforms')?.split(',').filter(Boolean) || [];
   state.filters.section = params.get('section') || null;
-  state.filters.search = params.get('q') || '';
 }
 
 function pushUrl() {
@@ -585,20 +562,12 @@ function pushUrl() {
 // Event Handlers
 // ============================================================
 
-function onFilterChange() {
-  state.filters.search = els.search.value.trim();
-
-  applyFilters();
-  pushUrl();
-}
-
 function onClearFilters() {
   state.filters = {
     game: null,
     platforms: [],
     category: null,
     section: 'news',
-    search: '',
   };
   syncFilterUIFromState();
   applyFilters();
@@ -608,49 +577,6 @@ function onClearFilters() {
 function onRetry() {
   clearError();
   loadData();
-}
-
-function onSearchTriggerClick() {
-  const isExpanded = els.searchTrigger.getAttribute('aria-expanded') === 'true';
-  if (isExpanded) {
-    collapseSearch();
-  } else {
-    expandSearch();
-  }
-}
-
-function expandSearch() {
-  els.searchTrigger.setAttribute('aria-expanded', 'true');
-  els.searchField.hidden = false;
-  els.search.focus();
-}
-
-function collapseSearch() {
-  els.searchTrigger.setAttribute('aria-expanded', 'false');
-  els.searchField.hidden = true;
-  els.search.blur();
-}
-
-function onKeyDown(e) {
-  if (e.key === 'Escape') {
-    const isExpanded = els.searchTrigger.getAttribute('aria-expanded') === 'true';
-    if (isExpanded) {
-      collapseSearch();
-    }
-  }
-}
-
-function onDocumentClick(e) {
-  const isExpanded = els.searchTrigger.getAttribute('aria-expanded') === 'true';
-  if (!isExpanded) return;
-
-  const searchContainer = document.getElementById('header-search');
-  if (!searchContainer.contains(e.target)) {
-    const searchValue = els.search.value.trim();
-    if (searchValue === '') {
-      collapseSearch();
-    }
-  }
 }
 
 // ============================================================
@@ -749,21 +675,14 @@ async function loadData() {
 function init() {
   setAppTitle();
 
-  const debouncedFilterChange = debounce(onFilterChange, CONFIG.debounceMs);
-
-  els.search.addEventListener('input', debouncedFilterChange);
   els.clearFilters.addEventListener('click', onClearFilters);
   els.retryBtn.addEventListener('click', onRetry);
-  els.searchTrigger.addEventListener('click', onSearchTriggerClick);
 
   window.addEventListener('popstate', () => {
     syncUrlToState();
     syncFilterUIFromState();
     applyFilters();
   });
-
-  document.addEventListener('keydown', onKeyDown);
-  document.addEventListener('click', onDocumentClick);
 
   loadData();
 }

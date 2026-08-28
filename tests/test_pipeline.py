@@ -23,6 +23,23 @@ def make_item(title="Noticia", body="Cuerpo", game="Persona", lang="en"):
     )
 
 
+def make_reddit_item(title="GTA VI leak", game="Grand Theft Auto"):
+    return FetchedItem(
+        title=title,
+        url="https://reddit.com/r/gamingleaksandrumours/comments/1",
+        source=Source(
+            name="Reddit · r/gamingleaksandrumours",
+            type="reddit",
+            subreddit="gamingleaksandrumours",
+        ),
+        published_at=datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc),
+        fetched_at=datetime(2026, 8, 27, 12, 5, tzinfo=timezone.utc),
+        body_text="Cuerpo del leak",
+        language="en",
+        game=game,
+    )
+
+
 def make_ai_summary(summary="ok", relevance=3, category=Category.UPDATE, language=Language.ENGLISH):
     return AISummary(
         summary=summary,
@@ -51,6 +68,45 @@ def test_ollama_ok_groq_no_usado():
     assert results[0].summary == "ok1"
     assert results[1].summary == "ok2"
     assert ollama.summarize.call_count == 2
+
+
+def test_reddit_siempre_rumor_sobreescribe_a_la_ia():
+    """La regla determinista fuerza rumor para cualquier item de subreddit,
+    aunque el modelo lo haya clasificado como lanzamiento."""
+    ollama = Mock()
+    ollama.summarize.return_value = make_ai_summary(
+        "El reveal puede estar en camino", 4, Category.LAUNCH
+    )
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline.ollama = ollama
+    pipeline.groq = Mock()
+    pipeline.current_client = ollama
+    pipeline._consecutive_ai_errors = 0
+
+    results = list(pipeline._enrich_with_ai([make_reddit_item()]))
+
+    assert len(results) == 1
+    assert ollama.summarize.call_count == 1  # la IA se consulta igualmente
+    assert results[0].category == "rumor"
+    assert results[0].is_verified is False
+
+
+def test_media_no_se_sobreescribe_por_regla_reddit():
+    """Un item de medio conserva la categoría devuelta por la IA."""
+    ollama = Mock()
+    ollama.summarize.return_value = make_ai_summary(
+        "Lanzamiento confirmado", 5, Category.LAUNCH
+    )
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline.ollama = ollama
+    pipeline.groq = Mock()
+    pipeline.current_client = ollama
+    pipeline._consecutive_ai_errors = 0
+
+    results = list(pipeline._enrich_with_ai([make_item("Anuncio oficial")]))
+
+    assert len(results) == 1
+    assert results[0].category == "lanzamiento"
 
 
 def test_ai_error_item_fallback_seguro_continua():

@@ -40,7 +40,7 @@ reddit:
 limites:
   max_items_por_fuente: 20
   timeout_segundos: 15
-  max_stories_por_juego: 5
+  max_stories_por_juego: 8
 
 calidad:
   excluir_titulos:

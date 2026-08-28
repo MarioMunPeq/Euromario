@@ -22,6 +22,7 @@ from gaming_news_digest.fetchers.rss import fetch_media_feed
 from gaming_news_digest.fetchers.steam import fetch_steam_news
 from gaming_news_digest.filtering.matcher import create_matcher
 from gaming_news_digest.models import (
+    Category,
     FetchedItem,
     ModelValidationError,
     NewsItem,
@@ -186,6 +187,11 @@ class Pipeline:
                 ai_data = _SAFE_FALLBACK
             # is_verified = True para medios oficiales y Steam, False para Reddit
             is_verified = item.source.type != SourceType.REDDIT
+            # Regla determinista aprobada: todo item de subreddit es un rumor;
+            # sobreescribe lo que haya devuelto el modelo (fix RUMORS/Reddit).
+            category = ai_data["category"]
+            if item.source.type is SourceType.REDDIT:
+                category = Category.RUMOR.value
             try:
                 yield NewsItem(
                     title=item.title,
@@ -196,7 +202,7 @@ class Pipeline:
                     published_at=item.published_at,
                     fetched_at=item.fetched_at,
                     relevance=ai_data["relevance"],
-                    category=ai_data["category"],
+                    category=category,
                     summary=ai_data["summary"],
                     image_url=item.image_url,
                     author=item.author,

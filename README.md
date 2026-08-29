@@ -612,16 +612,16 @@ This limit is also used before AI inference to reduce unnecessary model calls.
 
 ## 🔄 GitHub Actions automation
 
-The project uses two workflows.
+The project uses a single workflow.
 
-### News pipeline
+### News pipeline and GitHub Pages deployment
 
 `.github/workflows/digest.yml`
 
 Runs:
 
 ```text
-Every hour at minute 17
+Every hour at minute 17 (plus manual triggers via workflow_dispatch)
 ```
 
 The workflow:
@@ -634,17 +634,12 @@ The workflow:
 6. pulls the configured model;
 7. runs `python -m gaming_news_digest`;
 8. commits updated frontend data;
-9. pushes the generated data back to `master`.
+9. pushes the generated data back to `master`;
+10. deploys `frontend/` to GitHub Pages (`configure-pages` → `upload-pages-artifact` → `deploy-pages`), only when all previous steps succeeded.
 
 A concurrency group prevents overlapping digest executions.
 
-### GitHub Pages deployment
-
-`.github/workflows/deploy-pages.yml`
-
-The deployment workflow publishes the `frontend/` directory to GitHub Pages when frontend files change.
-
-Because the digest workflow commits `frontend/data/news.json` and `frontend/data/games.json`, an updated digest naturally becomes a frontend change and can trigger publication.
+Manual frontend changes are deployed by triggering the workflow with `workflow_dispatch`.
 
 ---
 
@@ -706,8 +701,7 @@ python -m compileall -q src tests
 .
 ├── .github/
 │   └── workflows/
-│       ├── digest.yml              # hourly news pipeline
-│       └── deploy-pages.yml        # GitHub Pages deployment
+│       └── digest.yml              # hourly news pipeline + GitHub Pages deployment
 │
 ├── config/
 │   ├── games.yaml                  # followed / excluded games

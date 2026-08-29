@@ -1,4 +1,4 @@
-name: Pipeline de noticias
+﻿name: Pipeline de noticias
 
 on:
   schedule:
@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: digest
@@ -20,6 +22,9 @@ jobs:
   actualizar-digest:
     runs-on: ubuntu-latest
     timeout-minutes: 55
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,7 +49,7 @@ jobs:
               break
             fi
             if [ "$i" -eq 30 ]; then
-              echo "Ollama no arrancó en 30s"
+              echo "Ollama no arrancÃ³ en 30s"
               cat /tmp/ollama.log
               exit 1
             fi
@@ -66,6 +71,18 @@ jobs:
           if git diff --cached --quiet; then
             echo "Sin cambios en los datos."
           else
-            git commit -m "chore(datos): actualizar digest automático"
+            git commit -m "chore(datos): actualizar digest automÃ¡tico"
             git push
           fi
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend
+
+      - id: deployment
+        name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

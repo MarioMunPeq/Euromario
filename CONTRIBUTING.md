@@ -24,8 +24,7 @@ Este documento define las pautas obligatorias para desarrollar G-Patch Notes: pr
 
 ```text
 ├── .github/workflows/
-│   ├── digest.yml              # Pipeline horario: fetch → IA → commit de datos
-│   └── deploy-pages.yml        # Despliegue del frontend en GitHub Pages
+│   └── digest.yml              # Pipeline horario: fetch → IA → commit de datos + deploy GitHub Pages
 ├── config/
 │   ├── games.yaml              # Listas de inclusión/exclusión de juegos (editar a mano)
 │   └── sources.yaml            # Fuentes: feeds RSS, app_ids de Steam, subreddits, límites

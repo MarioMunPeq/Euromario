@@ -4,6 +4,7 @@ import pytest
 
 from gaming_news_digest.config import GameRule
 from gaming_news_digest.filtering.matcher import (
+    _detect_game_name_with_reason,
     _normalize,
     create_matcher,
     detect_game_name,
@@ -151,11 +152,116 @@ class TestDeteccionJuegosNoConfigurados:
     def test_recorta_ruido_inicial(self):
         assert detect_game_name("New Hades 2 gameplay trailer released", "") == "Hades 2"
 
-    def test_secuencia_capitalizada_como_fallback(self):
-        assert detect_game_name("Nodusfall is something different", "") == "Nodusfall"
+    def test_recorta_descriptores_entre_nombre_y_ancla(self):
+        assert detect_game_name("Red Dead Redemption 2 release date announced", "") == "Red Dead Redemption 2"
+
+    def test_nombre_multipalabra_antes_de_beta(self):
+        assert detect_game_name("Monstrum 2 beta test announced", "") == "Monstrum 2"
 
     def test_hint_steam_gana(self):
         assert detect_game_name("Patch notes", "", hint="Baldur's Gate 3") == "Baldur's Gate 3"
 
+    def test_hint_steam_gana_incluso_con_titulo_generico(self):
+        assert detect_game_name("Update 2.1 is here!", "", hint="Cyberpunk 2077") == "Cyberpunk 2077"
+
     def test_sin_conclusion_devuelve_none(self):
         assert detect_game_name("noticias del sector otra cosa", "") is None
+
+    def test_mayuscula_generica_no_basta(self):
+        """PROHIBIDO adivinar por capitalización: 'Nodusfall' no es concluyente."""
+        assert detect_game_name("Nodusfall is something different", "") is None
+
+    def test_modern_gamers_steam_no_detecta_modern(self):
+        """Regresión: 'Modern gamers spoiled by Steam...' debe ser None (nunca 'Modern')."""
+        assert detect_game_name(
+            "Modern gamers spoiled by Steam will never understand the joy of a MegaPak", ""
+        ) is None
+
+    def test_ancla_con_candidato_generico_devuelve_none(self):
+        assert detect_game_name("Modern update brings changes today", "") is None
+
+    def test_titulo_generico_tras_ancla_inicial_devuelve_none(self):
+        assert detect_game_name("Update 2.1 is here!", "") is None
+
+    def test_juego_conocido_sin_ancla_via_lista_curada(self):
+        """Nombre muy conocido sin ancla: la lista curada lo identifica."""
+        assert detect_game_name("Mass Effect 4 development news", "") == "Mass Effect"
+
+    def test_juego_conocido_sensible_a_mayusculas_y_acentos(self):
+        assert detect_game_name("ASSASSIN'S CREED SHADOWS devblog post", "") == "Assassin's Creed"
+
+    def test_conocido_exige_limites_de_palabra(self):
+        assert detect_game_name("Masseth Effect game", "") is None
+
+    def test_juego_excluido_no_interfiere_en_deteccion(self):
+        """La detección solo se llama para artículos no excluidos; aún así,
+        un título con puro ruido devuelve None y no inventa nombres."""
+        assert detect_game_name("FIFA 24 new kit announced", "") is None
+
+
+class TestFalsosPositivosProhibidos:
+    """Casos que DEBEN devolver None (nunca inventar juego)."""
+
+    def test_empresa_anuncia_iniciativa_gaming(self):
+        assert detect_game_name("Sony announces new gaming initiative", "") is None
+
+    def test_plataforma_anuncia_funcion(self):
+        assert detect_game_name("Steam announces new feature", "") is None
+
+    def test_hardware_anuncia_tecnologia(self):
+        assert detect_game_name("NVIDIA announces DLSS update", "") is None
+
+    def test_usuarios_steam_obtienen_funcion(self):
+        assert detect_game_name("Steam users are getting a major new feature", "") is None
+
+    def test_jugadores_reaccionan_actualizacion(self):
+        assert detect_game_name("Players react to the latest update", "") is None
+
+    def test_desarrolladores_discuten_futuro(self):
+        assert detect_game_name("Developers discuss the future of gaming", "") is None
+
+    def test_actualizacion_vaga_sin_juego(self):
+        assert detect_game_name("New update coming soon", "") is None
+
+
+class TestDeteccionNombreEnMitad:
+    """Detección cuando el juego aparece en mitad del titular."""
+
+    def test_gta_vi_gets_trailer(self):
+        assert detect_game_name("Grand Theft Auto VI gets a new trailer", "") == "Grand Theft Auto VI"
+
+    def test_persona_5_royal_is_coming(self):
+        assert detect_game_name("Persona 5 Royal is coming to PlayStation", "") == "Persona 5 Royal"
+
+    def test_nombre_en_mitad_titulo(self):
+        assert detect_game_name("New gameplay trailer for Red Dead Redemption 2 released", "") == "Red Dead Redemption 2"
+
+    def test_posesivo_en_medio(self):
+        assert detect_game_name("Spider-Man 2's developer discusses the new update", "") == "Spider-Man"
+
+    def test_marvel_rivals_anuncia_temporada(self):
+        assert detect_game_name("Marvel Rivals announces new season", "") == "Marvel Rivals"
+
+
+class TestReasonTracking:
+    """Verifica que _detect_game_name_with_reason devuelve razón correcta."""
+
+    def test_reason_hint(self):
+        name, reason = _detect_game_name_with_reason("Patch notes", "", hint="Cyberpunk 2077")
+        assert name == "Cyberpunk 2077"
+        assert reason == "hint"
+
+    def test_reason_anchor(self):
+        name, reason = _detect_game_name_with_reason("Hollow Knight Silksong Patch 1.1 notes", "")
+        assert name == "Hollow Knight Silksong"
+        assert reason == "anchor"
+
+    def test_reason_known_title(self):
+        name, reason = _detect_game_name_with_reason("Mass Effect 4 development news", "")
+        assert name == "Mass Effect"
+        assert reason == "known_title"
+
+    def test_reason_none(self):
+        name, reason = _detect_game_name_with_reason("New update coming soon", "")
+        assert name is None
+        assert reason is None

@@ -88,6 +88,12 @@ class GroqClient(AIClient):
             category_instruction = (
                 '"category" ("lanzamiento"|"actualizacion"|"rumor"|"analisis"), '
             )
+        game_instruction = (
+            "CRITICAL: The Game field is set by an external deterministic matcher. "
+            "DO NOT guess, invent, or change the game name. If Game is \"Videojuegos\", "
+            "it means no specific game was identified — treat it as a generic topic. "
+            "Do NOT let any guessed game influence relevance, category, or summary."
+        )
         return (
             "You are a video game news editor. Summarize the news in 1-2 short lines, "
             "ALWAYS WRITTEN IN ENGLISH. The summary must be in English regardless of the "
@@ -98,6 +104,7 @@ class GroqClient(AIClient):
             "the title with fewer words. Only use details actually present in the body — "
             "never invent facts. If the body has no usable extra detail, close with the "
             "most specific confirmed fact. "
+            f"{game_instruction} "
             "Return ONLY valid JSON with these exact keys: "
             '"summary" (str, 1-2 lines, always in English), '
             '"relevance" (int 1-5; 5 = major announcement of a followed saga), '
@@ -110,8 +117,15 @@ class GroqClient(AIClient):
             category_key = ""
         else:
             category_key = '"category": str, '
+        game_instruction = (
+            "CRITICAL: The Game field is set by an external deterministic matcher.\n"
+            "DO NOT guess, invent, or change the game name. If Game is \"Videojuegos\", "
+            "it means no specific game was identified — treat it as a generic topic.\n"
+            "Do NOT let any guessed game influence relevance, category, or summary.\n"
+        )
         return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
 Add value beyond the title: include ONE concrete, checkable detail found in the article body (a number, a date, a price, a version, a platform, a name, or a direct quote) that is NOT already in the title. Never merely rephrase the title with fewer words. Only use details actually present in the body — never invent facts. If the body has no usable extra detail, close with the most specific confirmed fact.
+{game_instruction}
 Return ONLY valid JSON with these exact keys:
 - "summary": str (1-2 lines, always written in English, regardless of the article's original language)
 - "relevance": int (1-5; 5 = major announcement of a followed saga)

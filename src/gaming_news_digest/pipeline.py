@@ -6,6 +6,7 @@ import time
 from collections import defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import requests
 
@@ -21,7 +22,14 @@ from gaming_news_digest.fetchers.reddit import (
 )
 from gaming_news_digest.fetchers.rss import fetch_media_feed
 from gaming_news_digest.fetchers.steam import fetch_steam_news
-from gaming_news_digest.filtering.matcher import create_matcher, detect_game_name
+from gaming_news_digest.filtering.matcher import (
+    _EVENT_ANCHOR_WORDS as _NEWS_KEYWORDS,
+)
+from gaming_news_digest.filtering.matcher import (
+    _detect_game_name_with_reason,
+    _normalize,
+    create_matcher,
+)
 from gaming_news_digest.models import (
     Category,
     FetchedItem,
@@ -30,13 +38,25 @@ from gaming_news_digest.models import (
     SourceType,
 )
 from gaming_news_digest.storage.json_store import save_digest, save_games_config
-from gaming_news_digest.storage.retention import apply_retention
+from gaming_news_digest.storage.retention import apply_retention, utc_now
 
 logger = logging.getLogger(__name__)
 
 # Nombre genérico para noticias de medios cuyo juego no se puede identificar
 # (y no está excluido). Sin whitelist: la noticia se publica de todos modos.
 _DEFAULT_GAME_NAME = "Videojuegos"
+
+# Ventana temporal del digest DIARIO: ~24 horas + 2 horas de tolerancia.
+# El cron de GitHub Actions no es puntilloso y los feeds publican tarde a
+# veces; 26 horas cubre "lo de ayer" sin arrastrar más historia de la cuenta.
+_DIGEST_WINDOW_HOURS = 26
+
+# Pre-ranking ANTES de la IA: se recorta el total enviado al modelo a ~40-60
+# items con señales baratas (nunca con la IA). No es una whitelist: los juegos
+# no configurados compiten con las mismas señales. Los rumores de Reddit
+# conservan un mínimo reservado para no vaciar la sección.
+_PRE_RANK_TARGET_MAX = 60
+_PRE_RANK_REDDIT_FLOOR = 8
 
 # Fallback seguro para items que fallan la IA
 _SAFE_FALLBACK = {
@@ -100,12 +120,80 @@ def _count_by_source(items: list[FetchedItem | NewsItem]) -> dict:
     return {"total": len(items), "reddit": len(reddit), "media_steam": len(media)}
 
 
-# Fallback seguro para items que fallan la IA
-_SAFE_FALLBACK = {
-    "summary": None,
-    "relevance": 1,
-    "category": "rumor",
-}
+def _is_reddit(item: FetchedItem | NewsItem) -> bool:
+    return getattr(item.source, "type", None) is SourceType.REDDIT
+
+
+def _pre_rank_score(
+    item: FetchedItem | NewsItem,
+    featured_names: set[str],
+    now: datetime,
+) -> float:
+    """Puntuación barata y determinista para ordenar antes de llamar a la IA.
+
+    Señales (nunca la IA, nunca el nombre del juego como criterio excluyente):
+    - actualidad: los últimos ~24 h puntúan alto (decae en 48 h);
+    - palabra clave de noticia en el titular (patch, update, announce...);
+    - juego destacado en ``games.yaml`` (logo disponibles en el frontend);
+    - fuente verificada (medios/Steam) sobre Reddit.
+    """
+    score = 0.0
+    if item.published_at:
+        age_hours = max(0.0, (now - item.published_at).total_seconds() / 3600.0)
+        score += min(1.0, max(0.0, 1.0 - age_hours / 48.0))
+    title_words = set(_normalize(item.title or "").split())
+    if title_words & _NEWS_KEYWORDS:
+        score += 2.0
+    if (item.game or "").casefold() in featured_names:
+        score += 3.0
+    if not _is_reddit(item):
+        score += 1.0
+    return score
+
+
+def _pre_rank_for_ai(
+    items: list[FetchedItem | NewsItem],
+    featured_names: set[str] | frozenset[str] | None = None,
+    *,
+    target_max: int = _PRE_RANK_TARGET_MAX,
+    reddit_floor: int = _PRE_RANK_REDDIT_FLOOR,
+    now: datetime | None = None,
+) -> list[FetchedItem | NewsItem]:
+    """Recorta el total de items ANTES de la IA a ``target_max`` (~40-60).
+
+    Solo actúa si sobran; si no, devuelve la misma lista sin tocar. Los juegos
+    no configurados en ``games.yaml`` compiten con las mismas señales baratas
+    (está PROHIBIDO descartar solo por no estar configurado). Los rumores de
+    Reddit mantienen un mínimo (``reddit_floor``) para no vaciar la sección.
+    Devuelve los supervivientes en el orden original de entrada.
+    """
+    if len(items) <= target_max:
+        return items
+
+    featured = {name.casefold() for name in (featured_names or ())}
+    if now is None:
+        now = utc_now()
+
+    scored = sorted(
+        items,
+        key=lambda it: (_pre_rank_score(it, featured, now), it.published_at, it.url),
+        reverse=True,
+    )
+    picked = scored[:target_max]
+    dropped = scored[target_max:]
+
+    # Piso de Reddit: sustituir los peores no-reddit elegidos por los mejores
+    # reddit descartados (los picked están en orden descendente de puntuación).
+    if reddit_floor > 0:
+        reddit_picked = [it for it in picked if _is_reddit(it)]
+        reddit_dropped = [it for it in dropped if _is_reddit(it)]
+        missing = reddit_floor - len(reddit_picked)
+        non_reddit_indices = [i for i, it in enumerate(picked) if not _is_reddit(it)]
+        for _ in range(min(missing, len(reddit_dropped), len(non_reddit_indices))):
+            picked[non_reddit_indices.pop()] = reddit_dropped.pop(0)
+
+    picked_ids = {id(it) for it in picked}
+    return [it for it in items if id(it) in picked_ids]
 
 
 def _limit_stories_per_game(
@@ -260,7 +348,24 @@ class Pipeline:
         
         fetched = self._fetch_all()
         filtered = self._filter(fetched)
-        
+
+        # Diagnóstico JUEGOS (tras filtro): identificado, sin_identificar (Videojuegos),
+        # reddit. Permite ver calidad del matcher al vuelo.
+        identificado = 0
+        videojuegos = 0
+        reddit_cnt = 0
+        for item in filtered:
+            if getattr(item.source, "type", None) is SourceType.REDDIT:
+                reddit_cnt += 1
+            elif item.game == _DEFAULT_GAME_NAME:
+                videojuegos += 1
+            else:
+                identificado += 1
+        logger.info(
+            "DIAGNÓSTICO JUEGOS: identificado=%d | sin_identificar(Videojuegos)=%d | reddit=%d | media/steam total=%d",
+            identificado, videojuegos, reddit_cnt, identificado + videojuegos
+        )
+
         # Diagnóstico CLUSTERING
         StageStats.log_separator()
         clustered = cluster_and_select_representatives(filtered)
@@ -288,8 +393,23 @@ class Pipeline:
         )
         StageStats.log_separator()
 
+        # Pre-ranking ANTES de la IA: señales baratas (actualidad, tipo de
+        # noticia, juego destacado, fuente verificada) sin coste de inferencia.
+        # NO es una whitelist: los juegos no configurados compiten igual.
+        featured_names = {rule.name for rule in self._games.include}
+        preranked = _pre_rank_for_ai(prelimited, featured_names)
+
+        # Diagnóstico PRE-RANK
+        stats_prerank = _count_by_source(preranked)
+        logger.info(
+            "DIAGNÓSTICO PRE-RANK: total=%d (reddit=%d, media=%d) | target_max=%d | recortados: %d",
+            stats_prerank["total"], stats_prerank["reddit"], stats_prerank["media_steam"],
+            _PRE_RANK_TARGET_MAX, stats_pre["total"] - stats_prerank["total"],
+        )
+        StageStats.log_separator()
+
         # IA
-        enriched = list(self._enrich_with_ai(prelimited))
+        enriched = list(self._enrich_with_ai(preranked))
         
         # Diagnóstico IA
         stats_enriched = _count_by_source(enriched)
@@ -315,10 +435,11 @@ class Pipeline:
         )
         StageStats.log_separator()
 
-        # Retención: Reddit tiene bloque independiente con su propio límite por juego
+        # Retención: Reddit tiene bloque independiente con su propio límite por juego.
+        # Ventana del digest DIARIO: ~24 h + tolerancia (26 h) para cubrir "lo de ayer".
         retained = apply_retention(
             limited,
-            max_age_hours=48,
+            max_age_hours=_DIGEST_WINDOW_HOURS,
             max_total=200,
             max_per_game=self.limits.max_stories_per_game,
             max_per_game_reddit=self.limits.max_stories_per_game_reddit,
@@ -330,14 +451,14 @@ class Pipeline:
         logger.info("=== DIAGNÓSTICO FINAL REDDIT ===")
         logger.info("  Fetched: %d", _count_by_source(fetched)["reddit"])
         logger.info("  After clustering: %d", _count_by_source(clustered)["reddit"])
-        logger.info("  Before AI: %d", stats_pre["reddit"])
+        logger.info("  Before AI (pre-rank): %d", _count_by_source(preranked)["reddit"])
         logger.info("  AI processed: %d", stats_enriched["reddit"])
         logger.info("  After post-limit: %d", stats_limited["reddit"])
         logger.info("  Final digest: %d", stats_final["reddit"])
         logger.info("=== DIAGNÓSTICO FINAL MEDIA/STEAM ===")
         logger.info("  Fetched: %d", _count_by_source(fetched)["media_steam"])
         logger.info("  After clustering: %d", _count_by_source(clustered)["media_steam"])
-        logger.info("  Before AI: %d", stats_pre["media_steam"])
+        logger.info("  Before AI (pre-rank): %d", _count_by_source(preranked)["media_steam"])
         logger.info("  AI processed: %d", stats_enriched["media_steam"])
         logger.info("  After post-limit: %d", stats_limited["media_steam"])
         logger.info("  Final digest: %d", stats_final["media_steam"])
@@ -381,6 +502,16 @@ class Pipeline:
 
     def _filter(self, items: list[FetchedItem]) -> list[FetchedItem]:
         kept = []
+        # Contadores GAME MATCH por motivo (solo medios/Steam: Reddit no
+        # pasa por detección). Permiten detectar falsos positivos del matcher.
+        game_stats: dict[str, int] = {
+            "config": 0,
+            "hint": 0,
+            "anchor": 0,
+            "known_title": 0,
+            "no_confident_match": 0,
+            "videojuegos": 0,
+        }
         for item in items:
             if self._is_excluded(item):
                 continue
@@ -414,7 +545,10 @@ class Pipeline:
                 # 2. Juego configurado (games.yaml): entra con nombre canónico
                 #    si es tema principal.
                 accepted, game = self.matcher.match(item.title, body)
-                if not accepted:
+                if accepted:
+                    reason = "config"
+                    game_stats["config"] += 1
+                else:
                     # 3. Juego NO configurado: la noticia se publica igual.
                     #    Se detecta su nombre (Steam: el de la app seguida;
                     #    medios: heurística sobre el titular), o se usa un
@@ -425,7 +559,25 @@ class Pipeline:
                         prefix = "Steam · "
                         if name.startswith(prefix):
                             hint = name[len(prefix):]
-                    game = detect_game_name(item.title, body, hint=hint) or _DEFAULT_GAME_NAME
+                    detected, reason = _detect_game_name_with_reason(item.title, body, hint=hint)
+                    if detected:
+                        game = detected
+                        reason = reason or "anchor"
+                        game_stats[reason] = game_stats.get(reason, 0) + 1
+                    else:
+                        # Sin conclusión fiable -> None -> nombre genérico.
+                        reason = "no_confident_match"
+                        game = None
+                        game_stats[reason] += 1
+                # Log por noticia: permite rastrear falsos positivos
+                # (GAME MATCH: "título" -> juego o None [motivo]).
+                shown = game or "None"
+                if game is None:
+                    logger.info('GAME MATCH: "%s" -> None [%s]', item.title, reason)
+                    game = _DEFAULT_GAME_NAME
+                    game_stats["videojuegos"] += 1
+                else:
+                    logger.info('GAME MATCH: "%s" -> %s [%s]', item.title, shown, reason)
                 item = FetchedItem(
                     title=item.title,
                     url=item.url,
@@ -455,6 +607,12 @@ class Pipeline:
             stats_in.total - stats_out.total,
             stats_in.reddit - stats_out.reddit,
             stats_in.media_steam - stats_out.media_steam
+        )
+        logger.info(
+            "GAME MATCH (resumen): config=%d, hint=%d, anchor=%d, known_title=%d, no_confident_match=%d, videojuegos=%d",
+            game_stats["config"], game_stats["hint"], game_stats["anchor"],
+            game_stats["known_title"], game_stats["no_confident_match"],
+            game_stats["videojuegos"],
         )
         if stats_out.reddit_titles:
             for i, title in enumerate(stats_out.reddit_titles):

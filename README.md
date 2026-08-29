@@ -52,7 +52,7 @@ RSS / Steam / Reddit
  Per-game ranking
         │
         ▼
- 48-hour retention
+ ~24-hour retention (daily)
  + 200-item cap
         │
         ▼
@@ -81,14 +81,15 @@ RSS / Steam / Reddit
 - **Ollama local inference** with a Groq cloud fallback.
 - **Graceful AI failure handling** so one bad response does not destroy the whole run.
 - **Pre-AI per-game limiting** to avoid wasting inference calls on stories that cannot survive the final cap.
-- **48-hour rolling news retention**.
+- **Cheap pre-ranking before AI** that cuts the workload to ~40-60 stories per run.
+- **~24-hour rolling news retention** (daily digest window, with a 2-hour tolerance).
 - **200-item global storage cap**.
 - **Atomic JSON writes** for safer publication data.
 - **Vanilla HTML/CSS/JavaScript frontend** with no framework or build step.
 - **Responsive game/platform filter tiles**.
 - **News / Rumors sections**.
 - **URL-synchronized filters** so views can be shared or refreshed without losing state.
-- **GitHub Actions hourly automation**.
+- **GitHub Actions daily automation** (a fresh digest every morning, ~09:00 Madrid time).
 - **GitHub Pages hosting** with no server to maintain.
 
 ---
@@ -157,6 +158,20 @@ EuroMario therefore applies the per-game cap twice:
 
 This can drastically reduce AI calls during source-heavy news cycles.
 
+### 5b. Pre-AI ranking (the cheap cut)
+
+The per-game caps alone can still leave the full workload above the daily-digest budget.
+
+EuroMario therefore applies one more filter immediately before AI, keeping **at most 60 stories** ordered by cheap signals collected without an LLM:
+
+- **recency** — fresher stories win (a 48-hour decay);
+- **news value** — headlines containing words like *update, patch, announcement, trailer* get a bonus;
+- **featured games** — stories already in `config/games.yaml` get a bonus;
+- **verified sources** — non-Reddit publications get a small bonus;
+- **Reddit floor** — a minimum of 8 rumors survive so the rumors section is never empty.
+
+This ranking never *drops* a game or source family by itself: it only picks the strongest candidates to spend AI inference on.
+
 ### 6. AI enrichment
 
 Surviving stories are passed through a common AI interface.
@@ -180,11 +195,11 @@ The stored digest is deliberately short-lived.
 
 Current policy:
 
-- **48 hours maximum age**;
+- **~24 hours rolling window** (26 hours with tolerance, matching the daily schedule);
 - **200 items maximum**;
 - **per-game limit remains enforced**.
 
-The 48-hour boundary is inclusive: an item at exactly the cutoff is retained, while an item older than the cutoff is removed.
+The 24-hour window is inclusive: an item at exactly the cutoff is retained, while an item older than the cutoff is removed.
 
 ### 8. Publication
 
@@ -624,7 +639,9 @@ The project uses a single workflow.
 Runs:
 
 ```text
-Every hour at minute 17 (plus manual triggers via workflow_dispatch)
+Every day at 07:00 UTC (09:00 in Madrid during summer, 08:00 in winter;
+GitHub Actions schedules in UTC only, see the workflow comment)
+plus manual triggers via workflow_dispatch
 ```
 
 The workflow:
@@ -633,12 +650,13 @@ The workflow:
 2. installs Python 3.12;
 3. restores pip cache;
 4. installs Python dependencies;
-5. installs and starts Ollama;
-6. pulls the configured model;
-7. runs `python -m gaming_news_digest`;
-8. commits updated frontend data;
-9. pushes the generated data back to `master`;
-10. deploys `frontend/` to GitHub Pages (`configure-pages` → `upload-pages-artifact` → `deploy-pages`), only when all previous steps succeeded.
+5. restores the cached Ollama model;
+6. installs and starts Ollama;
+7. pulls the configured model (from cache when available);
+8. runs `python -m gaming_news_digest`;
+9. commits updated frontend data;
+10. pushes the generated data back to `master`;
+11. deploys `frontend/` to GitHub Pages (`configure-pages` → `upload-pages-artifact` → `deploy-pages`), only when all previous steps succeeded.
 
 A concurrency group prevents overlapping digest executions.
 
@@ -653,7 +671,7 @@ The project has a substantial pytest suite covering the core pipeline.
 Latest repository verification for this version:
 
 ```text
-265 passed
+303 passed
 Ruff: All checks passed
 Python syntax: OK
 ```
@@ -704,7 +722,7 @@ python -m compileall -q src tests
 .
 ├── .github/
 │   └── workflows/
-│       └── digest.yml              # hourly news pipeline + GitHub Pages deployment
+│       └── digest.yml              # daily news pipeline (~09:00 Madrid) + GitHub Pages deployment
 │
 ├── config/
 │   ├── games.yaml                  # featured games & blacklist
@@ -977,5 +995,5 @@ EuroMario is a portfolio project focused on demonstrating:
 
 <p align="center">
   <strong>EuroMario</strong><br>
-  <sub>Less noise. More games. Fresh every hour.</sub>
+  <sub>Less noise. More games. Fresh every day.</sub>
 </p>

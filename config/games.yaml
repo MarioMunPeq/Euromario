@@ -16,7 +16,7 @@
 # a las noticias. Ejemplo: "Baldur's Gate 3", NO "Baldur's Gate".
 #
 # Para editar: modifica este archivo y haz commit; la siguiente ejecución
-# horaria del pipeline ya lo aplica. No hace falta tocar código.
+# diaria del pipeline ya lo aplica. No hace falta tocar código.
 
 incluir:
   # ── Originales (ya existían) ──────────────────────────────

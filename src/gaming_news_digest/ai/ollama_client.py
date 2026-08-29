@@ -66,8 +66,21 @@ class OllamaClient(AIClient):
         else:
             category_instruction = '- "category": "lanzamiento" | "actualizacion" | "rumor" | "analisis"\n'
         
+        # INSTRUCCIÓN CRÍTICA: El campo Game viene determinado por un matcher
+        # determinista externo. NUNCA adivines/inventes/cambies el juego.
+        # - Si Game = "Videojuegos" → significa que NO se identificó juego concreto.
+        # - NO dejes que un juego adivinado influya en relevance/category/summary.
+        # - El summary/relevance/category deben basarse SOLO en el contenido real.
+        game_instruction = (
+            "CRITICAL: The Game field is set by an external deterministic matcher.\n"
+            "DO NOT guess, invent, or change the game name. If Game is \"Videojuegos\", "
+            "it means no specific game was identified — treat it as a generic topic.\n"
+            "Do NOT let any guessed game influence relevance, category, or summary.\n"
+        )
+        
         return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
 Add value beyond the title: include ONE concrete, checkable detail found in the article body (a number, a date, a price, a version, a platform, a name, or a direct quote) that is NOT already in the title. Never merely rephrase the title with fewer words. Only use details actually present in the body — never invent facts. If the body has no usable extra detail, close with the most specific confirmed fact.
+{game_instruction}
 Return ONLY valid JSON with these exact keys:
 - "summary": str (1-2 lines, always written in English, regardless of the article's original language)
 - "relevance": int (1-5; 5 = major announcement of a followed saga)

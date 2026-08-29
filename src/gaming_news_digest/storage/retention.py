@@ -1,9 +1,13 @@
 """Política de retención del histórico.
 
 Se limpia cuando se cumple cualquiera de estas condiciones:
-- la noticia más antigua almacenada supera las 48 horas, o
+- la noticia más antigua almacenada supera la ventana de tiempo, o
 - el total de noticias almacenadas supera las 200
 - un juego supera el máximo de historias permitidas
+
+El pipeline diario (pipeline.py) pasa su propia ventana (~24 h con tolerancia,
+_DIGEST_WINDOW_HOURS = 26) en max_age_hours; el valor por defecto de 48 horas
+se mantiene solo como tope conservador para usos aislados.
 """
 
 from collections import defaultdict
@@ -34,7 +38,7 @@ def apply_retention(
     Devuelve lista recortada manteniendo orden descendente.
 
     1. Filtro por antigüedad (corte = ahora - max_age_hours):
-       un item se elimina cuando supera las 48 horas (corte inclusivo, >=).
+       un item se elimina cuando supera la ventana (corte inclusivo, >=).
     2. Cap total: conserva los PRIMEROS max_total (los más nuevos)
     3. Cap por juego: si se especifica max_per_game, limita por juego
        priorizando por relevancia y luego por fecha.

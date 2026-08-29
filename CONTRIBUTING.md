@@ -13,7 +13,7 @@ Este documento define las pautas obligatorias para desarrollar G-Patch Notes: pr
 **Restricciones innegociables:**
 
 - **Coste económico cero.** Nada puede depender de servicios de pago.
-- **Todo el cómputo corre en GitHub Actions gratuito** (runners ubuntu-latest, cron horario, job con timeout de ~55 min para no acercarse al límite de 6 h).
+- **Todo el cómputo corre en GitHub Actions gratuito** (runners ubuntu-latest, cron diario, job con timeout de ~55 min para no acercarse al límite de 6 h).
 - **La IA es local vía Ollama** (modelo pequeño cuantizado, CPU). El fallback a Groq existe solo por rendimiento de CI, debe ser opcional (secreto `GROQ_API_KEY`) y fácilmente intercambiable: misma interfaz, misma entrada/salida.
 - **Idiomas de fuente:** español e inglés aceptados tal cual; el resumen se genera en el idioma original, nunca se traduce.
 - **Reddit siempre se marca como categoría aparte** ("Reddit / Rumores"): es contenido no verificado de comunidad y debe distinguirse visualmente de las noticias de medios oficiales.
@@ -24,7 +24,7 @@ Este documento define las pautas obligatorias para desarrollar G-Patch Notes: pr
 
 ```text
 ├── .github/workflows/
-│   └── digest.yml              # Pipeline horario: fetch → IA → commit de datos + deploy GitHub Pages
+│   └── digest.yml              # Pipeline diario (~09:00 Madrid): fetch → IA → commit de datos + deploy GitHub Pages
 ├── config/
 │   ├── games.yaml              # Juegos/sagas destacados (logos/alias) + exclusiones (editar a mano)
 │   └── sources.yaml            # Fuentes: feeds RSS, app_ids de Steam, subreddits, límites
@@ -32,7 +32,7 @@ Este documento define las pautas obligatorias para desarrollar G-Patch Notes: pr
 │   ├── __main__.py             # CLI: python -m gaming_news_digest
 │   ├── config.py               # Carga y validación de los YAML
 │   ├── models.py               # Modelos de dominio (NewsItem, Source, FetchedItem)
-│   ├── pipeline.py             # Orquestador de las 5 fases
+│   ├── pipeline.py             # Orquestador de las fases del digest
 │   ├── fetchers/               # rss.py, steam.py, reddit.py + base.py compartido
 │   ├── filtering/              # matcher.py (inclusión/exclusión robusto)
 │   ├── ai/                     # base.py (interfaz común), ollama_client.py, groq_client.py
@@ -123,13 +123,14 @@ Invariantes:
 
 ## 5. El pipeline paso a paso
 
-Ejecutado cada hora por `.github/workflows/digest.yml` (y manualmente con `python -m gaming_news_digest`):
+Ejecutado una vez al día (07:00 UTC ≈ 09:00 en Madrid en verano, 08:00 en invierno; GitHub Actions solo acepta cron en UTC) por `.github/workflows/digest.yml` (y manualmente con `python -m gaming_news_digest`):
 
 1. **Fetch** — `fetchers/` descarga todas las fuentes declaradas en `config/sources.yaml` (RSS de medios, Steam News por `app_id`, RSS de subreddits). Cada item se normaliza a `NewsItem` y se deduplica por `id` contra lo ya almacenado.
 2. **Filtrado** — `filtering/matcher.py` aplica `config/games.yaml`: **cualquier noticia de medios/Steam se publica**, excepto las que mencionan un juego de exclusión (la exclusión gana siempre; ver sección 6). Si el juego está en `incluir`, entra con su nombre canónico; si no está configurado, se conserva igualmente detectando su nombre del titular (o el de la app en Steam) sin que haga falta añadirlo a la lista.
-3. **Resumen y clasificación IA** — `ai/` genera por noticia: `summary`, `relevance` y `category`. Motor por defecto: Ollama local (`ollama_client.py`). Fallback: si Ollama no está disponible, supera el timeout por ítem o acumula demasiados errores, `groq_client.py` asume el resto de la ejecución (misma interfaz definida en `base.py`). Respuestas inválidas → reintento simple → si persiste, la noticia entra sin `summary` (`null`) pero nunca bloquea el pipeline.
-4. **Retención** — `storage/retention.py` limpia el histórico cuando se cumple **cualquiera** de: la noticia más antigua supera **48 horas**, o el total supera **200 noticias** (recorte eliminando primero las más antiguas). Ambas condiciones combinadas, evaluadas tras cada merge.
-5. **Escritura atómica y commit** — si el JSON resultante difiere del actual, se escribe de forma atómica en `frontend/data/news.json` y el workflow hace commit con el bot `github-actions[bot]` (`chore(datos): actualizar digest automático`). Ese commit toca `frontend/**`, así que dispara automáticamente el redeploy en Pages. Sin cambios → sin commit.
+3. **Pre-ranking barato pre-IA** — `pipeline.py::_pre_rank_for_ai` ordena todo lo que superó el límite por juego y recorta el trabajo de la IA a un máximo de **60 noticias** usando señales sin LLM: frescura (decaimiento de 48 h), valor de noticia en el titular (update/anuncios/trailers), bonus para juegos de `incluir`, bonus para fuentes verificadas, y un **mínimo de 8 rumores de Reddit** para que la sección nunca quede vacía. Nunca descarta un juego por no estar configurado: solo elige a qué gastar inferencia.
+4. **Resumen y clasificación IA** — `ai/` genera por noticia: `summary`, `relevance` y `category`. Motor por defecto: Ollama local (`ollama_client.py`). Fallback: si Ollama no está disponible, supera el timeout por ítem o acumula demasiados errores, `groq_client.py` asume el resto de la ejecución (misma interfaz definida en `base.py`). Respuestas inválidas → reintento simple → si persiste, la noticia entra sin `summary` (`null`) pero nunca bloquea el pipeline.
+5. **Retención** — `storage/retention.py` limpia el histórico cuando se cumple **cualquiera** de: la noticia más antigua supera **~24 horas** (ventana de 26 h con tolerancia, alineada con la cadencia diaria), o el total supera **200 noticias** (recorte eliminando primero las más antiguas). Ambas condiciones combinadas, evaluadas tras cada merge.
+6. **Escritura atómica y commit** — si el JSON resultante difiere del actual, se escribe de forma atómica en `frontend/data/news.json` y el workflow hace commit con el bot `github-actions[bot]` (`chore(datos): actualizar digest automático`). Ese commit toca `frontend/**`, así que dispara automáticamente el redeploy en Pages. Sin cambios → sin commit.
 
 ### Manejo de fechas en los fetchers
 
@@ -174,7 +175,7 @@ El pipeline (`pipeline.py`) orquesta la IA con una política de resiliencia clar
 > **AIError en Groq tras fallback**  
 > Un `AIError` de Groq (fallo de validación tras reintentos) **no aborta** el pipeline: el item recibe fallback seguro y el pipeline continúa con el siguiente. Solo errores de infraestructura (conexión, timeout, HTTP 5xx) son críticos en Groq.
 
-Detalles de CI: `concurrency.group: digest` para evitar solapes entre ejecuciones; el modelo de Ollama se instala en el runner en cada ejecución (`ollama pull "$OLLAMA_MODEL"`).
+Detalles de CI: `concurrency.group: digest` para evitar solapes entre ejecuciones; el modelo de Ollama se **cachea** entre ejecuciones (`actions/cache` sobre `~/.ollama/models`) para no descargar ~1-2 GB a diario, y se fuerza de todos modos `ollama pull "$OLLAMA_MODEL"` para garantizar que el runner tiene la versión pedida.
 
 ---
 
@@ -191,7 +192,7 @@ excluir:
     aliases: [FIFA]
 ```
 
-**Cómo se edita:** editando el YAML a mano y haciendo commit. No se toca código ni se reinicia nada: la siguiente ejecución horaria ya usa la lista nueva. Es la forma prevista de mantener el proyecto día a día.
+**Cómo se edita:** editando el YAML a mano y haciendo commit. No se toca código ni se reinicia nada: la siguiente ejecución diaria ya usa la lista nueva. Es la forma prevista de mantener el proyecto día a día.
 
 **Semántica:**
 
@@ -206,6 +207,7 @@ excluir:
 - Límites de palabra: "GTA" no puede matchear dentro de otra palabra.
 - Alias y variantes: abreviaturas (`CoD`), numeraciones romanas/arábigas de secuelas (`GTA VI` ≡ `GTA 6`), subtítulos.
 - Insensible a mayúsculas/minúsculas y acentos.
+- **Prohibido adivinar por capitalización.** Un titular en MAYÚSCULAS o un "Titular Con Mayúsculas" no implica nombre de juego: si no hay palabra-ancla (update, patch, trailer…), alias conocido o coincidencia con la lista curada de títulos (`_KNOWN_GAME_TITLES` en `matcher.py`), el resultado es `None` → nombre genérico `Videojuegos`. Mejor un cubo genérico que un falso juego.
 - La detección de juegos no configurados es heurística y best-effort: no debe bloquear jamás la publicación de una noticia no excluida.
 
 ---
@@ -227,7 +229,7 @@ excluir:
 Sin red: los fetchers se testean con fixtures locales (XML/HTML/JSON guardados en `tests/fixtures/`). Los clientes de IA se testean con mocks. Mínimo cubierto:
 
 1. **Matcher** — positivos por nombre y alias; negativos; falsos positivos por subcadena ("gta" dentro de otras palabras); variantes de secuelas (VI/6); prioridad de exclusión sobre inclusión; detección de tema principal vs mención; `detect_game_name` (juegos no configurados) y `is_excluded`.
-2. **Retención** — recorte por antigüedad (48 horas), por cantidad (cap 200), combinados, y casos borde exactamente en el límite.
+2. **Retención** — recorte por antigüedad (ventana configurable; el pipeline diario usa ~24 h), por cantidad (cap 200), combinados, y casos borde exactamente en el límite.
 3. **`json_store`** — schema válido, orden descendente, id estable y determinista, escritura atómica, no-reescritura si no hay cambios.
 4. **`config`** — carga correcta de YAML válidos y errores claros ante YAML inválido o incompleto.
 5. **Clientes IA (mockeados)** — parseo de respuesta válida, rechazo de respuesta malformada, y activación del fallback Groq ante fallos/timeout de Ollama.

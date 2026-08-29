@@ -635,28 +635,33 @@ function renderNewsCard(item) {
   const isHighRelevance = item.relevance >= 4;
 
   const sectionLabel = category === 'rumor' ? 'RUMOR' : 'NEWS';
+  const isReddit = sourceType === 'reddit';
 
-  let mediaHtml;
-  if (item.image) {
-    mediaHtml = `
-      <img src="${escapeHtml(item.image)}" alt="" class="news-card__image" loading="lazy"/>
-      <div class="news-card__overlay">
-        <div class="news-card__overlay-content">
-          <span class="news-card__section">${sectionLabel}</span>
-          <span class="news-card__game">${escapeHtml(gameName.toUpperCase())}</span>
-        </div>
-      </div>`;
-  } else {
-    mediaHtml = `
-      <div class="news-card__placeholder" style="--cat-color: ${catColor}">
-        <span class="news-card__placeholder-initials">${escapeHtml(getSourceInitials(getSourceName(item.source, sourceType)))}</span>
-      </div>
+  const overlayHtml = `
       <div class="news-card__overlay news-card__overlay--placeholder">
         <div class="news-card__overlay-content">
           <span class="news-card__section">${sectionLabel}</span>
           <span class="news-card__game">${escapeHtml(gameName.toUpperCase())}</span>
         </div>
       </div>`;
+
+  let mediaHtml;
+  if (isReddit) {
+    mediaHtml = `
+      <div class="news-card__placeholder news-card__placeholder--reddit" role="img" aria-label="Reddit">
+        <img src="assets/icons/reddit.svg" alt="" class="news-card__placeholder-logo"/>
+      </div>
+      ${overlayHtml}`;
+  } else if (item.image) {
+    mediaHtml = `
+      <img src="${escapeHtml(item.image)}" alt="" class="news-card__image" loading="lazy"/>
+      ${overlayHtml}`;
+  } else {
+    mediaHtml = `
+      <div class="news-card__placeholder" style="--cat-color: ${catColor}">
+        <span class="news-card__placeholder-initials">${escapeHtml(getSourceInitials(getSourceName(item.source, sourceType)))}</span>
+      </div>
+      ${overlayHtml}`;
   }
 
   const dateObj = new Date(item.published_at);

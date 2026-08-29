@@ -1080,6 +1080,22 @@ input, select, textarea {
   user-select: none;
 }
 
+.news-card__placeholder--reddit {
+  background: linear-gradient(
+    180deg,
+    var(--surface) 0%,
+    var(--bg) 100%
+  );
+  opacity: 1;
+}
+
+.news-card__placeholder-logo {
+  width: 42%;
+  height: auto;
+  display: block;
+  opacity: 0.95;
+}
+
 /* === Overlay: section + game on image === */
 .news-card__overlay {
   position: absolute;

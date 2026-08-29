@@ -3,7 +3,11 @@
 import pytest
 
 from gaming_news_digest.config import GameRule
-from gaming_news_digest.filtering.matcher import _normalize, create_matcher
+from gaming_news_digest.filtering.matcher import (
+    _normalize,
+    create_matcher,
+    detect_game_name,
+)
 
 
 @pytest.fixture
@@ -127,3 +131,31 @@ class TestSinMatchEnInclusion:
         accept, game = matcher.match("Novedades de Minecraft", "Actualización 1.20.")
         assert accept is False
         assert game is None
+
+
+class TestIsExcludedDirecto:
+    def test_exclusion_por_titulo(self, matcher):
+        assert matcher.is_excluded("FIFA 24 sale mañana", "Cuerpo") is True
+
+    def test_exclusion_por_mención_unica_en_body(self, matcher):
+        assert matcher.is_excluded("Novedades varias", "FIFA 24 tiene actualización") is True
+
+    def test_sin_exclusion_false(self, matcher):
+        assert matcher.is_excluded("Noticias de Persona", "Solo noticias de la saga.") is False
+
+
+class TestDeteccionJuegosNoConfigurados:
+    def test_nombre_antes_de_palabra_ancla(self):
+        assert detect_game_name("Hollow Knight Silksong Patch 1.1 notes", "") == "Hollow Knight Silksong"
+
+    def test_recorta_ruido_inicial(self):
+        assert detect_game_name("New Hades 2 gameplay trailer released", "") == "Hades 2"
+
+    def test_secuencia_capitalizada_como_fallback(self):
+        assert detect_game_name("Nodusfall is something different", "") == "Nodusfall"
+
+    def test_hint_steam_gana(self):
+        assert detect_game_name("Patch notes", "", hint="Baldur's Gate 3") == "Baldur's Gate 3"
+
+    def test_sin_conclusion_devuelve_none(self):
+        assert detect_game_name("noticias del sector otra cosa", "") is None

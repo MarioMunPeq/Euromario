@@ -26,7 +26,7 @@ Este documento define las pautas obligatorias para desarrollar G-Patch Notes: pr
 ├── .github/workflows/
 │   └── digest.yml              # Pipeline horario: fetch → IA → commit de datos + deploy GitHub Pages
 ├── config/
-│   ├── games.yaml              # Listas de inclusión/exclusión de juegos (editar a mano)
+│   ├── games.yaml              # Juegos/sagas destacados (logos/alias) + exclusiones (editar a mano)
 │   └── sources.yaml            # Fuentes: feeds RSS, app_ids de Steam, subreddits, límites
 ├── src/gaming_news_digest/     # Paquete principal (src layout)
 │   ├── __main__.py             # CLI: python -m gaming_news_digest
@@ -106,7 +106,7 @@ Invariantes:
 - `id`: hex de 16 caracteres = primeros 16 bytes de `sha256(url normalizada)`. Estable entre ejecuciones (base del dedup).
 - `source`: string con el nombre normalizado de la fuente (ej. `"Eurogamer"`, `"Steam · Grand Theft Auto"`, `"Reddit · r/gamingleaks"`).
 - `source_type`: enum cerrado `"media"` | `"steam"` | `"reddit"`. Si es `"reddit"`, el frontend lo muestra como "Reddit / Rumores".
-- `game`: string con el nombre canónico del juego (según `config/games.yaml`).
+- `game`: string con el nombre del juego. Canónico si está en `config/games.yaml`; si el juego no está configurado, el nombre detectado del titular (o el de la app de Steam). Una noticia no se descarta por no estar en la lista.
 - `game_id`: string opcional con identificador externo (ej. Steam `app_id` como `"1687950"`), o `null`.
 - `category`: `"lanzamiento"` | `"actualizacion"` | `"rumor"` | `"analisis"`.
 - `relevance`: entero 1–5 asignado por la IA (5 = anuncio mayor de una saga seguida; 1 = mención menor).
@@ -126,7 +126,7 @@ Invariantes:
 Ejecutado cada hora por `.github/workflows/digest.yml` (y manualmente con `python -m gaming_news_digest`):
 
 1. **Fetch** — `fetchers/` descarga todas las fuentes declaradas en `config/sources.yaml` (RSS de medios, Steam News por `app_id`, RSS de subreddits). Cada item se normaliza a `NewsItem` y se deduplica por `id` contra lo ya almacenado.
-2. **Filtrado** — `filtering/matcher.py` aplica `config/games.yaml`: entra la noticia que matchea algún juego de inclusión y ninguno de exclusión (la exclusión gana siempre; ver sección 6).
+2. **Filtrado** — `filtering/matcher.py` aplica `config/games.yaml`: **cualquier noticia de medios/Steam se publica**, excepto las que mencionan un juego de exclusión (la exclusión gana siempre; ver sección 6). Si el juego está en `incluir`, entra con su nombre canónico; si no está configurado, se conserva igualmente detectando su nombre del titular (o el de la app en Steam) sin que haga falta añadirlo a la lista.
 3. **Resumen y clasificación IA** — `ai/` genera por noticia: `summary`, `relevance` y `category`. Motor por defecto: Ollama local (`ollama_client.py`). Fallback: si Ollama no está disponible, supera el timeout por ítem o acumula demasiados errores, `groq_client.py` asume el resto de la ejecución (misma interfaz definida en `base.py`). Respuestas inválidas → reintento simple → si persiste, la noticia entra sin `summary` (`null`) pero nunca bloquea el pipeline.
 4. **Retención** — `storage/retention.py` limpia el histórico cuando se cumple **cualquiera** de: la noticia más antigua supera **48 horas**, o el total supera **200 noticias** (recorte eliminando primero las más antiguas). Ambas condiciones combinadas, evaluadas tras cada merge.
 5. **Escritura atómica y commit** — si el JSON resultante difiere del actual, se escribe de forma atómica en `frontend/data/news.json` y el workflow hace commit con el bot `github-actions[bot]` (`chore(datos): actualizar digest automático`). Ese commit toca `frontend/**`, así que dispara automáticamente el redeploy en Pages. Sin cambios → sin commit.
@@ -195,16 +195,18 @@ excluir:
 
 **Semántica:**
 
-- Una noticia entra si matchea **al menos un** juego de `incluir` y **ninguno** de `excluir`.
-- **La exclusión tiene prioridad sobre la inclusión.** Si la noticia trata principalmente de un juego excluido, no se muestra aunque también mencione una saga seguida. Motivo: la lista de inclusión es amplia y generará ruido cruzado; la lista de exclusión es una blacklist deliberada y debe ganar siempre (ej. una comparativa "EA Sports FC vs eFootball" donde se menciona Persona no debe entrar).
-- Se evalúa como **tema principal**, no mención casual: heurística basada en aparición en título y/o peso en el cuerpo. La heurística concreta vive en `matcher.py` y es territorio de tests obligatorios.
+- **`incluir` NO es una whitelist.** Es la lista de juegos/sagas que se quieren **destacar**: logos, nombres canónicos con alias, plataformas y prioridad de reconocimiento. Una noticia de cualquier juego entra igualmente aunque no esté en la lista.
+- **La exclusión es la única puerta de salida.** Si **cualquier** juego de `excluir` aparece una sola vez en el artículo, se descarta completo, sea cual sea su tema principal. Motivo: la lista de exclusión es una blacklist deliberada y debe ganar siempre (ej. una comparativa "EA Sports FC vs eFootball" donde se menciona Persona misma noticia: se descarta).
+- Juegos en `incluir`: se evalúa como **tema principal** (título O ≥2 menciones en body) para asignar el **nombre canónico**. Una mención casual en body sin título no basta para canonizar, pero la noticia **no se descarta por eso**: recibe el nombre detectado.
+- Juegos fuera de `incluir`: la noticia se publica con el nombre detectado por `matcher.py::detect_game_name` (heurística sobre el titular; en Steam, el nombre de la app seguida) o con el nombre genérico `Videojuegos` si no se puede identificar.
+- Reddit **no pasa por este matcher**: entra siempre que supere los checks técnicos y se agrupa bajo el juego genérico "Reddit Rumors".
 
 **Robustez exigida al matcher** (prohibido el naive `if palabra in texto`):
 
 - Límites de palabra: "GTA" no puede matchear dentro de otra palabra.
 - Alias y variantes: abreviaturas (`CoD`), numeraciones romanas/arábigas de secuelas (`GTA VI` ≡ `GTA 6`), subtítulos.
 - Insensible a mayúsculas/minúsculas y acentos.
-- Reddit pasa por el mismo filtro; su distinción visual viene de `source.type`, no del filtro.
+- La detección de juegos no configurados es heurística y best-effort: no debe bloquear jamás la publicación de una noticia no excluida.
 
 ---
 
@@ -224,7 +226,7 @@ excluir:
 
 Sin red: los fetchers se testean con fixtures locales (XML/HTML/JSON guardados en `tests/fixtures/`). Los clientes de IA se testean con mocks. Mínimo cubierto:
 
-1. **Matcher** — positivos por nombre y alias; negativos; falsos positivos por subcadena ("gta" dentro de otras palabras); variantes de secuelas (VI/6); prioridad de exclusión sobre inclusión; detección de tema principal vs mención.
+1. **Matcher** — positivos por nombre y alias; negativos; falsos positivos por subcadena ("gta" dentro de otras palabras); variantes de secuelas (VI/6); prioridad de exclusión sobre inclusión; detección de tema principal vs mención; `detect_game_name` (juegos no configurados) y `is_excluded`.
 2. **Retención** — recorte por antigüedad (48 horas), por cantidad (cap 200), combinados, y casos borde exactamente en el límite.
 3. **`json_store`** — schema válido, orden descendente, id estable y determinista, escritura atómica, no-reescritura si no hay cambios.
 4. **`config`** — carga correcta de YAML válidos y errores claros ante YAML inválido o incompleto.

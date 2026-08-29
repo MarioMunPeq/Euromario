@@ -21,7 +21,7 @@ from gaming_news_digest.fetchers.reddit import (
 )
 from gaming_news_digest.fetchers.rss import fetch_media_feed
 from gaming_news_digest.fetchers.steam import fetch_steam_news
-from gaming_news_digest.filtering.matcher import create_matcher
+from gaming_news_digest.filtering.matcher import create_matcher, detect_game_name
 from gaming_news_digest.models import (
     Category,
     FetchedItem,
@@ -33,6 +33,10 @@ from gaming_news_digest.storage.json_store import save_digest, save_games_config
 from gaming_news_digest.storage.retention import apply_retention
 
 logger = logging.getLogger(__name__)
+
+# Nombre genérico para noticias de medios cuyo juego no se puede identificar
+# (y no está excluido). Sin whitelist: la noticia se publica de todos modos.
+_DEFAULT_GAME_NAME = "Videojuegos"
 
 # Fallback seguro para items que fallan la IA
 _SAFE_FALLBACK = {
@@ -401,23 +405,41 @@ class Pipeline:
                 )
                 kept.append(item)
             else:
-                # Media/Steam: apply normal game matching
-                accepted, game = self.matcher.match(item.title, item.body_text or "")
-                if accepted:
-                    item = FetchedItem(
-                        title=item.title,
-                        url=item.url,
-                        source=item.source,
-                        published_at=item.published_at,
-                        fetched_at=item.fetched_at,
-                        body_text=item.body_text,
-                        language=item.language,
-                        game=game,
-                        image_url=item.image_url,
-                        author=item.author,
-                        game_id=item.game_id,
-                    )
-                    kept.append(item)
+                # Media/Steam:
+                # 1. Exclusión GLOBAL (poison pill): cualquier mención de un
+                #    juego excluido descarta el artículo completo.
+                body = item.body_text or ""
+                if self.matcher.is_excluded(item.title, body):
+                    continue
+                # 2. Juego configurado (games.yaml): entra con nombre canónico
+                #    si es tema principal.
+                accepted, game = self.matcher.match(item.title, body)
+                if not accepted:
+                    # 3. Juego NO configurado: la noticia se publica igual.
+                    #    Se detecta su nombre (Steam: el de la app seguida;
+                    #    medios: heurística sobre el titular), o se usa un
+                    #    nombre genérico si no se puede concluir nada.
+                    hint = None
+                    if item.source.type is SourceType.STEAM:
+                        name = item.source.name
+                        prefix = "Steam · "
+                        if name.startswith(prefix):
+                            hint = name[len(prefix):]
+                    game = detect_game_name(item.title, body, hint=hint) or _DEFAULT_GAME_NAME
+                item = FetchedItem(
+                    title=item.title,
+                    url=item.url,
+                    source=item.source,
+                    published_at=item.published_at,
+                    fetched_at=item.fetched_at,
+                    body_text=item.body_text,
+                    language=item.language,
+                    game=game,
+                    image_url=item.image_url,
+                    author=item.author,
+                    game_id=item.game_id,
+                )
+                kept.append(item)
         
         # Diagnóstico FILTRADO
         stats_in = StageStats()

@@ -67,10 +67,10 @@ incluir:
     logo: roblox.svg
     platform: [pc, playstation, xbox]
 
-  # ── Nuevos: sin SVG (fallback a inicial en frontend) ──────
+  # ── Nuevos ─────────────────────────────────────────────────
   - nombre: Cyberpunk 2077
     aliases: [CP2077]
-    logo: null
+    logo: cyberpunk.svg
     platform: [pc, playstation, xbox]
   - nombre: Final Fantasy
     aliases: [FF]
@@ -78,11 +78,11 @@ incluir:
     platform: [playstation, pc]
   - nombre: Helldivers 2
     aliases: [HD2]
-    logo: null
+    logo: helldivers.svg
     platform: [pc, playstation]
   - nombre: Starfield
     aliases: []
-    logo: null
+    logo: starfield.svg
     platform: [pc, xbox]
 
 excluir:

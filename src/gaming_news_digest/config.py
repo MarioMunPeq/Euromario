@@ -43,8 +43,10 @@ class GameRule:
 class GamesConfig:
     """Listas de inclusión/exclusión ya validadas.
 
-    La exclusión tiene prioridad sobre la inclusión (regla del filtro);
-    aquí solo se guarda la estructura.
+    ``include`` es la lista de juegos/sagas **destacados** (logo, aliases de
+    reconocimiento canónico, plataformas), NO una whitelist: las noticias de
+    juegos no incluidos se publican igualmente. La exclusión tiene prioridad
+    sobre la inclusión (regla del filtro); aquí solo se guarda la estructura.
     """
 
     include: tuple[GameRule, ...]

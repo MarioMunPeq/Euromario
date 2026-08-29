@@ -429,7 +429,8 @@ def test_reddit_post_limite_despues_de_ia_funciona(monkeypatch):
 
 
 def test_reddit_filtro_salta_game_matching(monkeypatch):
-    """Reddit items pasan el filtro sin game matching, Media items requieren match."""
+    """Reddit pasa el filtro sin game matching; los items de medios se
+    conservan aunque su juego no esté configurado (sin whitelist)."""
     import re
 
     import gaming_news_digest.pipeline as pipe
@@ -480,8 +481,224 @@ def test_reddit_filtro_salta_game_matching(monkeypatch):
 
     pipeline.run()
 
-    # Reddit items should pass filter (5 items)
-    # Media items should be filtered out (no game match)
-    assert len(seen_enriched) == 5, f"Esperados 5 items Reddit en IA, got {len(seen_enriched)}"
+    # Reddit items pasan el filtro sin game matching (5 items)
+    # Media items también se conservan aunque su juego no esté configurado
+    assert len(seen_enriched) == 10, f"Esperados 10 items en IA (5 reddit + 5 media), got {len(seen_enriched)}"
     reddit_in_ai = sum(1 for it in seen_enriched if it.source.type.value == "reddit")
-    assert reddit_in_ai == 5, f"Todos los items en IA deben ser Reddit, got {reddit_in_ai}"
+    assert reddit_in_ai == 5, f"Esperados 5 items Reddit en IA, got {reddit_in_ai}"
+    media_in_ai = sum(1 for it in seen_enriched if it.source.type.value != "reddit")
+    assert media_in_ai == 5, f"Esperados 5 items Media en IA, got {media_in_ai}"
+
+
+def test_media_juego_no_configurado_llega_al_digest(monkeypatch):
+    """Una noticia de medios sobre un juego que NO está en games.yaml se
+    publica igualmente: el pipeline detecta el nombre y no la descarta."""
+    import re
+
+    import gaming_news_digest.pipeline as pipe
+    from gaming_news_digest.config import (
+        GamesConfig,
+        Limits,
+        QualityConfig,
+        SourcesConfig,
+    )
+
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=8)
+    pipeline.sources = SourcesConfig()
+    pipeline._games = GamesConfig(include=())
+    pipeline._save_games_config = Mock()
+    pipeline._consecutive_ai_errors = 0
+    pipeline._title_re = [re.compile(p, re.IGNORECASE) for p in []]
+    pipeline._url_re = [re.compile(p, re.IGNORECASE) for p in []]
+    pipeline.quality = QualityConfig()
+    pipeline.matcher = pipe.create_matcher((), ())
+
+    fetched = [make_item("Hollow Knight Silksong Patch 1.1 notes", url_suffix="hks")]
+    monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
+    monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
+
+    seen_enriched = []
+
+    def fake_enrich(items):
+        seen_enriched.extend(items)
+        for it in items:
+            yield make_news_item(it.title, it.game)
+
+    monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
+
+    saved = []
+    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
+
+    pipeline.run()
+
+    assert len(seen_enriched) == 1
+    assert seen_enriched[0].game == "Hollow Knight Silksong"
+    assert len(saved) == 1
+    assert len(saved[0]) == 1
+    assert saved[0][0].game == "Hollow Knight Silksong"
+
+
+def test_steam_juego_no_configurado_asigna_nombre_de_la_app(monkeypatch):
+    """Un juego seguido en Steam pero ausente de games.yaml conserva el
+    nombre de la app en vez de descartarse."""
+    import re
+
+    import gaming_news_digest.pipeline as pipe
+    from gaming_news_digest.config import (
+        GamesConfig,
+        Limits,
+        QualityConfig,
+        SourcesConfig,
+    )
+    from gaming_news_digest.models import Source, SourceType
+
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=8)
+    pipeline.sources = SourcesConfig()
+    pipeline._games = GamesConfig(include=())
+    pipeline._save_games_config = Mock()
+    pipeline._consecutive_ai_errors = 0
+    pipeline._title_re = [re.compile(p, re.IGNORECASE) for p in []]
+    pipeline._url_re = [re.compile(p, re.IGNORECASE) for p in []]
+    pipeline.quality = QualityConfig()
+    pipeline.matcher = pipe.create_matcher((), ())
+
+    fetched = [
+        FetchedItem(
+            title="Major update notes now available",
+            url="https://store.steampowered.com/news/app/1086940",
+            source=Source(name="Steam · Baldur's Gate 3", type="steam"),
+            published_at=datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc),
+            fetched_at=datetime(2026, 8, 27, 12, 5, tzinfo=timezone.utc),
+            body_text="Cuerpo",
+            language="en",
+            game=None,
+        )
+    ]
+    monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
+    monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
+
+    seen_enriched = []
+
+    def fake_enrich(items):
+        seen_enriched.extend(items)
+        for it in items:
+            yield make_news_item(it.title, it.game)
+
+    monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
+
+    saved = []
+    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
+
+    pipeline.run()
+
+    assert seen_enriched[0].source.type is SourceType.STEAM
+    assert seen_enriched[0].game == "Baldur's Gate 3"
+    assert saved[0][0].game == "Baldur's Gate 3"
+
+
+def test_media_excluido_sigue_descartado(monkeypatch):
+    """La exclusión global (poison pill) sigue descartando aunque el juego
+    no esté en 'incluir': games.yaml no es whitelist pero sí blacklist."""
+    import re
+
+    import gaming_news_digest.pipeline as pipe
+    from gaming_news_digest.config import (
+        GameRule,
+        GamesConfig,
+        Limits,
+        QualityConfig,
+        SourcesConfig,
+    )
+
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=8)
+    pipeline.sources = SourcesConfig()
+    pipeline._games = GamesConfig(include=())
+    pipeline._save_games_config = Mock()
+    pipeline._consecutive_ai_errors = 0
+    pipeline._title_re = [re.compile(p, re.IGNORECASE) for p in []]
+    pipeline._url_re = [re.compile(p, re.IGNORECASE) for p in []]
+    pipeline.quality = QualityConfig()
+    pipeline.matcher = pipe.create_matcher(
+        (), (GameRule(name="EA Sports FC", aliases=["FIFA"]),)
+    )
+
+    fetched = [make_item("FIFA 24 new kit announced", url_suffix="fifa-excluido")]
+    monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
+    monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
+
+    seen_enriched = []
+
+    def fake_enrich(items):
+        seen_enriched.extend(items)
+        for it in items:
+            yield make_news_item(it.title, it.game)
+
+    monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
+
+    saved = []
+    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
+
+    pipeline.run()
+
+    assert len(seen_enriched) == 0
+    assert len(saved[0]) == 0
+
+
+def test_media_sin_juego_identificable_usa_nombre_generico(monkeypatch):
+    """Sin whitelist: una noticia cuyo juego no se puede identificar NO se
+    descarta; entra bajo el nombre genérico."""
+    import re
+
+    import gaming_news_digest.pipeline as pipe
+    from gaming_news_digest.config import (
+        GamesConfig,
+        Limits,
+        QualityConfig,
+        SourcesConfig,
+    )
+    from gaming_news_digest.pipeline import _DEFAULT_GAME_NAME
+
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=8)
+    pipeline.sources = SourcesConfig()
+    pipeline._games = GamesConfig(include=())
+    pipeline._save_games_config = Mock()
+    pipeline._consecutive_ai_errors = 0
+    pipeline._title_re = [re.compile(p, re.IGNORECASE) for p in []]
+    pipeline._url_re = [re.compile(p, re.IGNORECASE) for p in []]
+    pipeline.quality = QualityConfig()
+    pipeline.matcher = pipe.create_matcher((), ())
+
+    fetched = [make_item("noticias del sector otra cosa", url_suffix="generico")]
+    monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
+    monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
+
+    seen_enriched = []
+
+    def fake_enrich(items):
+        seen_enriched.extend(items)
+        for it in items:
+            yield make_news_item(it.title, it.game)
+
+    monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
+
+    saved = []
+    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
+
+    pipeline.run()
+
+    assert len(seen_enriched) == 1
+    assert seen_enriched[0].game == _DEFAULT_GAME_NAME
+    assert len(saved[0]) == 1
+    assert saved[0][0].game == _DEFAULT_GAME_NAME

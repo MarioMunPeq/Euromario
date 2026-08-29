@@ -71,6 +71,10 @@ class GameMatcher:
         combined = _normalize(title + " " + body)
         return pattern.search(combined) is not None
 
+    def is_excluded(self, title: str, body: str) -> bool:
+        """True si algún juego de exclusión se menciona una sola vez (poison pill)."""
+        return any(self.is_mentioned(title, body, pat) for pat in self.exclude)
+
     def match(self, title: str, body: str) -> tuple[bool, str | None]:
         """
         Devuelve (aceptada, juego_canonico).
@@ -89,6 +93,112 @@ class GameMatcher:
                 return (True, name)
 
         return (False, None)
+
+
+# ---------------------------------------------------------------------------
+# Detección de juegos NO configurados (las noticias de cualquier juego entran)
+# ---------------------------------------------------------------------------
+
+# Palabras-ancla típicas de titulares de noticias: lo que va justo antes es el
+# candidato a "nombre del juego/saga". (palabras en minúsculas, sin puntuación)
+_EVENT_ANCHOR_WORDS = frozenset({
+    "announce", "announces", "announced", "announcing",
+    "reveal", "reveals", "revealed", "revealing",
+    "tease", "teases", "teased", "teasing",
+    "launch", "launches", "launching", "launched",
+    "release", "releases", "releasing", "released",
+    "return", "returns", "returning", "coming", "arrives", "arriving",
+    "gets", "get", "getting",
+    "patch", "patches", "updated", "updates", "update",
+    "dlc", "expansion", "expands", "content", "roadmap",
+    "trailer", "trailers", "teaser", "teasers", "gameplay", "showcase",
+    "beta", "demo", "leak", "leaks", "leaked",
+    "screenshot", "screenshots", "images", "price", "prices",
+    "delays", "delayed", "delay",
+    "confirms", "confirmed", "confirm", "officially", "finally",
+    "available", "featuring", "introducing",
+})
+
+# Ruido inicial que se recorta del candidato detectado
+_LEADING_NOISE = frozenset({
+    "new", "official", "first", "next", "upcoming", "latest", "final",
+    "finally", "the", "watch", "see", "big", "huge", "tiny", "here",
+    "for", "in", "on", "at", "to", "is", "are", "has", "have",
+})
+
+
+def detect_game_name(title: str, body: str = "", *, hint: str | None = None) -> str | None:
+    """Detecta el nombre de un juego/saga NO configurado en ``games.yaml``.
+
+    Respecta el comportamiento del filter: no se usa a modo de inclusión ni
+    le gana nunca a una exclusión (la llamada solo ocurre tras verificar que
+    el artículo no está excluido y que no matcha ningún juego configurado).
+
+    Orden de confianza:
+    1. ``hint`` explícito (p. ej. el nombre de la app de Steam, que siempre
+       identifica el juego aunque no esté en ``games.yaml``).
+    2. Título: las palabras-ancla de noticia separan "nombre del juego" del
+       resto del titular (p. ej. "Hollow Knight Silksong Patch 1.1").
+    3. Título: la secuencia más larga de tokens capitalizados/números.
+    4. Sin conclusión fiable → ``None`` (la llamada usa un nombre genérico).
+
+    El resultado se conserva tal cual llega del título (mayúsculas originales).
+    """
+    if hint and hint.strip():
+        return hint.strip()
+
+    title_clean = title.strip()
+    if title_clean:
+        cand = _detect_via_anchor(title_clean)
+        if cand:
+            return cand
+        cand = _detect_via_capitalized_run(title_clean)
+        if cand:
+            return cand
+    return None
+
+
+def _words_of(text: str) -> list[str]:
+    return re.split(r"\s+", text.strip())
+
+
+def _strip_punct(word: str) -> str:
+    return word.strip(".,:;!?()[]\"'«»-—_")
+
+
+def _detect_via_anchor(title: str) -> str | None:
+    words = _words_of(title)
+    for i, word in enumerate(words):
+        if _strip_punct(word).lower() in _EVENT_ANCHOR_WORDS:
+            name_tokens = words[:i]
+            while name_tokens and _strip_punct(name_tokens[0]).lower() in _LEADING_NOISE:
+                name_tokens = name_tokens[1:]
+            if not name_tokens:
+                return None
+            candidate = " ".join(_strip_punct(t) for t in name_tokens[:6])
+            candidate = candidate.strip(" :;—,-")
+            return candidate if len(candidate) >= 2 else None
+    return None
+
+
+_OR_CAPITALIZED = re.compile(
+    r"(?:[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ0-9]*|\d+|[A-ZÁÉÍÓÚÜÑ]{2,5})"
+    r"(?:\s+(?:[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ0-9]*|\d+|[A-ZÁÉÍÓÚÜÑ]{2,5}))*"
+)
+
+
+def _detect_via_capitalized_run(title: str) -> str | None:
+    best: str | None = None
+    best_len = 0
+    for match in _OR_CAPITALIZED.finditer(title):
+        run = match.group().strip()
+        tokens = _words_of(run)
+        if len(tokens) > best_len:
+            best = run
+            best_len = len(tokens)
+    if best and best_len >= 1:
+        return best
+    return None
 
 
 def create_matcher(

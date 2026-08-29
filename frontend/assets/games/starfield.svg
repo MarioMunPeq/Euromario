@@ -10,8 +10,13 @@
       }
       .cls-3 {
         fill: none;
-        stroke: #000;
+        stroke: #fff;
         stroke-width: 7.1px;
+      }
+      #g25 path,
+      #starfield-top-T,
+      #starfield-bottom-L {
+        fill: #fff;
       }</style>
   <mask id="mask" x="0" y="0" width="436" height="297" maskUnits="userSpaceOnUse">
    <g id="starfield-arc-mask">

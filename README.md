@@ -10,7 +10,7 @@
 
 **Live site:** https://mariomunpeq.github.io/Euromario/
 
-EuroMario is a zero-infrastructure gaming news digest built as a portfolio project. It continuously collects gaming news from specialist publications, Steam and Reddit, filters it against a curated list of followed games, groups related articles into stories, enriches the survivors with AI, and publishes the resulting dataset to a vanilla JavaScript frontend hosted on GitHub Pages.
+EuroMario is a zero-infrastructure gaming news digest built as a portfolio project. It continuously collects gaming news from specialist publications, Steam and Reddit, detects the game each story is about, groups related articles into stories, enriches the survivors with AI, and publishes the resulting dataset to a vanilla JavaScript frontend hosted on GitHub Pages.
 
 The project deliberately avoids a traditional backend, database and paid infrastructure. The repository itself acts as the data store and GitHub Actions acts as the scheduler and deployment pipeline.
 
@@ -34,7 +34,7 @@ RSS / Steam / Reddit
    Quality exclusions
         │
         ▼
-   Game matching
+   Game matching / detection
         │
         ▼
  Story clustering / deduplication
@@ -71,6 +71,7 @@ RSS / Steam / Reddit
 - **Official Steam news** through the Steam News API.
 - **Reddit community coverage** through subreddit RSS.
 - **Curated game tracking** with canonical names and aliases.
+- **News from any game, no whitelist needed**: games outside `config/games.yaml` are still published (Steam app name, title detection or a generic label).
 - **Blacklist support** for games that should never appear.
 - **Robust matching** designed to avoid naive substring false positives.
 - **Story clustering** to reduce duplicate coverage of the same event.
@@ -291,7 +292,7 @@ The current configuration includes:
 
 The configuration also contains an exclusion for **EA Sports FC / FIFA**.
 
-This list is intentionally configuration-driven. Adding a game should normally require editing [`config/games.yaml`](config/games.yaml), not changing Python code.
+This list is a **featured set, not a whitelist**. News about any game is published even without an entry; editing [`config/games.yaml`](config/games.yaml) adds canonical aliases (recognition priority), logos and platform info, while `excluir` removes games entirely.
 
 ---
 
@@ -350,7 +351,7 @@ frontend/
 
 ### `config/games.yaml`
 
-Controls what the digest follows.
+Controls the **featured games** (logos, aliases, platforms) and the **blacklist**.
 
 ```yaml
 incluir:
@@ -362,6 +363,8 @@ excluir:
   - nombre: EA Sports FC
     aliases: [FIFA]
 ```
+
+News about any other game is still published (Steam app name, title detection or a generic label); it just doesn't get a logo or a dedicated filter tile until you add it below.
 
 For each included game you can configure:
 
@@ -704,7 +707,7 @@ python -m compileall -q src tests
 │       └── digest.yml              # hourly news pipeline + GitHub Pages deployment
 │
 ├── config/
-│   ├── games.yaml                  # followed / excluded games
+│   ├── games.yaml                  # featured games & blacklist
 │   └── sources.yaml                # feeds, Steam IDs, Reddit, limits
 │
 ├── frontend/

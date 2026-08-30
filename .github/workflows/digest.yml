@@ -7,7 +7,7 @@ on:
     # el cron dispara a las 08:00 hora de Madrid: GitHub Actions solo acepta
     # cron en UTC y no aplica cambios de horario (limitación documentada).
     - cron: "0 7 * * *"
-    timezone: "Europe/Madrid"
+      timezone: "Europe/Madrid"
   workflow_dispatch:
 
 permissions:

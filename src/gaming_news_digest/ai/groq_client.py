@@ -92,7 +92,11 @@ class GroqClient(AIClient):
             "CRITICAL: The Game field is set by an external deterministic matcher. "
             "DO NOT guess, invent, or change the game name. If Game is \"Videojuegos\", "
             "it means no specific game was identified — treat it as a generic topic. "
-            "Do NOT let any guessed game influence relevance, category, or summary."
+            "Do NOT let any guessed game influence relevance, category, or summary. "
+            "The pipeline only sends articles already classified as video game news. "
+            "If an article seems off-topic (movies, TV, comics), still treat it as a "
+            "video game story and base the summary ONLY on the article content. "
+            "Never use off-topic ambiguity to change or filter the article."
         )
         return (
             "You are a video game news editor. Summarize the news in 1-2 short lines, "
@@ -122,6 +126,9 @@ class GroqClient(AIClient):
             "DO NOT guess, invent, or change the game name. If Game is \"Videojuegos\", "
             "it means no specific game was identified — treat it as a generic topic.\n"
             "Do NOT let any guessed game influence relevance, category, or summary.\n"
+            "The pipeline only sends articles already classified as video game news. "
+            "If an article seems off-topic (movies, TV, comics), still treat it as a "
+            "video game story and base the summary ONLY on the article content.\n"
         )
         return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
 Add value beyond the title: include ONE concrete, checkable detail found in the article body (a number, a date, a price, a version, a platform, a name, or a direct quote) that is NOT already in the title. Never merely rephrase the title with fewer words. Only use details actually present in the body — never invent facts. If the body has no usable extra detail, close with the most specific confirmed fact.

@@ -30,6 +30,9 @@ from gaming_news_digest.filtering.matcher import (
     _normalize,
     create_matcher,
 )
+from gaming_news_digest.filtering.topic import (
+    classify_video_game_article as _classify_video_game_article,
+)
 from gaming_news_digest.models import (
     Category,
     FetchedItem,
@@ -512,6 +515,13 @@ class Pipeline:
             "no_confident_match": 0,
             "videojuegos": 0,
         }
+        # Contadores del FILTRO TEMÁTICO (solo medios RSS): señalan cuántos
+        # artículos se descartan por NO ser de videojuegos y con qué motivo.
+        topic_stats: dict[str, int] = {
+            "total_media": 0,
+            "aceptados": 0,
+            "descartados": 0,
+        }
         for item in items:
             if self._is_excluded(item):
                 continue
@@ -542,6 +552,30 @@ class Pipeline:
                 body = item.body_text or ""
                 if self.matcher.is_excluded(item.title, body):
                     continue
+
+                # 1b. FILTRO TEMÁTICO (solo medios RSS): el dominio de la
+                #     fuente NO basta. Cada artículo debe demostrar que es
+                #     videojuegos (Polygon/IGN publican cine, series, cómics).
+                #     Steam se salta el filtro: es un feed del propio juego.
+                if item.source.type is SourceType.MEDIA:
+                    ok_topic, topic_reason = _classify_video_game_article(
+                        item.title, body, item.url, item.feed_categories
+                    )
+                    topic_stats["total_media"] += 1
+                    topic_stats.setdefault(topic_reason, 0)
+                    if not ok_topic:
+                        topic_stats["descartados"] += 1
+                        topic_stats[topic_reason] += 1
+                        logger.info(
+                            'TEMÁTICA: DESCARTADO "%s" [%s]', item.title, topic_reason
+                        )
+                        continue
+                    topic_stats["aceptados"] += 1
+                    topic_stats[topic_reason] += 1
+                    logger.info(
+                        'TEMÁTICA: OK "%s" [%s]', item.title, topic_reason
+                    )
+
                 # 2. Juego configurado (games.yaml): entra con nombre canónico
                 #    si es tema principal.
                 accepted, game = self.matcher.match(item.title, body)
@@ -613,6 +647,17 @@ class Pipeline:
             game_stats["config"], game_stats["hint"], game_stats["anchor"],
             game_stats["known_title"], game_stats["no_confident_match"],
             game_stats["videojuegos"],
+        )
+        topic_reasons = ", ".join(
+            f"{k}={v}" for k, v in sorted(topic_stats.items())
+            if k not in ("total_media", "aceptados", "descartados") and v
+        )
+        logger.info(
+            "DIAGNÓSTICO TEMÁTICA: media_total=%d -> aceptados=%d, descartados=%d (%s)",
+            topic_stats["total_media"],
+            topic_stats["aceptados"],
+            topic_stats["descartados"],
+            topic_reasons or "sin_motivos",
         )
         if stats_out.reddit_titles:
             for i, title in enumerate(stats_out.reddit_titles):

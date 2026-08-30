@@ -76,7 +76,24 @@ def _build_item(
         language=language,
         image_url=_extract_image(entry),
         author=extract_author(entry),
+        feed_categories=_extract_categories(entry),
     )
+
+
+def _extract_categories(entry) -> tuple[str, ...]:
+    """Extrae categorías/secciones del feed (RSS <category>, Atom, dc:subject).
+
+    Se usan como señal temática previa al análisis de texto: una categoría
+    incompatible (Movies, TV, ...) permite descartar el artículo directamente.
+    """
+    categories: list[str] = []
+    for tag in getattr(entry, "tags", []) or []:
+        term = str(tag.get("term") or "").strip()
+        label = str(tag.get("label") or "").strip()
+        value = term or label
+        if value:
+            categories.append(value)
+    return tuple(categories)
 
 
 def _extract_image(entry) -> str | None:

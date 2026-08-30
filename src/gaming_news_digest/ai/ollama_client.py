@@ -76,6 +76,10 @@ class OllamaClient(AIClient):
             "DO NOT guess, invent, or change the game name. If Game is \"Videojuegos\", "
             "it means no specific game was identified — treat it as a generic topic.\n"
             "Do NOT let any guessed game influence relevance, category, or summary.\n"
+            "The pipeline only sends articles already classified as video game news. "
+            "If an article seems off-topic (movies, TV, comics), still treat it as a "
+            "video game story and base the summary ONLY on the article content. "
+            "Never use off-topic ambiguity to change or filter the article.\n"
         )
         
         return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.

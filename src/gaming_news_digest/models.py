@@ -390,6 +390,7 @@ class FetchedItem:
     image_url: str | None = None
     author: str | None = None
     game_id: str | None = None
+    feed_categories: tuple[str, ...] = ()
 
     def __post_init__(self):
         if not isinstance(self.source, Source):
@@ -417,3 +418,8 @@ class FetchedItem:
         object.__setattr__(self, "image_url", image or None)
         object.__setattr__(self, "author", _optional_text(self.author, "el autor"))
         object.__setattr__(self, "game_id", _optional_text(self.game_id, "el game_id"))
+        categories = self.feed_categories
+        if not isinstance(categories, tuple):
+            raise ModelValidationError("feed_categories debe ser una tupla")
+        normalized = tuple(str(c) for c in categories)
+        object.__setattr__(self, "feed_categories", normalized)

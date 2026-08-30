@@ -452,7 +452,8 @@ def test_reddit_post_limite_despues_de_ia_funciona(monkeypatch):
 
 def test_reddit_filtro_salta_game_matching(monkeypatch):
     """Reddit pasa el filtro sin game matching; los items de medios se
-    conservan aunque su juego no esté configurado (sin whitelist)."""
+    conservan aunque su juego no esté configurado (sin whitelist) siempre
+    que pasen el filtro temático de videojuegos."""
     import re
 
     import gaming_news_digest.pipeline as pipe
@@ -479,8 +480,9 @@ def test_reddit_filtro_salta_game_matching(monkeypatch):
 
     # 5 Reddit items + 5 Media items sin game matching válido
     reddit_items = [make_reddit_item(f"Leak {i}", game="Starfield") for i in range(5)]
-    # Media items con títulos que NO matchean ningún juego conocido
-    media_items = [make_item(f"Random News {i}", url_suffix=f"random{i}") for i in range(5)]
+    # Media items con títulos de videojuegos que NO matchean ningún juego
+    # conocido (pasan el filtro temático pero sin nombre de juego).
+    media_items = [make_item(f"New Gaming News Item {i}", url_suffix=f"random{i}") for i in range(5)]
     
     fetched = reddit_items + media_items
     monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
@@ -701,7 +703,7 @@ def test_media_sin_juego_identificable_usa_nombre_generico(monkeypatch):
     pipeline.quality = QualityConfig()
     pipeline.matcher = pipe.create_matcher((), ())
 
-    fetched = [make_item("noticias del sector otra cosa", url_suffix="generico")]
+    fetched = [make_item("Gaming news of the day no specific title", url_suffix="generico")]
     monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
     monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
 
@@ -914,7 +916,7 @@ class TestGameMatchLogging:
         fetched = [
             make_item("Persona 6 announced", game="Persona"),  # se configura en games.yaml del test? no -> lo matchea el matcher
             make_item("Hollow Knight Silksong Patch 1.1 notes", game="Videojuegos"),  # detectado por anchor
-            make_item("New update coming soon", game="Videojuegos"),  # None -> Videojuegos
+            make_item("Nintendo announces new hardware strategy", game="Videojuegos"),  # juegos pero sin juego concreto -> Videojuegos
         ]
         monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
         monkeypatch.setattr(pipeline, "_filter", pipeline._filter)  # usar filtro real
@@ -966,7 +968,7 @@ class TestGameMatchLogging:
         fetched = [
             make_item("Persona 6 announced", game="Persona"),      # known_title -> Persona
             make_item("Hollow Knight Silksong Patch notes", game="Videojuegos"),  # anchor -> Hollow Knight Silksong
-            make_item("New update coming soon", game="Videojuegos"),  # None -> Videojuegos
+            make_item("Nintendo announces new hardware strategy", game="Videojuegos"),  # juegos, sin juego concreto -> Videojuegos
             make_item("Red Dead Redemption 2 trailer", game="Videojuegos"),  # known_title -> Red Dead
         ]
         monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)

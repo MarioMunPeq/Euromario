@@ -7,9 +7,15 @@ forma tangencial. El dominio de la fuente NO basta: cada artículo debe
 demostrar individualmente que pertenece al ámbito de los videojuegos.
 
 La decisión combina, por orden de prioridad:
-A) Categorías/secciones/tags del propio feed.
+A) Categorías/secciones/tags del propio feed: las incompatibles descartan; las
+   "blandas" restan; las gaming NO aceptan por sí solas, actúan como señal de
+   CONTEXTO (peso 1) que no puede compensar una señal negativa de texto.
 B) Señales de texto en título + URL (+ cuerpo como apoyo), con señales
-   POSITIVAS fuertes/débiles y NEGATIVAS fuertes/débiles.
+   POSITIVAS fuertes/débiles y NEGATIVAS fuertes/débiles, más la evidencia de
+   que el artículo menciona un juego real (título conocido o rescatado por
+   ancla), incluso en comparación ("isn't Elden Ring", "Hades-esque").
+Modelo: pos_score (peso 2 por señal fuerte) frente a neg_score; la mención de
+un juego real suma. Una negativa fuerte no se anula con contexto de feed.
 El ancla: si dudamos de que sea videojuegos, se descarta (precisión > recall).
 """
 
@@ -21,8 +27,8 @@ from gaming_news_digest.filtering.matcher import (
     _GENERIC_NAME_TOKENS,
     _LEADING_NOISE,
     _NON_GAME_ENTITIES,
+    _detect_known_title_any,
     _detect_via_anchor,
-    _detect_via_known_title,
     _normalize,
 )
 
@@ -54,7 +60,7 @@ _STRONG_POSITIVE: frozenset[str] = frozenset((
     "activision", "blizzard", "bethesda", "ubisoft", "rockstar", "capcom",
     "konami", "sega", "square enix", "from software", "valve", "riot",
     "epic games", "cd projekt", "paradox", "naughty dog", "insomniac",
-    "guerrilla", "nintendo", "bandai",
+    "guerrilla", "nintendo", "bandai", "hoyoverse", "total war",
 ))
 
 # Señales DÉBILES (peso 1): también aparecen en cine/TV, necesitan apoyarse.
@@ -64,6 +70,8 @@ _WEAK_POSITIVE: frozenset[str] = frozenset((
     "remake", "remakes", "co-op", "coop", "cooperative", "multiplayer",
     "singleplayer", "launch", "released", "release", "release date",
     "announced", "announcement", "announces", "reveals", "revealed",
+    # Señales de EXPERIENCIA de juego (solo los videojuegos se "juegan")
+    "playing", "played", "playthrough", "adventure", "adventures",
     "tráiler", "tráilers", "parche", "parches", "actualización",
     "jugabilidad", "juego", "juegos", "videojuego", "videojuegos",
 ))
@@ -87,6 +95,9 @@ _STRONG_NEGATIVE: frozenset[str] = frozenset((
     "comic", "comics", "graphic novel", "manga", "anime",
     "novel", "novels", "book", "books", "author", "bestseller",
     "musician", "musicians", "singer", "singers", "album", "concerts",
+    # Merchandising físico (figuras, ediciones coleccionistas no-gaming)
+    "statues", "statue", "figurines", "figurine",
+    "merch", "merchandise", "souvenirs", "souvenir",
 ))
 
 # Señales NEGATIVAS DÉBILES (peso 1): pueden aparecer en contexto gaming.
@@ -120,7 +131,9 @@ _SOFT_NEG_FEED: frozenset[str] = frozenset((
     "entertainment", "culture", "pop culture", "features",
 ))
 
-# Categorías inequívocamente gaming: aceptar directamente.
+# Categorías inequívocamente gaming: ya NO aceptan solas (un feed gaming
+# publica trailers de cine y mercancía). Actúan como señal de CONTEXTO
+# (peso 1) que apoya a las señales de texto, igual que una señal débil.
 _POS_FEED: frozenset[str] = frozenset((
     "video games", "video game", "video-games", "gaming", "games", "game",
     "videojuegos", "videojuego", "juegos", "pc gaming", "playstation",
@@ -174,36 +187,37 @@ def _matched(signals: frozenset[str], text: str) -> set[str]:
 
 def _anchor_rescue(title_n: str) -> str | None:
     """Rescate por ancla: detecta un posible nombre de juego en el titular,
-    pero lo rechaza si está compuesto SOLO de ruido ("A brand", "New trailer"),
-    cosa que la heurística de ancla del matcher no distingue (no es su papel).
+    pero lo rechaza si está compuesto SOLO de ruido ("A brand", "New trailer")
+    o es un candidato-chorizo poco fiable ("Ridley Scott Says Alien Romulus Was
+    OK So He s Returning..."): más de 5 palabras no es un nombre, es prosa.
+    Cosa que la heurística del matcher no distingue (no es su papel).
     """
     cand = _detect_via_anchor(title_n)
     if not cand:
+        return None
+    if len(cand.split()) > 5:
         return None
     if any(t.lower() not in _TOPIC_NOISE_WORDS for t in cand.split()):
         return cand
     return None
 
 
-def _feed_verdict(categories: tuple[str, ...]) -> tuple[bool | None, str]:
-    """Clasifica usando solo las categorías del feed. None = sin información."""
+def _feed_signals(categories: tuple[str, ...]) -> tuple[bool, bool, bool]:
+    """Señales del feed: (hard_neg, soft_neg, pos). Ninguna es definitiva por
+    sí sola: hard_neg descarta (el feed lo afirma inequívocamente), pos solo
+    otorga contexto de texto (+1)."""
     if not categories:
-        return None, ""
+        return False, False, False
     clean_cats = {_clean(c) for c in categories}
-    hard_neg = clean_cats & _HARD_NEG_FEED
-    soft_neg = clean_cats & _SOFT_NEG_FEED
-    pos = clean_cats & _POS_FEED
-    if hard_neg:
-        return False, "feed_seccion_incompatible"
-    if pos and not soft_neg:
-        return True, "feed_seccion_videojuegos"
-    if soft_neg and not pos:
-        # Señal blanda: la decide el texto; marcamos para no guardar doble.
-        return None, "feed_seccion_blanda"
-    return None, ""
+    hard_neg = bool(clean_cats & _HARD_NEG_FEED)
+    soft_neg = bool(clean_cats & _SOFT_NEG_FEED)
+    pos = bool(clean_cats & _POS_FEED)
+    return hard_neg, soft_neg, pos
 
 
-def _text_verdict(title: str, body: str, url: str) -> tuple[bool, str]:
+def _text_verdict(
+    title: str, body: str, url: str, *, feed_boost: int = 0
+) -> tuple[bool, str]:
     """Decide con las señales de texto (título + URL + cuerpo de apoyo)."""
     title_n = _mask_suppressed(_clean(title))
     url_n = _clean(url)
@@ -219,37 +233,41 @@ def _text_verdict(title: str, body: str, url: str) -> tuple[bool, str]:
     strong_neg = _matched(_STRONG_NEGATIVE, neg_text)
     weak_neg = _matched(_WEAK_NEGATIVE, neg_text)
     has_strong_neg = bool(strong_neg)
-    has_weak_neg = bool(weak_neg)
 
-    # Rescate por NOMBRE de juego:
-    # - Lista curada (juego conocido): señal fuerte pero no anula una
-    #   negativa fuerte (p. ej. "The Last of Us HBO series..." no es gaming).
-    # - Detectado por ancla: solo cuenta si no hay negativas fuertes, porque
-    #   es una heurística y un titular de cine puede "parecer" un juego
-    #   ("Robert Downey Jr's 98-Minute Cult Classic... coming to Netflix").
-    # Ambos rescates se calculan sobre el título con frases suprimidas.
-    rescued_known = _detect_via_known_title(title_n)
+    # Evidencia de que se MENCIONA un juego real, aunque sea en comparación
+    # ("isn't Elden Ring", "Hades-esque action" también son contenido gaming).
+    # La versión INGUARDADA de la detección (sin filtro de contexto) se usa a
+    # propósito: decidir la TEMÁTICA no es decidir el NOMBRE de la noticia.
+    rescued_known = _detect_known_title_any(title_n)
+    # - Rescate por ancla: solo cuenta si no hay negativas fuertes, porque es
+    #   una heurística y un titular de cine puede "parecer" un juego
+    #   ("...Cult Classic... coming to Netflix").
     rescued_anchor = _anchor_rescue(title_n) if not has_strong_neg else None
 
-    if has_strong_neg or has_weak_neg:
-        pos_weight = (
-            len(strong_pos) * 2
-            + len(weak_pos) * 1
-            + (2 if rescued_known else 0)
-            + (2 if rescued_anchor else 0)
-        )
-        neg_weight = len(strong_neg) * 2 + len(weak_neg)
-        if pos_weight - neg_weight >= 2:
+    pos_score = (
+        len(strong_pos) * 2
+        + len(weak_pos)
+        + (2 if rescued_known else 0)
+        + (2 if rescued_anchor else 0)
+        + feed_boost
+    )
+    neg_score = len(strong_neg) * 2 + len(weak_neg)
+
+    if neg_score > 0:
+        if pos_score - neg_score >= 2:
             return True, "senal_positiva_supera_negativa"
         first_neg = next(iter(strong_neg or weak_neg), "")
         return False, f"senal_negativa:{first_neg}"
-    if strong_pos or rescued_known or rescued_anchor:
+    if pos_score >= 2:
         if strong_pos:
             return True, "senal_positiva_fuerte"
         if rescued_known:
             return True, "juego_reconocible"
-        return True, "nombre_juego_detectado"
-    if len(weak_pos) >= 2:
+        if rescued_anchor:
+            return True, "nombre_juego_detectado"
+        if feed_boost:
+            # feed gaming + una señal débil (un trailer genérico) sí basta
+            return True, "feed_contexto_videojuegos"
         return True, "senal_positiva_doble"
     return False, "sin_senal_suficiente"
 
@@ -262,14 +280,25 @@ def classify_video_game_article(
 ) -> tuple[bool, str]:
     """Clasifica un artículo como videojuego/No-videojuego.
 
-    Devuelve (es_videojuego, motivo). Se ejecuta ANTES del game-name: un
-    artículo puede ser de videojuegos sin mencionar ningún juego concreto
-    ("Nintendo announces new hardware strategy" → True, game="Videojuegos").
+    Devuelve (es_videojuego, motivo). Se ejecuta ANTES del matcher de nombres:
+    un artículo puede ser de videojuegos sin mencionar ningún juego concreto
+    ("Nintendo announces new hardware strategy" → True, name="Videojuegos") y
+    un artículo de cine puede compartir franquicia con un juego ("The Last of
+    Us HBO series…" → False) aunque el matcher reconocería el título.
+
+    El feed nunca decide solo: una categoría gaming suma contexto (+1), una
+    negativa fuerte de texto siempre gana y una categoría incompatibles
+    descarta de forma inequívoca.
     """
-    verdict, reason = _feed_verdict(tuple(feed_categories))
-    if verdict is not None:
-        return verdict, reason
-    return _text_verdict(title, body, url)
+    hard_neg_feed, soft_neg_feed, pos_feed = _feed_signals(tuple(feed_categories))
+    if hard_neg_feed:
+        return False, "feed_seccion_incompatible"
+    # La categoría gaming aporta +1 al puntaje de positivas del texto; una
+    # categoría "blanda" (entertainment/culture) no resta por sí sola (eso lo
+    # hace una señal negativa de texto). El contexto de feed jamás compensa una
+    # señal negativa de texto: se marca para que la resta sea simétrica abajo.
+    feed_boost = 1 if (pos_feed and not soft_neg_feed) else 0
+    return _text_verdict(title, body, url, feed_boost=feed_boost)
 
 
 def is_video_game_article(

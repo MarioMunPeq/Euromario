@@ -60,10 +60,23 @@ class GameMatcher:
         self.exclude = [_compile_pattern(r) for r in exclude_rules]
 
     def is_main_topic(self, title: str, body: str, pattern: re.Pattern) -> bool:
-        """Inclusión exige: título O ≥2 menciones en body."""
+        """Inclusión exige: título O ≥2 menciones en body.
+
+        La mención en el título solo cuenta si actúa como SUJETO y no como
+        comparación/referencia ("GTA 6? No thanks…", "unlike X"), de modo que
+        un juego configurado mencionado solo como contexto NO roba la noticia.
+        """
         norm_title = _normalize(title)
-        if pattern.search(norm_title):
-            return True
+        m = pattern.search(norm_title)
+        if m:
+            # Extiende la mención con secuencias numéricas inmediatas
+            # ("GTA 6", "Persona 5") para evaluar la referencia sobre el
+            # nombre completo en lugar del alias corto.
+            rest = re.split(r"\s+", norm_title[m.end():].strip())
+            ext = [t for t in rest if re.fullmatch(r"\d+(?:\.\d+)?", t)][:2]
+            mention = " ".join([m.group(0)] + ext).strip()
+            if not _is_reference(title, mention):
+                return True
         return len(pattern.findall(_normalize(body))) >= 2
 
     def is_mentioned(self, title: str, body: str, pattern: re.Pattern) -> bool:
@@ -93,6 +106,23 @@ class GameMatcher:
                 return (True, name)
 
         return (False, None)
+
+    def context_matches(self, title: str) -> list[str]:
+        """Nombres de juegos configurados que aparecen en ``title`` SOLO como
+        comparación/referencia (para el diagnóstico del pipeline: "NO usar
+        coincidencia contextual")."""
+        refused: list[str] = []
+        norm_title = _normalize(title)
+        for inc_pat, name in self.include:
+            m = inc_pat.search(norm_title)
+            if not m:
+                continue
+            rest = re.split(r"\s+", norm_title[m.end():].strip())
+            ext = [t for t in rest if re.fullmatch(r"\d+(?:\.\d+)?", t)][:2]
+            mention = " ".join([m.group(0)] + ext).strip()
+            if _is_reference(title, mention):
+                refused.append(name)
+        return refused
 
 
 # ---------------------------------------------------------------------------
@@ -236,6 +266,132 @@ def _is_non_game_token(token: str) -> bool:
     return low in _GENERIC_NAME_TOKENS or low in _NON_GAME_ENTITIES
 
 
+# ---------------------------------------------------------------------------
+# Mención como SUJETO vs. COMPARACIÓN/referencia
+#
+# Un juego puede aparecer en un titular como:
+#   A) SUJETO de la noticia   -> "Elden Ring gets a new update"
+#   B) COMPARACIÓN/REFERENCIA -> "Nodusfall isn't Elden Ring...",
+#      "Usual June mixes Hades-esque action...", "GTA 6? No thanks, I'll be
+#      playing Volvy's Adventure".
+# Solo A produce un NOMBRE de juego fiable. Esta sección detecta B mediante
+# marcadores ESTRUCTURALES (negación, sufijos "-esque"/"-like", verbos de
+# contraste, descarte post-mención, patrón "playing/played <título>"), nunca
+# por listas de palabras negativas sueltas: el filtro temático (topic.py)
+# sigue necesitando las menciones comparativas como EVIDENCIA de que el
+# artículo habla de videojuegos. Por eso la detección de nombres tiene dos
+# versiones: la INGUARDADA (evidencia: ``_detect_known_title_any``) y la
+# GUARDADA (nombre fiable: ``_detect_via_known_title`` / ``is_main_topic``).
+# ---------------------------------------------------------------------------
+
+# Palabras que inauguran una negación/comparación justo antes del nombre.
+_REFERENCE_PREFIX_WORDS = frozenset({
+    "not", "no", "never", "neither", "nor", "unlike", "without", "except",
+    "rather", "instead", "than", "versus", "vs", "unless", "beyond",
+})
+
+# Prefijos de contracción negativa ("isn't" -> "isn"+"t", "aren't" -> "aren"+"t").
+_CONTRACTION_STEMS = frozenset({
+    "isn", "arent", "wasn", "werent", "aint", "didn", "doesn", "don", "hant",
+    "hadn", "shouldn", "wouldn", "won", "can", "couldn", "needn", "mustn",
+})
+
+# Confirmación inmediata de descarte tras la mención.
+_DISMISS_NEXT = frozenset({"nope", "nah", "nada"})
+_DISMISS_NO_FOLLOW = frozenset({"thanks", "thank", "thx", "way", "worries"})
+
+
+def _strip_punct_list(text: str) -> list[str]:
+    return [_strip_punct(w) for w in _words_of(text)]
+
+
+def _is_reference(title: str, name: str) -> bool:
+    """``True`` si ``name`` aparece en ``title`` como comparación/referencia o
+    negación y NO como sujeto de la noticia.
+
+    Estrictamente estructural (los apóstrofes se normalizan a espacio):
+    1. Sufijo pegado/adyacente de comparación: "Hades-esque", "Dark Souls-like",
+       "rip-off", "clone", "homage", "inspired".
+    2. Negación/comparación directa en las 2 palabras previas: "isn't Elden
+       Ring", "unlike X", "not X", "than X".
+    3. Lista que hereda una negación previa si no hay un verbo de preferencia
+       ("playing"/"played") que "absorba" la mención: "isn't Elden Ring,
+       Monster Hunter o…" marca las tres como referencias, pero "no X, I'll be
+       playing Volvy's" solo marca a X.
+    4. Descarte inmediato posterior: "GTA 6? No thanks", "GTA 6? Nah".
+    """
+    if not title or not name:
+        return False
+    base = re.sub(r"['’]", " ", title)
+    nname = re.sub(r"['’]", " ", name.strip().strip(".,:;!?()[]\"«»-—_")).strip()
+    if not nname:
+        return False
+
+    # 1) Sufijo de comparación pegado a la mención.
+    if re.search(
+        rf"\b{re.escape(nname)}[\s\-–—](?:esque|like|style|styled|inspired|"
+        rf"evoking|clone|clones|ripoff|rip[- ]off|ripoffs|knockoff|knock[- ]offs|"
+        rf"wannabe|homage)\b",
+        base,
+        re.IGNORECASE,
+    ):
+        return True
+
+    words = [w.casefold() for w in _strip_punct_list(base)]
+    name_words = [w.casefold() for w in _strip_punct_list(nname)]
+    n = len(words)
+    m = len(name_words)
+    if m == 0 or n < m:
+        return False
+
+    for i in range(n - m + 1):
+        if words[i:i + m] != name_words:
+            continue
+        before = words[max(0, i - 10):i]
+        after = words[i + m:]
+
+        # 2) Negación/comparación directa inmediata.
+        tail2 = before[-2:]
+        direct_neg = (
+            any(w in _REFERENCE_PREFIX_WORDS for w in tail2)
+            or (
+                len(tail2) == 2
+                and tail2[1] == "t"
+                and tail2[0] in _CONTRACTION_STEMS
+            )
+        )
+        if direct_neg:
+            return True
+
+        # 3) Lista que hereda una negación previa sin verbo de preferencia.
+        marker = next(
+            (j for j, w in enumerate(before) if w in _REFERENCE_PREFIX_WORDS),
+            None,
+        )
+        stem_marker = next(
+            (j for j in range(len(before) - 1)
+             if before[j] in _CONTRACTION_STEMS and before[j + 1] == "t"),
+            None,
+        )
+        if marker is not None or stem_marker is not None:
+            hit = marker if marker is not None else stem_marker
+            tail = before[hit + 1:]
+            if not any(w in ("playing", "played") for w in tail):
+                return True
+
+        # 4) Descarte inmediato tras la mención.
+        if after:
+            if after[0] in _DISMISS_NEXT:
+                return True
+            no_idx = next((j for j, w in enumerate(after[:4]) if w == "no"), None)
+            if no_idx is not None:
+                following = after[no_idx + 1] if no_idx + 1 < len(after) else None
+                if following is None or following in _DISMISS_NO_FOLLOW:
+                    return True
+        return False
+    return False
+
+
 def _detect_via_anchor(title: str) -> str | None:
     words = _words_of(title)
     candidates: list[tuple[str, int]] = []  # (candidate, anchor_index)
@@ -346,20 +502,135 @@ _KNOWN_TITLE_PATTERNS: list[tuple[re.Pattern, str, int]] = [
 ]
 
 
-def _detect_via_known_title(title: str) -> str | None:
-    """Busca nombres de juegos conocidos en el titular (límites de palabra).
-
-    Devuelve el nombre más específico (el de mayor longitud) que aparezca.
-    Nunca inventa nombres: si no hay match, devuelve ``None``.
-    """
+def _known_title_matches(title: str) -> list[tuple[int, str, str]]:
+    """Parejas (longitud, display, variante real matcheada) de títulos conocidos
+    presentes en ``title``, ordenadas por longitud de patrón DESC (las más
+    específicas primero)."""
     norm = _normalize(title)
-    best: str | None = None
-    best_len = 0
+    seen: set[tuple[str, str]] = set()
+    out: list[tuple[int, str, str]] = []
     for pattern, display, key_len in _KNOWN_TITLE_PATTERNS:
-        if pattern.search(norm) and key_len > best_len:
-            best = display
-            best_len = key_len
-    return best
+        m = pattern.search(norm)
+        if m:
+            key = (display, m.group(0))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append((key_len, display, m.group(0)))
+    out.sort(key=lambda t: t[0], reverse=True)
+    return out
+
+
+def _detect_known_title_any(title: str) -> str | None:
+    """Versión EVIDENCIA (sin guarda de contexto): para el filtro temático.
+
+    Un juego conocido mencionado en comparación/referencia ("Hades-esque",
+    "isn't Elden Ring") demuestra CONTENIDO gaming; el matcher decide luego si
+    esa mención es además el NOMBRE de la noticia."""
+    matches = _known_title_matches(title)
+    return matches[0][1] if matches else None
+
+
+def _detect_via_known_title(title: str) -> str | None:
+    """Para el matcher (NOMBRE del juego): ignora menciones que solo sean
+    comparación/referencia/negación y devuelve la más específica restante."""
+    for _key_len, display, actual in _known_title_matches(title):
+        if not _is_reference(title, actual):
+            return display
+    return None
+
+
+# Verbo/sintagma de contraste al inicio que convierte lo que le precede en el
+# SUJETO del titular. Se evalúa en slices de 1-3 tokens ("is not just").
+_CONTRAST_LEADING_VERBS = frozenset({
+    "isn't", "isnt", "isn’t", "isn t", "is not", "is not just",
+    "is more", "is more than", "is not a", "is not an",
+    "are not", "aren't", "arent", "aren t", "weren't", "werent", "weren t",
+    "mixes", "mix", "blends", "blend", "combines", "combine",
+    "mashes", "mash", "mashing", "mixing",
+})
+
+# Pronombres/partículas que jamás forman un nombre de juego.
+_PRONOUNS = frozenset({
+    "i", "you", "we", "they", "he", "she", "it", "my", "your", "our",
+    "their", "his", "her", "its", "this", "that", "these", "those",
+    "there", "here", "who", "what", "when", "why", "someone", "everyone",
+    "nobody", "anybody", "me", "us", "them", "him", "himself",
+})
+
+
+def _contrast_verb_at(words: list[str], idx: int) -> int | None:
+    """Longitud del sintagma de contraste que comienza en ``idx``, si existe."""
+    for span in (3, 2, 1):
+        if idx + span > len(words):
+            continue
+        phrase = " ".join(_strip_punct(w).lower() for w in words[idx:idx + span])
+        if phrase in _CONTRAST_LEADING_VERBS:
+            return span
+    return None
+
+
+def _detect_leading_contrast_subject(title: str) -> str | None:
+    """Reconoce el SUJETO cuando el titular arranca con "nombre + verbo de
+    contraste/mezcla":
+
+        "Nodusfall isn't Elden Ring..."       -> "Nodusfall"
+        "Usual June mixes Hades-esque action" -> "Usual June"
+
+    Patrón ESTRUCTURAL (nombre al inicio + verbo de contraste tras él), no
+    adivinación por capitalización: solo captura lo que precede al verbo."""
+    words = _words_of(title.strip())
+    for i in range(len(words)):
+        if _contrast_verb_at(words, i) is None:
+            continue
+        subject = words[:i]
+        while subject and _strip_punct(subject[0]).lower() in _LEADING_NOISE:
+            subject = subject[1:]
+        if not subject:
+            continue
+        subject[-1] = _strip_terminal_possessive(subject[-1])
+        if not subject[-1]:
+            continue
+        cand = " ".join(_strip_punct(t) for t in subject[:6]).strip(" :;—,-")
+        if len(cand) < 2:
+            continue
+        tokens = cand.split()
+        if any(t.lower() in _PRONOUNS for t in tokens):
+            continue
+        if any(_is_non_game_token(t) for t in tokens):
+            continue
+        return cand
+    return None
+
+
+_PLAYING_RE = re.compile(
+    r"\b(?:playing|played)\s+"
+    r"((?:[A-ZÁÉÍÓÚÑÜÀÈÌÒÙ][A-Za-z0-9ÁÉÍÓÚÑÜáéíóúñü’'-]*)(?:\s+"
+    r"(?:[A-ZÁÉÍÓÚÑÜÀÈÌÒÙ][A-Za-z0-9ÁÉÍÓÚÑÜáéíóúñü’'-]*|\d+(?:\.\d+)*)){0,3})"
+)
+
+
+def _detect_after_playing(title: str) -> str | None:
+    """Reconoce el juego tras un verbo de juego explícito:
+
+        "…I'll be playing Volvy's Adventure" -> "Volvy's Adventure"
+
+    Reconstruye el nombre tal cual llega del titular y exige arranque en
+    mayúscula (con apoyo de acentos y números), máx. 4 tokens, sin ruido
+    genérico."""
+    if not title:
+        return None
+    for m in _PLAYING_RE.finditer(title):
+        cand = m.group(1).strip().strip(".,:;!?()[]\"'«»-—_")
+        if len(cand) < 2:
+            continue
+        tokens = [_strip_punct(t) for t in cand.split()]
+        if any(t.lower() in _PRONOUNS for t in tokens):
+            continue
+        if any(_is_non_game_token(t) for t in tokens):
+            continue
+        return cand
+    return None
 
 
 def _detect_game_name_with_reason(
@@ -368,7 +639,9 @@ def _detect_game_name_with_reason(
     """Como ``detect_game_name`` pero además devuelve la razón del match.
 
     Razones: "hint" (Steam), "anchor" (palabra-ancla y contexto), "known_title"
-    (lista curada) o ``None`` (sin conclusión fiable → llamada usa genérico).
+    (lista curada), "subject" (sujeto ante verbo de contraste/mezcla),
+    "playing" (juego tras "playing"/"played") o ``None`` (sin conclusión
+    fiable → la llamada usa el genérico).
     """
     if hint and hint.strip():
         return hint.strip(), "hint"
@@ -381,6 +654,12 @@ def _detect_game_name_with_reason(
         cand = _detect_via_known_title(title_clean)
         if cand:
             return cand, "known_title"
+        cand = _detect_leading_contrast_subject(title_clean)
+        if cand:
+            return cand, "subject"
+        cand = _detect_after_playing(title_clean)
+        if cand:
+            return cand, "playing"
     return None, None
 
 
@@ -398,8 +677,10 @@ def detect_game_name(title: str, body: str = "", *, hint: str | None = None) -> 
        resto del titular (p. ej. "Hollow Knight Silksong Patch 1.1"), siempre
        que el candidato no sea una palabra genérica ni una entidad no-juego.
     3. Título: nombres de juegos/sagas conocidos (lista curada) por límites de
-       palabra.
-    4. Sin conclusión fiable → ``None`` (la llamada usa el nombre genérico).
+       palabra, ignorando menciones que solo sean comparación/referencia.
+    4. Título: sujeto ante verbo de contraste/mezcla ("Nodusfall isn't Elden
+       Ring…") y juego tras "playing/played" ("…playing Volvy's Adventure").
+    5. Sin conclusión fiable → ``None`` (la llamada usa el nombre genérico).
 
     Queda PROHIBIDO adivinar por capitalización o por cualquier palabra que
     "parezca" nombre: "Modern gamers spoiled by Steam...", "Update 2.1 is

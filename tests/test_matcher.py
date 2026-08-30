@@ -5,6 +5,8 @@ import pytest
 from gaming_news_digest.config import GameRule
 from gaming_news_digest.filtering.matcher import (
     _detect_game_name_with_reason,
+    _detect_known_title_any,
+    _detect_via_known_title,
     _normalize,
     create_matcher,
     detect_game_name,
@@ -265,3 +267,79 @@ class TestReasonTracking:
         name, reason = _detect_game_name_with_reason("New update coming soon", "")
         assert name is None
         assert reason is None
+
+
+class TestProblema3SujetoVsComparacion:
+    """PROBLEMA 3: una mención comparativa NO es el nombre del artículo.
+
+    El matcher (nombre) ignora las referencias; el filtro temático (topic)
+    las usa como EVIDENCIA de contenido gaming (ahí es otra decisión).
+    """
+
+    def test_isnt_elden_ring_detecta_sujeto_nodusfall(self):
+        name, reason = _detect_game_name_with_reason(
+            "Nodusfall isn't Elden Ring, Monster Hunter or a typical "
+            "HoYoverse game – it's a genre-mixing RPG"
+        )
+        assert name == "Nodusfall"
+        assert reason == "subject"
+
+    def test_hades_esque_detecta_sujeto_usual_june(self):
+        name, reason = _detect_game_name_with_reason(
+            "Usual June mixes Hades-esque action into a roguelite"
+        )
+        assert name == "Usual June"
+        assert reason == "subject"
+
+    def test_gta_no_thanks_detecta_volvys_por_playing(self):
+        name, reason = _detect_game_name_with_reason(
+            "GTA 6? No thanks, I'll be playing Volvy's Adventure"
+        )
+        assert name == "Volvy's Adventure"
+        assert reason == "playing"
+
+    def test_conocido_en_comparacion_no_devuelve_nombre(self):
+        assert _detect_via_known_title(
+            "Nodusfall isn't Elden Ring, Monster Hunter or a typical HoYoverse game"
+        ) is None
+
+    def test_conocido_en_comparacion_sigue_siendo_evidencia(self):
+        """(PROBLEMA 1/3) La versión INGUARDADA sí detecta temática gaming:
+        la mención en comparación ES evidencia de contenido."""
+        assert _detect_known_title_any(
+            "Nodusfall isn't Elden Ring, Monster Hunter or a typical HoYoverse game"
+        ) == "Monster Hunter"
+
+    def test_sujeto_conocido_sigue_detectandose(self):
+        assert detect_game_name(
+            "Monster Hunter Wilds details from the official blog", ""
+        ) == "Monster Hunter"
+
+
+class TestProblema3ConfigNoRobaPorContexto:
+    """Un juego CONFIGURADO mencionado solo en comparación no roba la noticia."""
+
+    def test_gta_no_thanks_no_matchea_config(self, matcher):
+        ok, game = matcher.match(
+            "GTA 6? No thanks, I'll be playing Volvy's Adventure", ""
+        )
+        assert ok is False
+        assert game is None
+
+    def test_gta_subject_sigue_matcheando(self, matcher):
+        ok, game = matcher.match("GTA 6 gets a new trailer", "")
+        assert ok is True
+        assert game == "Grand Theft Auto"
+
+    def test_unlike_x_no_matchea(self, matcher):
+        ok, game = matcher.match(
+            "Unlike Zelda, this indie won't be on Nintendo first", ""
+        )
+        assert ok is False
+        assert game is None
+
+    def test_context_matches_reporta_la_coincidencia_contextual(self, matcher):
+        refused = matcher.context_matches(
+            "GTA 6? No thanks, I'll be playing Volvy's Adventure"
+        )
+        assert refused == ["Grand Theft Auto"]

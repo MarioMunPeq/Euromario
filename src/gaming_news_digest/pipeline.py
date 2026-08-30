@@ -6,7 +6,7 @@ import time
 from collections import defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import requests
 
@@ -14,7 +14,12 @@ from gaming_news_digest.ai.base import AIClient, AIError
 from gaming_news_digest.ai.groq_client import GroqClient
 from gaming_news_digest.ai.ollama_client import OllamaClient
 from gaming_news_digest.clustering import cluster_and_select_representatives
-from gaming_news_digest.config import GamesConfig, Limits, SourcesConfig
+from gaming_news_digest.config import (
+    DIGEST_MAX_AGE_HOURS,
+    GamesConfig,
+    Limits,
+    SourcesConfig,
+)
 from gaming_news_digest.fetchers.base import FetchError, build_session
 from gaming_news_digest.fetchers.reddit import (
     REDDIT_REQUEST_INTERVAL_SECONDS,
@@ -49,10 +54,11 @@ logger = logging.getLogger(__name__)
 # (y no está excluido). Sin whitelist: la noticia se publica de todos modos.
 _DEFAULT_GAME_NAME = "Videojuegos"
 
-# Ventana temporal del digest DIARIO: ~24 horas + 2 horas de tolerancia.
-# El cron de GitHub Actions no es puntilloso y los feeds publican tarde a
-# veces; 26 horas cubre "lo de ayer" sin arrastrar más historia de la cuenta.
-_DIGEST_WINDOW_HOURS = 26
+# Ventana temporal del digest DIARIO. Política ÚNICA en config.py: una noticia
+# solo se publica si fue publicada en las últimas 24 h (fecha real, no fecha de
+# procesado). El filtro de fecha, la retención y la escritura del JSON la
+# respetan. Se conserva el alias histórico por compat con los tests.
+_DIGEST_WINDOW_HOURS: int = DIGEST_MAX_AGE_HOURS
 
 # Pre-ranking ANTES de la IA: se recorta el total enviado al modelo a ~40-60
 # items con señales baratas (nunca con la IA). No es una whitelist: los juegos
@@ -125,6 +131,77 @@ def _count_by_source(items: list[FetchedItem | NewsItem]) -> dict:
 
 def _is_reddit(item: FetchedItem | NewsItem) -> bool:
     return getattr(item.source, "type", None) is SourceType.REDDIT
+
+
+def _format_age(delta: timedelta) -> str:
+    total_min = max(0, int(delta.total_seconds() // 60))
+    hours, minutes = divmod(total_min, 60)
+    return f"{hours}h{minutes:02d}m"
+
+
+def _filter_by_age(
+    items: list[FetchedItem | NewsItem],
+    *,
+    max_age_hours: int,
+    now: datetime | None = None,
+) -> list[FetchedItem | NewsItem]:
+    """Filtro de FECHA (PROBLEMA 7): publicar solo lo publicado en la ventana.
+
+    Se ejecuta ANTES de exclusión/temática/matcher y aplica a media, Steam y
+    Reddit por igual. Compara fechas REALES de publicación (UTC), nunca la
+    fecha de procesado: una noticia publicada ayer NO debe colarse en el
+    digest de hoy por reposicionarse en el JSON.
+
+    - Sin ``published_at`` → se descarta con aviso (el modelo ya lo exige).
+    - Fecha futura → se trata como reciente (edad 0): nunca se inventan fechas.
+    """
+    if now is None:
+        now = utc_now()
+    kept: list[FetchedItem | NewsItem] = []
+    rejected: list[FetchedItem | NewsItem] = []
+    for item in items:
+        pub = item.published_at
+        if pub is None:
+            rejected.append(item)
+            logger.info('FECHA: DESCARTADO "%s" [sin fecha de publicación]', item.title)
+            continue
+        age = now - pub
+        if age.total_seconds() < 0:
+            kept.append(item)
+            logger.info(
+                'FECHA: OK "%s" [publicación futura, tratada como reciente]',
+                item.title,
+            )
+            continue
+        if age.total_seconds() <= max_age_hours * 3600:
+            kept.append(item)
+            logger.info('FECHA: OK "%s" [edad=%s]', item.title, _format_age(age))
+        else:
+            rejected.append(item)
+            logger.info(
+                'FECHA: DESCARTADO "%s" [edad=%s > max_age=%dh]',
+                item.title,
+                _format_age(age),
+                max_age_hours,
+            )
+    if items:
+        oldest_kept = min(
+            (it.published_at for it in kept if it.published_at), default=None
+        )
+        newest_rej = max(
+            (it.published_at for it in rejected if it.published_at), default=None
+        )
+        logger.info(
+            "DIAGNÓSTICO FECHA: in=%d accepted=%d rejected=%d max_age=%dh "
+            "oldest_accepted=%s newest_rejected=%s",
+            len(items),
+            len(kept),
+            len(rejected),
+            max_age_hours,
+            oldest_kept.isoformat() if oldest_kept else "-",
+            newest_rej.isoformat() if newest_rej else "-",
+        )
+    return kept
 
 
 def _pre_rank_score(
@@ -322,12 +399,18 @@ class Pipeline:
         self._ai_cache: dict[str, dict] = {}  # url -> {summary, relevance, category, is_fallback}
 
     def _load_ai_cache(self) -> None:
-        """Carga el digest existente y construye caché de resultados de IA por URL.
-        
-        Solo cachea items con summary no-None (procesados exitosamente por IA).
+        """Carga el digest publicado Y el histórico, y construye caché de
+        resultados de IA por URL.
+
+        Leer también ``history.json`` permite reutilizar resúmenes de noticias
+        antiguas SIN resucitarlas en el digest publicado (el filtro de FECHA y
+        la ventana de publicación las mantienen fuera).
         """
-        from gaming_news_digest.storage.json_store import load_existing_digest
-        existing = load_existing_digest()
+        from gaming_news_digest.storage.json_store import (
+            load_existing_digest,
+            load_history_digest,
+        )
+        existing = load_existing_digest() + load_history_digest()
         cached = 0
         for item in existing:
             if item.summary is not None and item.summary.strip():
@@ -344,13 +427,20 @@ class Pipeline:
         if cached:
             logger.info("Caché de IA cargado: %d items con summary reutilizable", cached)
 
-    def run(self) -> None:
-        """Ejecuta el pipeline completo y guarda el digest."""
+    def run(self, *, now: datetime | None = None) -> None:
+        """Ejecuta el pipeline completo y guarda el digest.
+
+        ``now`` permite inyectar el reloj en los tests (y diagnosticar el
+        digest sin contar con la hora real). Todos los filtros temporales
+        (FECHA, pre-rank, retención, publicación) usan el mismo instante.
+        """
         # Cargar caché de IA ANTES de fetch/filtrado para reutilizar resultados previos
         self._load_ai_cache()
+
+        now_ref = now or utc_now()
         
         fetched = self._fetch_all()
-        filtered = self._filter(fetched)
+        filtered = self._filter(fetched, now=now_ref)
 
         # Diagnóstico JUEGOS (tras filtro): identificado, sin_identificar (Videojuegos),
         # reddit. Permite ver calidad del matcher al vuelo.
@@ -400,7 +490,7 @@ class Pipeline:
         # noticia, juego destacado, fuente verificada) sin coste de inferencia.
         # NO es una whitelist: los juegos no configurados compiten igual.
         featured_names = {rule.name for rule in self._games.include}
-        preranked = _pre_rank_for_ai(prelimited, featured_names)
+        preranked = _pre_rank_for_ai(prelimited, featured_names, now=now_ref)
 
         # Diagnóstico PRE-RANK
         stats_prerank = _count_by_source(preranked)
@@ -439,13 +529,14 @@ class Pipeline:
         StageStats.log_separator()
 
         # Retención: Reddit tiene bloque independiente con su propio límite por juego.
-        # Ventana del digest DIARIO: ~24 h + tolerancia (26 h) para cubrir "lo de ayer".
+        # Ventana del digest DIARIO: política única (DIGEST_MAX_AGE_HOURS = 24 h).
         retained = apply_retention(
             limited,
             max_age_hours=_DIGEST_WINDOW_HOURS,
             max_total=200,
             max_per_game=self.limits.max_stories_per_game,
             max_per_game_reddit=self.limits.max_stories_per_game_reddit,
+            now=now_ref,
         )
         
         # Diagnóstico FINAL
@@ -467,7 +558,7 @@ class Pipeline:
         logger.info("  Final digest: %d", stats_final["media_steam"])
         logger.info("=" * 60)
 
-        save_digest(retained)
+        save_digest(retained, now=now_ref)
         self._save_games_config()
 
     def _fetch_all(self) -> list[FetchedItem]:
@@ -503,7 +594,13 @@ class Pipeline:
         stats.log("DIAGNÓSTICO FETCH")
         return items
 
-    def _filter(self, items: list[FetchedItem]) -> list[FetchedItem]:
+    def _filter(
+        self, items: list[FetchedItem], *, now: datetime | None = None
+    ) -> list[FetchedItem]:
+        # 0. FILTRO DE FECHA (PROBLEMA 7): ANTES de todo. Aplica a media,
+        #    Steam y Reddit por igual y usa fechas reales de publicación.
+        items = _filter_by_age(items, max_age_hours=_DIGEST_WINDOW_HOURS, now=now)
+
         kept = []
         # Contadores GAME MATCH por motivo (solo medios/Steam: Reddit no
         # pasa por detección). Permiten detectar falsos positivos del matcher.
@@ -512,6 +609,8 @@ class Pipeline:
             "hint": 0,
             "anchor": 0,
             "known_title": 0,
+            "subject": 0,
+            "playing": 0,
             "no_confident_match": 0,
             "videojuegos": 0,
         }
@@ -599,10 +698,18 @@ class Pipeline:
                         reason = reason or "anchor"
                         game_stats[reason] = game_stats.get(reason, 0) + 1
                     else:
-                        # Sin conclusión fiable -> None -> nombre genérico.
-                        reason = "no_confident_match"
-                        game = None
-                        game_stats[reason] += 1
+                        # Sin conclusión fiable. Si el juego configurado solo
+                        # aparecía como comparación/referencia, se reporta para
+                        # el diagnóstico (y el nombre configurado se IGNORA).
+                        refused = self.matcher.context_matches(item.title)
+                        if refused:
+                            reason = "no_confident_match | NO usar coincidencia contextual: " + ", ".join(refused)
+                            game = None
+                            game_stats["no_confident_match"] += 1
+                        else:
+                            reason = "no_confident_match"
+                            game = None
+                            game_stats["no_confident_match"] += 1
                 # Log por noticia: permite rastrear falsos positivos
                 # (GAME MATCH: "título" -> juego o None [motivo]).
                 shown = game or "None"
@@ -643,10 +750,11 @@ class Pipeline:
             stats_in.media_steam - stats_out.media_steam
         )
         logger.info(
-            "GAME MATCH (resumen): config=%d, hint=%d, anchor=%d, known_title=%d, no_confident_match=%d, videojuegos=%d",
+            "GAME MATCH (resumen): config=%d, hint=%d, anchor=%d, known_title=%d, "
+            "subject=%d, playing=%d, no_confident_match=%d, videojuegos=%d",
             game_stats["config"], game_stats["hint"], game_stats["anchor"],
-            game_stats["known_title"], game_stats["no_confident_match"],
-            game_stats["videojuegos"],
+            game_stats["known_title"], game_stats["subject"], game_stats["playing"],
+            game_stats["no_confident_match"], game_stats["videojuegos"],
         )
         topic_reasons = ", ".join(
             f"{k}={v}" for k, v in sorted(topic_stats.items())

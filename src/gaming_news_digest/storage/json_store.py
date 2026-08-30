@@ -1,20 +1,37 @@
 """Lectura/escritura atómica del JSON que consume el frontend (`frontend/data/news.json`).
 
-Incluye merge con histórico existente y escritura atómica (tmp + os.replace).
+Separación de responsabilidades (PROBLEMA 7):
+- `frontend/data/history.json` → HISTÓRICO/CAché: conserva items antiguos
+  (~30 días) para reutilizar resúmenes de IA sin volver a pagar inferencia.
+- `frontend/data/news.json` → PUBLICADO: solo lo publicado en la ventana del
+  digest (24 h por defecto). Las noticias viejas NO reaparecen por reposicionarse.
+
+Todos los filtros temporales usan ``published_at`` real (UTC), nunca la fecha
+de procesado. Escritura atómica (tmp + os.replace) en ambos archivos.
 """
 
 import json
 import logging
 import os
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from ..config import DIGEST_MAX_AGE_HOURS
 from ..models import ModelValidationError, NewsItem
+from .retention import apply_retention
 
 logger = logging.getLogger(__name__)
 
 DATA_PATH = Path("frontend/data/news.json")
+
+#: Histórico de caché (resúmenes IA reutilizables); NO es el feed publicado.
+HISTORY_PATH = Path("frontend/data/history.json")
+
+#: Retención del HISTÓRICO: mucho más amplia que la del digest publicado.
+_HISTORY_MAX_AGE_HOURS = 24 * 30
+_HISTORY_MAX_TOTAL = 2000
 
 #: Captura el subreddit del nombre de fuente plano "Reddit · r/<sub>".
 _SUBREDDIT_RE = re.compile(r"(?:^|\s)r/([A-Za-z0-9_]+)", re.IGNORECASE)
@@ -70,29 +87,29 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def load_existing_digest() -> list[NewsItem]:
-    """Carga el digest existente desde `frontend/data/news.json`.
+def _read_digest_file(path: Path, *, label: str) -> list[NewsItem]:
+    """Carga items desde un JSON de digest (news.json o history.json).
 
     - Un archivo ausente, ilegible o con JSON inválido devuelve lista vacía.
     - Cada item se migra de la forma histórica a la actual y se valida
       contra el contrato INDIVIDUALMENTE: uno inválido se descarta con log
-      y NUNCA tumba el resto del histórico (regla P0).
+      y NUNCA tumba el resto (regla P0).
     """
-    if not DATA_PATH.exists():
+    if not path.exists():
         return []
 
     try:
-        content = DATA_PATH.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
         data = json.loads(content)
     except (json.JSONDecodeError, OSError) as exc:
         logger.warning(
-            "news.json corrupto o ilegible (%s); se inicia histórico vacío", exc
+            "%s corrupto o ilegible (%s); se inicia histórico vacío", label, exc
         )
         return []
 
     news = data.get("news") if isinstance(data, dict) else None
     if not isinstance(news, list):
-        logger.warning("news.json sin lista 'news'; se inicia histórico vacío")
+        logger.warning("%s sin lista 'news'; se inicia histórico vacío", label)
         return []
 
     items: list[NewsItem] = []
@@ -124,6 +141,19 @@ def load_existing_digest() -> list[NewsItem]:
     if discarded:
         logger.warning("%d item(s) del histórico descartados por contrato", discarded)
     return items
+
+
+def load_existing_digest() -> list[NewsItem]:
+    """Carga el digest PUBLICADO (``frontend/data/news.json``)."""
+    return _read_digest_file(DATA_PATH, label="news.json")
+
+
+def load_history_digest() -> list[NewsItem]:
+    """Carga el HISTÓRICO de caché (``frontend/data/history.json``).
+
+    Conserva items antiguos para reutilizar sus resúmenes de IA (caché), pero
+    NO es el digest que ve el frontend."""
+    return _read_digest_file(HISTORY_PATH, label="history.json")
 
 
 def _migrate_legacy_item(item: dict) -> dict:
@@ -231,6 +261,23 @@ def _item_context(raw: dict) -> dict:
             if isinstance(raw.get(key), str)} | {"source": source_name}
 
 
+def _merge_by_id(existing: list[NewsItem], new: list[NewsItem]) -> list[NewsItem]:
+    """Combina histórico + items nuevos, deduplicando por id.
+
+    Regla: NUEVO GANA (el item de la ejecución actual sobrescribe al histórico
+    si tienen mismo id — por si cambió summary/relevance/category).
+    Devuelve lista ordenada descendente por ``published_at``, SIN retención
+    (la retención la aplica cada consumidor: histórico largo vs. publicado).
+    """
+    by_id = {it.id: it for it in existing}
+    for item in new:
+        by_id[item.id] = item  # nuevo gana
+
+    merged = list(by_id.values())
+    merged.sort(key=lambda x: x.published_at, reverse=True)
+    return merged
+
+
 def merge_and_retain(existing: list[NewsItem], new: list[NewsItem]) -> list[NewsItem]:
     """
     Combina histórico existente + items nuevos, deduplicando por id.
@@ -239,37 +286,64 @@ def merge_and_retain(existing: list[NewsItem], new: list[NewsItem]) -> list[News
     si tienen mismo id — por si cambió summary/relevance/category).
     Devuelve lista ordenada descendente por published_at con retención aplicada.
     """
-    by_id = {it.id: it for it in existing}
-    for item in new:
-        by_id[item.id] = item  # nuevo gana
-
-    merged = list(by_id.values())
-    merged.sort(key=lambda x: x.published_at, reverse=True)
-
-    from .retention import apply_retention
-    return apply_retention(merged)
+    return apply_retention(_merge_by_id(existing, new))
 
 
-def save_digest(items: list[NewsItem]) -> None:
-    """
-    Guarda el digest de forma atómica en `frontend/data/news.json`.
-
-    1. Carga histórico existente
-    2. Merge + retención
-    3. Escritura atómica: escribe .tmp + os.replace (atómico en POSIX/Windows)
-    """
-    existing = load_existing_digest()
-    merged = merge_and_retain(existing, items)
-    data = _make_digest_data(merged)
-
-    DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = DATA_PATH.with_suffix(".tmp")
-
-    json_str = json.dumps(data, ensure_ascii=False, indent=2)
+def _write_items(path: Path, items: list[NewsItem]) -> None:
+    """Escritura atómica: escribe .tmp + os.replace (atómico en POSIX/Windows)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(".tmp")
+    json_str = json.dumps(_make_digest_data(items), ensure_ascii=False, indent=2)
     tmp_path.write_text(json_str, encoding="utf-8")
-    os.replace(tmp_path, DATA_PATH)
+    os.replace(tmp_path, path)
 
-    logger.info("Digest guardado: %d items (generado %s)", len(merged), utc_now_iso())
+
+def save_digest(
+    items: list[NewsItem],
+    *,
+    max_age_hours: int = DIGEST_MAX_AGE_HOURS,
+    now: datetime | None = None,
+) -> None:
+    """
+    Guarda el digest de forma atómica separando HISTÓRICO de PUBLICADO.
+
+    1. Histórico (`history.json`): merge dedup con la caché previa + retención
+       larga (~30 días / 2000 items). Se siembra desde ``news.json`` la primera
+       vez que no existe ningún histórico.
+    2. Publicado (`news.json`): del histórico completo se queda SOLO con la
+       ventana de publicación (``max_age_hours``, p. ej. 24 h).
+
+    La ventana la decide ``published_at`` real (UTC), nunca la fecha de
+    procesado: una noticia vieja que siga en el histórico NO reaparece en el
+    digest, aunque sus resúmenes de IA sigan siendo reutilizables (caché).
+    """
+    now = now or datetime.now(timezone.utc)
+
+    history_existing = load_history_digest()
+    if not history_existing and DATA_PATH.exists():
+        # Primera migración al histórico: sembrar desde el digest publicado.
+        history_existing = load_existing_digest()
+
+    full = _merge_by_id(history_existing, items)
+    history = apply_retention(
+        full,
+        max_age_hours=_HISTORY_MAX_AGE_HOURS,
+        max_total=_HISTORY_MAX_TOTAL,
+        now=now,
+    )
+    published = apply_retention(
+        full, max_age_hours=max_age_hours, max_total=200, now=now
+    )
+
+    _write_items(HISTORY_PATH, history)
+    _write_items(DATA_PATH, published)
+    logger.info(
+        "Digest guardado: %d histórico / %d publicado (ventana %dh, generado %s)",
+        len(history),
+        len(published),
+        max_age_hours,
+        utc_now_iso(),
+    )
 
 
 GAMES_CONFIG_PATH = Path("frontend/data/games.json")

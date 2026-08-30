@@ -348,48 +348,58 @@ class TestMigracionMojibake:
         assert data["source_subreddit"] == "gamingleaksandrumours"
         loaded = NewsItem.from_dict(data)
         assert loaded.source.subreddit == "gamingleaksandrumours"
-    def test_escritura_atomica_crea_archivo(self, tmp_path):
+    def _pin_paths(self, tmp_path):
+        """Aísla DATA_PATH y HISTORY_PATH del repo en un tmp_path."""
         import gaming_news_digest.storage.json_store as js
-        original = js.DATA_PATH
+        (self._orig_data, self._orig_history) = (js.DATA_PATH, js.HISTORY_PATH)
         js.DATA_PATH = tmp_path / "news.json"
+        js.HISTORY_PATH = tmp_path / "history.json"
+        return js
+
+    def _restore_paths(self):
+        import gaming_news_digest.storage.json_store as js
+        js.DATA_PATH, js.HISTORY_PATH = self._orig_data, self._orig_history
+
+    def test_escritura_atomica_crea_archivo(self, tmp_path):
+        js = self._pin_paths(tmp_path)
         try:
             save_digest([make_item("Test", 1)])
             assert js.DATA_PATH.exists()
             data = json.loads(js.DATA_PATH.read_text(encoding="utf-8"))
             assert data["total"] == 1
             assert data["news"][0]["title"] == "Test"
+            # El histórico de caché también se escribe (separación PROBLEMA 7)
+            assert js.HISTORY_PATH.exists()
         finally:
-            js.DATA_PATH = original
+            self._restore_paths()
 
     def test_escritura_atomica_no_corrompe_si_crash_en_medio(self, tmp_path):
         """Simula crash a mitad de escritura: archivo original intacto."""
-        import gaming_news_digest.storage.json_store as js
-        path = tmp_path / "news.json"
-        js.DATA_PATH = path
-
-        # Escribir archivo inicial válido
-        initial = {"generated_at": "2026-01-01T00:00:00Z", "total": 1, "news": [{"id": "1"}]}
-        js.DATA_PATH.write_text(json.dumps(initial), encoding="utf-8")
-
-        # Simular crash: monkeypatch os.replace para que falle a mitad
-        original_replace = os.replace
-        def failing_replace(src, dst):
-            raise OSError("Simulated crash")
-        os.replace = failing_replace
+        js = self._pin_paths(tmp_path)
         try:
-            with pytest.raises(OSError):
-                save_digest([make_item("New", 1)])
-            # Archivo original debe seguir intacto
-            content = json.loads(Path(js.DATA_PATH).read_text(encoding="utf-8"))
-            assert content["total"] == 1  # original intacto
+            js.DATA_PATH.write_text(
+                json.dumps({"generated_at": "2026-01-01T00:00:00Z", "total": 1, "news": [{"id": "1"}]}),
+                encoding="utf-8",
+            )
+
+            # Simular crash: monkeypatch os.replace para que falle a mitad
+            original_replace = os.replace
+            def failing_replace(src, dst):
+                raise OSError("Simulated crash")
+            os.replace = failing_replace
+            try:
+                with pytest.raises(OSError):
+                    save_digest([make_item("New", 1)])
+                # Archivo original debe seguir intacto
+                content = json.loads(Path(js.DATA_PATH).read_text(encoding="utf-8"))
+                assert content["total"] == 1  # original intacto
+            finally:
+                os.replace = original_replace
         finally:
-            os.replace = original_replace
+            self._restore_paths()
 
     def test_merge_con_historico_existente(self, tmp_path):
-        import gaming_news_digest.storage.json_store as js
-        original = js.DATA_PATH
-        path = tmp_path / "news.json"
-        js.DATA_PATH = path
+        js = self._pin_paths(tmp_path)
         try:
             # Histórico existente
             old = NewsItem(
@@ -404,16 +414,77 @@ class TestMigracionMojibake:
                 category="actualizacion",
                 summary="Resumen de prueba.",
             )
-            path.write_text(json.dumps({
+            js.DATA_PATH.write_text(json.dumps({
                 "generated_at": "2026-01-01T00:00:00Z",
                 "total": 1,
                 "news": [old.to_dict()]
             }), encoding="utf-8")
 
             save_digest([make_item("New", 1)])
-            data = json.loads(path.read_text(encoding="utf-8"))
+            data = json.loads(js.DATA_PATH.read_text(encoding="utf-8"))
             assert data["total"] == 2
             titles = {n["title"] for n in data["news"]}
             assert "Old" in titles and "New" in titles
         finally:
-            js.DATA_PATH = original
+            self._restore_paths()
+
+
+class TestProblema7SeparacionHistoricoPublicado:
+    """PROBLEMA 7: la ventana de 24 h decide el PUBLICADO; el histórico de
+    caché conserva lo antiguo para reutilizar resúmenes de IA."""
+
+    def test_publica_solo_la_ventana_y_conserva_historico(self, tmp_path):
+        import gaming_news_digest.storage.json_store as js
+        js.DATA_PATH, js.HISTORY_PATH = tmp_path / "news.json", tmp_path / "history.json"
+        old = make_item("Vieja de hace 30h", 30)
+        new = make_item("Nueva de hace 3h", 3)
+        save_digest([old])
+        save_digest([new])
+
+        # PUBLICADO: solo la ventana (la de 30 h queda fuera del digest).
+        data = json.loads((tmp_path / "news.json").read_text(encoding="utf-8"))
+        assert data["total"] == 1
+        assert [n["title"] for n in data["news"]] == ["Nueva de hace 3h"]
+
+        # HISTÓRICO: conserva ambas (ventana larga = caché de IA).
+        history = json.loads((tmp_path / "history.json").read_text(encoding="utf-8"))
+        titles = {n["title"] for n in history["news"]}
+        assert titles == {"Vieja de hace 30h", "Nueva de hace 3h"}
+
+    def test_ventana_borde_exacto(self, tmp_path):
+        """maximos en el borde: 23h59m pasa, 24h01m no."""
+        import gaming_news_digest.storage.json_store as js
+        js.DATA_PATH, js.HISTORY_PATH = tmp_path / "news.json", tmp_path / "history.json"
+        from datetime import timedelta
+        now = datetime.now(timezone.utc)
+        dentro = NewsItem(
+            title="Dentro de ventana", url="https://example.com/dentro",
+            source=Source(name="IGN", type="media"), game="Persona", language="en",
+            published_at=now - timedelta(hours=23, minutes=59),
+            fetched_at=now - timedelta(hours=23, minutes=59),
+            relevance=3, category="actualizacion", summary="Resumen de prueba.",
+        )
+        fuera = NewsItem(
+            title="Fuera de ventana", url="https://example.com/fuera",
+            source=Source(name="IGN", type="media"), game="Persona", language="en",
+            published_at=now - timedelta(hours=24, minutes=1),
+            fetched_at=now - timedelta(hours=24, minutes=1),
+            relevance=3, category="actualizacion", summary="Resumen de prueba.",
+        )
+        save_digest([dentro, fuera])
+        data = json.loads((tmp_path / "news.json").read_text(encoding="utf-8"))
+        assert data["total"] == 1
+        assert data["news"][0]["title"] == "Dentro de ventana"
+
+    def test_noticia_vieja_no_reaparece_al_reposicionarse(self, tmp_path):
+        """Una noticia de hace 2 días que siga en el histórico NO vuelve al
+        digest publicado aunque se guarde de nuevo el histórico completo."""
+        import gaming_news_digest.storage.json_store as js
+        js.DATA_PATH, js.HISTORY_PATH = tmp_path / "news.json", tmp_path / "history.json"
+        vieja = make_item("Vieja", 48)
+        save_digest([vieja])           # entra en histórico, no publicada
+        save_digest([vieja])           # segunda ejecución del pipeline
+        data = json.loads((tmp_path / "news.json").read_text(encoding="utf-8"))
+        assert data["total"] == 0
+        history = json.loads((tmp_path / "history.json").read_text(encoding="utf-8"))
+        assert {n["title"] for n in history["news"]} == {"Vieja"}

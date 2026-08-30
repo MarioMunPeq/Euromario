@@ -9,14 +9,19 @@ from gaming_news_digest.ai.base import AIError, AISummary, Category, Language
 from gaming_news_digest.models import FetchedItem, NewsItem, Source
 from gaming_news_digest.pipeline import Pipeline
 
+# Reloj fijo para todos los filtros temporales del pipeline (PROBLEMA 7):
+# hoy = 2026-08-30. Las fixtures publican relativo a NOW, así que pasan la
+# ventana de 24 h; los tests de edad inyectan fechas explícitas a propósito.
+NOW = datetime(2026, 8, 30, 12, 0, tzinfo=timezone.utc)
+
 
 def make_item(title="Noticia", body="Cuerpo", game="Persona", lang="en", url_suffix=""):
     return FetchedItem(
         title=title,
         url=f"https://test.com/{url_suffix or title}",
         source=Source(name="Test", type="media"),
-        published_at=datetime(2026, 8, 23, 12, 0, tzinfo=timezone.utc),
-        fetched_at=datetime(2026, 8, 23, 12, 5, tzinfo=timezone.utc),
+        published_at=NOW - timedelta(hours=1),
+        fetched_at=NOW,
         body_text=body,
         language=lang,
         game=game,
@@ -32,8 +37,8 @@ def make_reddit_item(title="GTA VI leak", game="Grand Theft Auto"):
             type="reddit",
             subreddit="gamingleaksandrumours",
         ),
-        published_at=datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc),
-        fetched_at=datetime(2026, 8, 27, 12, 5, tzinfo=timezone.utc),
+        published_at=NOW - timedelta(hours=1),
+        fetched_at=NOW,
         body_text="Cuerpo del leak",
         language="en",
         game=game,
@@ -50,7 +55,7 @@ def make_ai_summary(summary="ok", relevance=3, category=Category.UPDATE, languag
 
 
 def make_news_item(title="Noticia", game="Persona", relevance=3, hours_ago=1):
-    published = datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc) - timedelta(hours=hours_ago)
+    published = NOW - timedelta(hours=hours_ago)
     return NewsItem(
         title=title,
         url=f"https://test.com/{title}",
@@ -66,7 +71,7 @@ def make_news_item(title="Noticia", game="Persona", relevance=3, hours_ago=1):
 
 
 def make_fetched(title="Noticia", game="Persona", hours_ago=1, is_reddit=False):
-    published = datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc) - timedelta(hours=hours_ago)
+    published = NOW - timedelta(hours=hours_ago)
     if is_reddit:
         source = Source(
             name="Reddit · r/gamingleaksandrumours",
@@ -256,7 +261,7 @@ def test_limit_por_juego_sin_relevancia_prioriza_lo_mas_reciente():
     from gaming_news_digest.pipeline import _limit_stories_per_game
 
     def fetched(hours_ago):
-        published = datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc) - timedelta(hours=hours_ago)
+        published = NOW - timedelta(hours=hours_ago)
         return FetchedItem(
             title=f"historia-{hours_ago}",
             url=f"https://test.com/{hours_ago}",
@@ -304,7 +309,7 @@ def test_limite_por_juego_se_aplica_antes_de_la_ia(monkeypatch):
 
     fetched = [make_item(f"N{i}", game="Persona") for i in range(20)]
     monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
-    monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+    monkeypatch.setattr(pipeline, "_filter", lambda items, **kw: items)
     monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
 
     seen_enriched = []
@@ -317,10 +322,10 @@ def test_limite_por_juego_se_aplica_antes_de_la_ia(monkeypatch):
     monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
     saved = []
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     # Pre-límite ahora es 12 (8 + 4), así que 12 items pasan a IA
     assert len(seen_enriched) == 12
@@ -345,7 +350,7 @@ def test_reddit_salta_pre_limite_antes_de_ia(monkeypatch):
     # 15 items de Reddit del mismo juego (exceden el límite de 8)
     fetched = [make_reddit_item(f"GTA leak {i}", game="Grand Theft Auto") for i in range(15)]
     monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
-    monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+    monkeypatch.setattr(pipeline, "_filter", lambda items, **kw: items)
     monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
 
     seen_enriched = []
@@ -358,10 +363,10 @@ def test_reddit_salta_pre_limite_antes_de_ia(monkeypatch):
     monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
     saved = []
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     # Todos los 15 items de Reddit deben llegar a la IA (pre-límite saltado)
     assert len(seen_enriched) == 15, f"Esperados 15 items en IA, got {len(seen_enriched)}"
@@ -385,7 +390,7 @@ def test_media_respeta_pre_limite_antes_de_ia(monkeypatch):
     # 15 items de MEDIOS del mismo juego (exceden el límite de 8)
     fetched = [make_item(f"N{i}", game="Persona") for i in range(15)]
     monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
-    monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+    monkeypatch.setattr(pipeline, "_filter", lambda items, **kw: items)
     monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
 
     seen_enriched = []
@@ -398,10 +403,10 @@ def test_media_respeta_pre_limite_antes_de_ia(monkeypatch):
     monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
     saved = []
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     # Pre-límite ahora es 12 (8 + 4), así que 12 items pasan a IA
     assert len(seen_enriched) == 12, f"Esperados 12 items en IA, got {len(seen_enriched)}"
@@ -425,7 +430,7 @@ def test_reddit_post_limite_despues_de_ia_funciona(monkeypatch):
     # 10 items de Reddit del mismo juego
     fetched = [make_reddit_item(f"Leak {i}", game="Starfield") for i in range(10)]
     monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
-    monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+    monkeypatch.setattr(pipeline, "_filter", lambda items, **kw: items)
     monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
 
     seen_enriched = []
@@ -438,10 +443,10 @@ def test_reddit_post_limite_despues_de_ia_funciona(monkeypatch):
     monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
     saved = []
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     # 10 items llegan a la IA (pre-límite saltado)
     assert len(seen_enriched) == 10
@@ -500,10 +505,10 @@ def test_reddit_filtro_salta_game_matching(monkeypatch):
     monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
     saved = []
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     # Reddit items pasan el filtro sin game matching (5 items)
     # Media items también se conservan aunque su juego no esté configurado
@@ -553,10 +558,10 @@ def test_media_juego_no_configurado_llega_al_digest(monkeypatch):
     monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
     saved = []
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     assert len(seen_enriched) == 1
     assert seen_enriched[0].game == "Hollow Knight Silksong"
@@ -596,8 +601,8 @@ def test_steam_juego_no_configurado_asigna_nombre_de_la_app(monkeypatch):
             title="Major update notes now available",
             url="https://store.steampowered.com/news/app/1086940",
             source=Source(name="Steam · Baldur's Gate 3", type="steam"),
-            published_at=datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc),
-            fetched_at=datetime(2026, 8, 27, 12, 5, tzinfo=timezone.utc),
+            published_at=NOW - timedelta(hours=1),
+            fetched_at=NOW,
             body_text="Cuerpo",
             language="en",
             game=None,
@@ -616,10 +621,10 @@ def test_steam_juego_no_configurado_asigna_nombre_de_la_app(monkeypatch):
     monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
     saved = []
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     assert seen_enriched[0].source.type is SourceType.STEAM
     assert seen_enriched[0].game == "Baldur's Gate 3"
@@ -668,10 +673,10 @@ def test_media_excluido_sigue_descartado(monkeypatch):
     monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
     saved = []
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     assert len(seen_enriched) == 0
     assert len(saved[0]) == 0
@@ -717,10 +722,10 @@ def test_media_sin_juego_identificable_usa_nombre_generico(monkeypatch):
     monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
     saved = []
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     assert len(seen_enriched) == 1
     assert seen_enriched[0].game == _DEFAULT_GAME_NAME
@@ -806,7 +811,7 @@ def test_pipeline_pasa_ventana_diaria_a_retencion(monkeypatch):
 
     fetched = [make_item()]
     monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
-    monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+    monkeypatch.setattr(pipeline, "_filter", lambda items, **kw: items)
     monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
 
     def fake_enrich(items):
@@ -822,10 +827,10 @@ def test_pipeline_pasa_ventana_diaria_a_retencion(monkeypatch):
         window_kwargs.update(kw)
         return items
 
-    monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+    monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
     monkeypatch.setattr(pipe, "apply_retention", fake_retention)
 
-    pipeline.run()
+    pipeline.run(now=NOW)
 
     assert window_kwargs["max_age_hours"] == _DIGEST_WINDOW_HOURS
 
@@ -860,7 +865,7 @@ class TestGameNamePassthrough:
         # Artículo con juego detectado (no configurado)
         fetched = [make_item("Persona 5 Royal new trailer released", game="Persona 5 Royal")]
         monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
-        monkeypatch.setattr(pipeline, "_filter", lambda items: items)
+        monkeypatch.setattr(pipeline, "_filter", lambda items, **kw: items)
         monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
 
         seen_games = []
@@ -874,10 +879,10 @@ class TestGameNamePassthrough:
         monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
         saved = []
-        monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+        monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
         monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
-        pipeline.run()
+        pipeline.run(now=NOW)
 
         # El juego original llega intacto a la IA
         assert seen_games == ["Persona 5 Royal"]
@@ -929,11 +934,11 @@ class TestGameMatchLogging:
         monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
         saved = []
-        monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+        monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
         monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
         with caplog.at_level(logging.INFO):
-            pipeline.run()
+            pipeline.run(now=NOW)
 
         # Verifica líneas GAME MATCH por ítem
         game_match_lines = [r.message for r in caplog.records if r.message.startswith("GAME MATCH:")]
@@ -982,11 +987,11 @@ class TestGameMatchLogging:
         monkeypatch.setattr(pipeline, "_enrich_with_ai", fake_enrich)
 
         saved = []
-        monkeypatch.setattr(pipe, "save_digest", lambda items: saved.append(list(items)))
+        monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: saved.append(list(items)))
         monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
 
         with caplog.at_level(logging.INFO):
-            pipeline.run()
+            pipeline.run(now=NOW)
 
         # Busca la línea DIAGNÓSTICO JUEGOS
         diag_lines = [r.message for r in caplog.records if r.message.startswith("DIAGNÓSTICO JUEGOS:")]

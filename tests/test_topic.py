@@ -178,12 +178,32 @@ class TestMencionIncidentalNoMata:
 
 
 class TestFeedCategories:
-    """La metadata del feed manda por encima del texto."""
+    """La metadata del feed aporta CONTEXTO, no decides sola (PROBLEMA 1)."""
 
-    def test_categoria_juegos_acepta(self):
-        assert is_video_game_article(
+    def test_categoria_juegos_no_acepta_sola(self):
+        """Un feed gaming publica trailers de cine y mercancía: la categoría
+        'Games' sin ninguna señal de texto ya NO acepta."""
+        ok, reason = classify_video_game_article(
             "Some vague title", feed_categories=("Games",)
-        ) is True
+        )
+        assert ok is False
+        assert reason == "sin_senal_suficiente"
+
+    def test_categoria_juegos_con_una_senal_debil_acepta(self):
+        """Feed gaming + una señal débil (un trailer genérico) sí basta."""
+        ok, reason = classify_video_game_article(
+            "A brand new trailer is out", feed_categories=("Games",)
+        )
+        assert ok is True
+        assert reason == "feed_contexto_videojuegos"
+
+    def test_categoria_juegos_con_negativa_fuerte_descarta(self):
+        """El contexto de feed NUNCA compensa una señal negativa de texto."""
+        ok, reason = classify_video_game_article(
+            "New Netflix series out today", feed_categories=("Games",)
+        )
+        assert ok is False
+        assert reason.startswith("senal_negativa:")
 
     def test_categoria_peliculas_descarta_incluso_con_texto_dudoso(self):
         ok, reason = classify_video_game_article(
@@ -213,3 +233,69 @@ class TestFeedCategories:
 
     def test_sin_categorias_usa_texto(self):
         assert is_video_game_article("Steam sale is live") is True
+
+
+class TestProblema3ComparacionesSon_EVIDENCIA_NoNombre:
+    """Las menciones comparativas demuestran TEMÁTICA gaming (aquí) aunque el
+    matcher no deba usarlas como NOMBRE del artículo (allí)."""
+
+    def test_isnt_elden_ring_es_contenido_gaming(self):
+        ok, reason = classify_video_game_article(
+            "Nodusfall isn't Elden Ring, Monster Hunter or a typical "
+            "HoYoverse game – it's a genre-mixing RPG"
+        )
+        assert ok is True
+        # "HoYoverse" aporta señal positiva fuerte; la mención en comparación
+        # de Elden Ring/Monster Hunter también cuenta (PROBLEMA 3).
+        assert reason in ("juego_reconocible", "senal_positiva_fuerte")
+
+    def test_hades_esque_es_contenido_gaming(self):
+        assert is_video_game_article(
+            "Usual June mixes Hades-esque action into a roguelite"
+        ) is True
+
+    def test_playing_adventure_volvys_es_contenido_gaming(self):
+        assert is_video_game_article(
+            "GTA 6? No thanks, I'll be playing Volvy's Adventure"
+        ) is True
+
+
+class TestProblema2CompartirFranquiciaNoEsGaming:
+    """Contenido de cine/TV/merch que comparte franquicia con videojuegos."""
+
+    def test_juego_gano_un_juego_de_verdad(self):
+        """'Resident Evil' + señal gaming → el artículo ES del juego."""
+        ok, reason = classify_video_game_article(
+            "Resident Evil game gets new trailer for upcoming title"
+        )
+        assert ok is True
+        assert reason == "juego_reconocible"
+
+    def test_juego_vs_pelicula_gana_pelicula(self):
+        assert is_video_game_article(
+            "Resident Evil movie opens to record box office"
+        ) is False
+
+    def test_merch_no_es_videojuego(self):
+        ok, reason = classify_video_game_article(
+            "Capcom unveils Collector's Edition statues and souvenirs"
+        )
+        assert ok is False
+        assert reason.startswith("senal_negativa:")
+
+    def test_alien_romulus_de_ridley_scott_no_es_gaming(self):
+        """El ejemplo real de la ronda 5: cita de cine sobre la película. Se
+        descarta antes de llegar al matcher (sin evidencia positiva alguna;
+        además el candidato-ancla del titular es prosa, no un juego)."""
+        ok, _ = classify_video_game_article(
+            "Ridley Scott Says Alien Romulus Was OK, So He's Returning to the "
+            "Franchise Because It 'Needs Some Help'"
+        )
+        assert ok is False
+
+    def test_alien_romulus_con_feed_gaming_tampoco_se_cuela(self):
+        ok = is_video_game_article(
+            "Ridley Scott Says Alien Romulus Was OK, So He's Returning to the Franchise",
+            feed_categories=("Games",),
+        )
+        assert ok is False

@@ -21,6 +21,12 @@ DEFAULT_TIMEOUT_SECONDS = 15
 DEFAULT_MAX_STORIES_PER_GAME = 8
 DEFAULT_MAX_STORIES_PER_GAME_REDDIT = 15
 
+#: Política única de edad del digest DIARIO: una noticia solo se publica si fue
+#: publicada en las últimas 24 horas (comparando fechas reales en UTC, nunca
+#: con la fecha de procesado). Tanto el filtro de fecha del pipeline como la
+#: escritura del JSON publicado la respetan; el histórico/caché conserva más.
+DIGEST_MAX_AGE_HOURS = 24
+
 
 class ConfigError(Exception):
     """La configuración es inválida o no se pudo cargar."""

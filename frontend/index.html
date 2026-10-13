@@ -40,27 +40,40 @@
         <span class="header__title" id="app-title">EuroMario</span>
       </a>
 
-      <nav class="header__nav" aria-label="Sections" role="radiogroup">
-        <button type="button" class="header__nav-btn" data-section="news" role="radio" aria-checked="true">
-          <img class="header__nav-icon" src="assets/icons/news.svg" alt="" aria-hidden="true" width="18" height="18">
-          <span>NEWS</span>
+      <!-- Game filters (GTA, Pokemon) - desktop center -->
+      <div class="header__game-filters header__game-filters--desktop" id="header-game-filters-desktop" role="group" aria-label="Game filters" hidden>
+        <button type="button" class="header__game-filter" data-game="Grand Theft Auto" aria-pressed="false" aria-label="GTA">
+          <img class="header__game-filter-icon" src="assets/games/gta.svg" alt="" aria-hidden="true" width="48" height="48">
         </button>
-        <button type="button" class="header__nav-btn" data-section="rumors" role="radio" aria-checked="false">
-          <img class="header__nav-icon" src="assets/icons/rumors.svg" alt="" aria-hidden="true" width="18" height="18">
-          <span>RUMORS</span>
+        <button type="button" class="header__game-filter" data-game="Pokemon" aria-pressed="false" aria-label="Pokémon">
+          <img class="header__game-filter-icon" src="assets/games/pokemon.svg" alt="" aria-hidden="true" width="48" height="48">
+        </button>
+      </div>
+
+      <!-- Game filters (GTA, Pokemon) - mobile right side -->
+      <div class="header__game-filters header__game-filters--mobile" id="header-game-filters-mobile" role="group" aria-label="Game filters" hidden>
+        <button type="button" class="header__game-filter" data-game="Grand Theft Auto" aria-pressed="false" aria-label="GTA">
+          <img class="header__game-filter-icon" src="assets/games/gta.svg" alt="" aria-hidden="true" width="32" height="32">
+        </button>
+        <button type="button" class="header__game-filter" data-game="Pokemon" aria-pressed="false" aria-label="Pokémon">
+          <img class="header__game-filter-icon" src="assets/games/pokemon.svg" alt="" aria-hidden="true" width="32" height="32">
+        </button>
+      </div>
+
+      <nav class="header__nav" aria-label="Sections" role="radiogroup">
+        <button type="button" class="header__nav-btn" data-section="news" role="radio" aria-checked="true" aria-label="News">
+          <img class="header__nav-icon" src="assets/icons/news.svg" alt="" aria-hidden="true" width="22" height="22">
+          <span class="header__nav-text">NEWS</span>
+        </button>
+        <button type="button" class="header__nav-btn" data-section="rumors" role="radio" aria-checked="false" aria-label="Rumors">
+          <img class="header__nav-icon" src="assets/icons/rumors.svg" alt="" aria-hidden="true" width="22" height="22">
+          <span class="header__nav-text">RUMORS</span>
         </button>
       </nav>
     </div>
   </header>
 
   <main class="main">
-    <section class="filters" aria-label="Filters">
-      <div class="filters__blocks" id="filter-blocks" role="group" aria-label="Platform and game filters">
-        <div class="filters__platforms" id="filter-platforms" role="group" aria-label="Platforms"></div>
-        <div class="filters__games" id="filter-games" role="group" aria-label="Games"></div>
-      </div>
-    </section>
-
     <section class="news-grid" id="news-grid" aria-live="polite" aria-label="News">
       <div class="state state--loading" id="state-loading" role="status" aria-live="polite" hidden>
         <div class="skeleton-grid" aria-hidden="true">

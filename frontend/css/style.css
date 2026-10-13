@@ -229,7 +229,6 @@ input, select, textarea {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  margin-left: var(--space-6);
 }
 
 .header__nav-btn {
@@ -254,6 +253,25 @@ input, select, textarea {
   height: 22px;
   filter: brightness(0) invert(1);
   transition: filter var(--transition-fast);
+}
+
+.header__nav-text {
+  display: inline;
+}
+
+/* Mobile: hide text, larger icons */
+@media (max-width: 768px) {
+  .header__nav-text {
+    display: none;
+  }
+  .header__nav-btn {
+    padding: var(--space-2) var(--space-3);
+    gap: 0;
+  }
+  .header__nav-icon {
+    width: 26px;
+    height: 26px;
+  }
 }
 
 .header__nav-btn:hover {
@@ -281,6 +299,107 @@ input, select, textarea {
 }
 
 .header__nav-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Header Game Filters ─────────────────────────────────────── */
+.header__game-filters {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Desktop: center, larger icons */
+.header__game-filters--desktop {
+  margin: 0 var(--space-6);
+  gap: var(--space-4);
+}
+
+@media (min-width: 769px) {
+  .header__game-filters--desktop {
+    display: flex;
+  }
+}
+
+/* Mobile: right side, smaller icons */
+@media (max-width: 768px) {
+  .header__game-filters--mobile {
+    display: flex;
+    margin-left: var(--space-2);
+    gap: var(--space-1);
+  }
+}
+
+.header__game-filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Desktop icons: 48px */
+@media (min-width: 769px) {
+  .header__game-filters--desktop .header__game-filter {
+    padding: var(--space-3);
+  }
+  .header__game-filters--desktop .header__game-filter-icon {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Mobile icons: 32px */
+@media (max-width: 768px) {
+  .header__game-filters--mobile .header__game-filter {
+    padding: var(--space-1);
+  }
+  .header__game-filters--mobile .header__game-filter-icon {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.header__game-filter-icon {
+  flex-shrink: 0;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+  object-fit: contain;
+}
+
+/* GTA SVG is already white - no inversion needed */
+.header__game-filter[data-game="Grand Theft Auto"] .header__game-filter-icon {
+  filter: none;
+}
+
+/* Pokemon SVG is black - needs inversion */
+.header__game-filter[data-game="Pokemon"] .header__game-filter-icon {
+  filter: brightness(0) invert(1);
+}
+
+.header__game-filter:hover {
+  background: var(--surface-hover);
+}
+
+.header__game-filter:hover .header__game-filter-icon {
+  transform: scale(1.1);
+  opacity: 0.8;
+}
+
+.header__game-filter[aria-pressed="true"] {
+  background: var(--accent-muted);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-glow);
+}
+
+.header__game-filter[aria-pressed="true"] .header__game-filter-icon {
+  opacity: 1;
+}
+
+.header__game-filter:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -549,91 +668,18 @@ input, select, textarea {
   gap: var(--space-2);
 }
 
-.filters__games {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--space-2);
-}
-
-@media (min-width: 1400px) {
-  .filters__games {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  }
-}
-
+/* Tablet (769px - 1024px): single column layout for mobile filters section */
 @media (max-width: 1024px) {
   .filters__blocks {
     grid-template-columns: 1fr;
   }
-  .filters__platforms {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
 @media (max-width: 768px) {
-  .filters__blocks {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
+  .filters {
+    margin-bottom: var(--space-4);
   }
-
-  .filters__platforms {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-2);
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-  }
-  .filters__platforms .game-tile {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-    padding: var(--space-2) var(--space-2);
-    gap: var(--space-1);
-  }
-  .filters__platforms .game-tile__image {
-    width: 32px;
-    height: 32px;
-  }
-  .filters__platforms .game-tile__icon {
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
-  }
-  .filters__platforms .game-tile__name {
-    font-size: 0.7rem;
-    max-width: none;
-    white-space: normal;
-    overflow-wrap: anywhere;
-    overflow: hidden;
-  }
-  .filters__platforms .game-tile__icon--all {
-    background: transparent;
-    border-color: var(--border);
-  }
-  .filters__platforms .game-tile__icon--all img,
-  .filters__games .game-tile__icon--all img {
-    width: 32px;
-    height: 32px;
-    filter: brightness(0) invert(1);
-  }
-  .filters__platforms .game-tile.active .game-tile__icon,
-  .filters__games .game-tile.active .game-tile__icon {
-    border-color: var(--accent);
-    box-shadow: 0 0 8px var(--accent-glow);
-  }
-  .filters__platforms::after {
-    content: "JUEGOS";
-    font-size: var(--text-xs);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-subtle);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    grid-column: 1 / -1;
-    margin-top: var(--space-2);
-  }
-
+  
   .filters__games {
     display: flex;
     flex-wrap: nowrap;
@@ -686,6 +732,38 @@ input, select, textarea {
   .filters__games .game-tile__icon--all {
     background: transparent;
     border-color: var(--border);
+  }
+
+  /* Mobile: peso visual extra para GTA y Pokemon */
+  .filters__games .game-tile--priority {
+    width: 112px; /* +16px vs normal */
+  }
+  .filters__games .game-tile--priority .game-tile__image,
+  .filters__games .game-tile--priority .game-tile__icon {
+    width: 40px;
+    height: 40px;
+  }
+  .filters__games .game-tile--priority .game-tile__icon { font-size: 1.25rem; }
+  .filters__games .game-tile--priority .game-tile__name {
+    font-size: 0.75rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--text);
+  }
+  .filters__games .game-tile--priority.active {
+    transform: scale(1.18); /* más que el normal 1.12 */
+  }
+  .filters__games .game-tile--priority::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--accent);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+  }
+  .filters__games .game-tile--priority.active::before {
+    opacity: 1;
   }
 }
 

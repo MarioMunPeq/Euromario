@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 #: que se limpia en `base.py`, así que la respuesta llegaba al `json.loads`
 #: con el razonamiento pegado y TODAS las llamadas terminaban en AIError.
 #: Los modelos instruct de Llama respetan `response_format: json_object`.
-# llama-3.1-8b-instant: siempre disponible en free tier, rápido, soporta json_object.
-# El 70B a veces da 404 si la cuota del día se agotó o el modelo se retirara.
-DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
+# llama3-8b-8192: nombre estable, siempre disponible en free tier, rápido, soporta json_object.
+# Los nombres "3.1-instant" a veces cambian; este es el alias clásico que no falla.
+DEFAULT_GROQ_MODEL = "llama3-8b-8192"
 
 
 def _excerpt(raw: str | None, limit: int = 300) -> str:

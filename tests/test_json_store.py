@@ -488,3 +488,128 @@ class TestProblema7SeparacionHistoricoPublicado:
         assert data["total"] == 0
         history = json.loads((tmp_path / "history.json").read_text(encoding="utf-8"))
         assert {n["title"] for n in history["news"]} == {"Vieja"}
+
+
+class TestItemCorruptoNoTumbaLaEjecucion:
+    """Regla P0: un item inválido se descarta con log y NUNCA tumba el resto.
+
+    El `except` por item no cubría `AttributeError`, que es justo lo que lanza
+    un campo obligatorio a `None` (`url: null` → `'NoneType' has no attribute
+    'strip'`). Consecuencia real: un solo item corrupto en history.json
+    abortaba load_history_digest() y el digest diario no se publicaba.
+    """
+
+    def _write(self, tmp_path, news):
+        from gaming_news_digest.storage import json_store as js
+
+        path = tmp_path / "history.json"
+        path.write_text(
+            json.dumps({"generated_at": "2026-10-13T00:00:00Z",
+                        "total": len(news), "news": news}),
+            encoding="utf-8",
+        )
+        return js._read_digest_file(path, label="history.json")
+
+    def _valid(self, **overrides):
+        # Se construye desde un NewsItem real para que el `id` derivado sea
+        # correcto: el contrato exige que coincida con el de la URL.
+        base = make_item("Noticia buena", 1).to_dict()
+        base["url"] = "https://x.test/a"
+        base["source"] = "Polygon"
+        base["id"] = hashlib.sha256(
+            normalize_url("https://x.test/a").encode("utf-8")
+        ).hexdigest()[:16]
+        base.update(overrides)
+        return base
+
+    @pytest.mark.parametrize(
+        "campo,valor",
+        [
+            ("url", None),
+            ("title", None),
+            ("game", 123),
+            ("published_at", None),
+            ("relevance", "3"),
+            ("category", 7),
+            ("source", ["no", "es", "texto"]),
+        ],
+    )
+    def test_item_invalido_se_descarta_solo(self, tmp_path, campo, valor):
+        """Cada campo corrupto debe descartar SÓLO ese item, no la carga."""
+        news = [self._valid(), self._valid(**{campo: valor})]
+        items = self._write(tmp_path, news)
+        assert len(items) == 1
+        assert items[0].title == "Noticia buena"
+
+    def test_ningun_item_roto_rompe_la_carga(self, tmp_path):
+        news = [self._valid(**{c: v}) for c, v in
+                [("url", None), ("title", None), ("game", 123)]] + [self._valid()]
+        items = self._write(tmp_path, news)
+        assert len(items) == 1
+
+
+class TestCamposVaciosNoPierdenLaCache:
+    """`author: ""` es salida normal de un RSS. Antes rechazaba el item entero
+    junto con su resumen de IA ya pagado, obligando a re-inferencia."""
+
+    @staticmethod
+    def _dict(**overrides):
+        base = make_item("Noticia", 1).to_dict()
+        base["url"] = "https://x.test/a"
+        base["source"] = "IGN"
+        base["id"] = hashlib.sha256(
+            normalize_url("https://x.test/a").encode("utf-8")
+        ).hexdigest()[:16]
+        base.update(overrides)
+        return base
+
+    def test_author_vacio_se_normaliza_a_none(self):
+        from gaming_news_digest.models import NewsItem
+
+        item = NewsItem.from_dict(self._dict(author="", summary="Resumen."))
+        assert item.author is None
+        assert item.summary == "Resumen."
+
+    def test_item_con_author_vacio_sobrevive_en_el_historico(self, tmp_path):
+        from gaming_news_digest.storage import json_store as js
+
+        path = tmp_path / "history.json"
+        path.write_text(
+            json.dumps({"news": [self._dict(author="", summary="Resumen pagado.")]}),
+            encoding="utf-8",
+        )
+        items = js._read_digest_file(path, label="history.json")
+        assert len(items) == 1
+        assert items[0].summary == "Resumen pagado."
+        assert items[0].author is None
+
+
+class TestNormalizeUrlQuitaTracking:
+    """Sin esto, `…/articulo?utm_source=rss` y `…/articulo` derivan ids y
+    claves de caché distintos: el mismo artículo se deduplica dos veces y se
+    pagan dos inferencias al LLM."""
+
+    @pytest.mark.parametrize("param", [
+        "utm_source=rss", "utm_medium=feed", "utm_campaign=x", "fbclid=abc",
+        "gclid=abc", "msclkid=1", "ref=twitter", "amp",
+    ])
+    def test_quita_parametros_de_tracking(self, param):
+        base = "https://pcgamer.com/games/rpg/article"
+        assert normalize_url(f"{base}?{param}") == base
+
+    def test_conserva_parametros_con_significado(self):
+        url = "https://site.com/noticia?id=42"
+        assert normalize_url(url) == url
+
+    def test_el_id_es_estable_con_y_sin_tracking(self):
+        base = "https://pcgamer.com/games/rpg/article"
+
+        def dict_for(url):
+            d = make_item("N", 1).to_dict()
+            d.update({"url": url, "id": hashlib.sha256(
+                normalize_url(url).encode("utf-8")).hexdigest()[:16]})
+            return d
+
+        a = NewsItem.from_dict(dict_for(base))
+        b = NewsItem.from_dict(dict_for(base + "?utm_source=rss"))
+        assert a.id == b.id

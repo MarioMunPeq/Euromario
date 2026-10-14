@@ -112,6 +112,28 @@ _SUPPRESS_PHRASES: tuple[str, ...] = (
     "game show", "gameshow", "game night",
 )
 
+# Vocabulario de marketing audiovisual. Su presencia significa que el titular
+# habla de una película o una serie, NO de un juego, y desactiva el "rescate
+# por ancla" (que solo busca un nombre propio delante de un verbo de anuncio).
+#
+# Sin esto, `_anchor_rescue` devolvía un falso "nombre de juego" para cualquier
+# cabecera de/plaintext de entretenimiento: "'Baywatch' Reboot Trailer…",
+# "Miami Vice '85 Pictures Reveal First Look…", "Gremlins 3 Gets an Official
+# Teaser", "Blade Runner 2099 Trailer…". Todas se publicaban y se pagaban con
+# una llamada al LLM.
+_ENTERTAINMENT_MARKERS: tuple[str, ...] = (
+    "trailer", "trailers", "teaser", "teasers", "first look", "set photos",
+    "set photo", "red carpet", "episode", "episodes", "premiere",
+    "spinoff", "spin off", "reboot", "box office", "film festival",
+    "season finale", "series finale", "first season", "streaming series",
+    "sitcom", "biopic", "documentary", "christmas special",
+)
+
+
+def _has_entertainment_marker(text_n: str) -> bool:
+    """True si el titular (normalizado) usa vocabulario de cine/TV."""
+    return any(marker in text_n for marker in _ENTERTAINMENT_MARKERS)
+
 # ---------------------------------------------------------------------------
 # Categorías del feed (señal A)
 # ---------------------------------------------------------------------------
@@ -242,7 +264,13 @@ def _text_verdict(
     # - Rescate por ancla: solo cuenta si no hay negativas fuertes, porque es
     #   una heurística y un titular de cine puede "parecer" un juego
     #   ("...Cult Classic... coming to Netflix").
-    rescued_anchor = _anchor_rescue(title_n) if not has_strong_neg else None
+    #   Tampoco cuenta si el titular usa vocabulario de cine/TV: en ese caso
+    #   el "nombre de juego" detectado es el título de una película o serie.
+    rescued_anchor = (
+        _anchor_rescue(title_n)
+        if not has_strong_neg and not _has_entertainment_marker(title_n)
+        else None
+    )
 
     pos_score = (
         len(strong_pos) * 2

@@ -5,6 +5,8 @@ y cultura. Cada artículo debe demostrar que pertenece al ámbito gaming.
 Precisión > recall: si dudamos, se descarta.
 """
 
+import pytest
+
 from gaming_news_digest.filtering.topic import (
     classify_video_game_article,
     is_video_game_article,
@@ -299,3 +301,37 @@ class TestProblema2CompartirFranquiciaNoEsGaming:
             feed_categories=("Games",),
         )
         assert ok is False
+
+
+class TestCabecerasAudiovisuales:
+    """Regresión: `_anchor_rescue` fabricaba un "nombre de juego" a partir de
+    cualquier nombre propio seguido de un verbo de anuncio, así que TODAS las
+    cabeceras de cine y TV entraban, se publicaban y se pagaban con una llamada
+    al LLM. Se suprimen cuando el titular usa vocabulario de marketing
+    audiovisual (trailer, teaser, first look, set photos, episodio...)."""
+
+    @pytest.mark.parametrize("titulo", [
+        "'Baywatch' Reboot Trailer Has All the Slo-Mo You Could Ever Want",
+        "Miami Vice '85 Pictures Reveal First Look at Michael B. Jordan",
+        "The Mummy 4 Set Photos Reveal Rachel Weisz as Evelyn O'Connell",
+        "Blade Runner 2099 Trailer Teases Replicant Mystery With Hunter Schafer",
+        "Gremlins 3 Gets an Official Teaser",
+        "BBC Reveals New Doctor Who Spinoff Starring a 'Young Doctor'",
+        "Doctor Who Is Getting a Christmas Special After All",
+        "Lanterns Midseason Trailer for Last 3 Episodes Leaves Fans Feeling Bad",
+    ])
+    def test_cine_y_television_se_descartan(self, titulo):
+        ok, reason = classify_video_game_article(titulo, "", "", ())
+        assert ok is False, f"cabeza audiovisual aceptada [{reason}]: {titulo}"
+
+    @pytest.mark.parametrize("titulo", [
+        "Elden Ring Shadow of the Erdtree gameplay trailer released",
+        "Cyberpunk 2077 update 2.1 teaser shows new cyberware",
+        "Call of Duty: Modern Warfare 4's latest DMZ trailers have left players confused",
+        "Professor Layton Developer Level-5 Scrambles to Reupload Trailers",
+        "RuneScape Dev Pulls Trailer After 6-Fingered Knight AI Allegations",
+        "Starfield seamless planetary landings are nearly a thing, thanks to a modder",
+    ])
+    def test_noticias_de_juego_con_trailer_no_se_pierden(self, titulo):
+        ok, reason = classify_video_game_article(titulo, "", "", ())
+        assert ok is True, f"noticia de juego rechazada [{reason}]: {titulo}"

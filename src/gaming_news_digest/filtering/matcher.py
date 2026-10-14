@@ -492,9 +492,80 @@ _KNOWN_GAME_TITLES: dict[str, str] = {
     "destiny 2": "Destiny 2",
     "detroit become human": "Detroit: Become Human",
     "death stranding": "Death Stranding",
+    "death stranding 2": "Death Stranding 2",
     "metroid prime": "Metroid Prime",
     "heavenly sword": "Heavenly Sword",
+    # ── Títulos frecuentes en la cobertura real que faltaban ──────────────
+    # Sin estos, el filtro temático no reconocía la evidencia de juego y el
+    # matcher nombraba "Videojuegos" en noticias claramente identificables.
+    "call of duty": "Call of Duty",
+    "modern warfare": "Call of Duty",
+    "black ops": "Call of Duty",
+    "warzone": "Call of Duty: Warzone",
+    "runescape": "RuneScape",
+    "path of exile": "Path of Exile",
+    "warframe": "Warframe",
+    "dota 2": "Dota 2",
+    "dota": "Dota 2",
+    "cyberpunk 2077": "Cyberpunk 2077",
+    "cyberpunk": "Cyberpunk",
+    "starfield": "Starfield",
+    "helldivers 2": "Helldivers 2",
+    "final fantasy": "Final Fantasy",
+    "persona 5": "Persona",
+    "baldurs gate": "Baldur's Gate",
+    "witcher 4": "The Witcher",
+    "new vegas": "Fallout: New Vegas",
+    "fallout": "Fallout",
+    "stardew": "Stardew Valley",
+    "animal crossing": "Animal Crossing",
+    "the legend of zelda": "The Legend of Zelda",
+    "zelda": "The Legend of Zelda",
+    "ghost of tsushima": "Ghost of Tsushima",
+    "horizon forbidden": "Horizon Forbidden West",
+    "deathloop": "Deathloop",
+    "kena bridge of spirits": "Kena: Bridge of Spirits",
+    "lego": "LEGO",
+    "roblox": "Roblox",
+    "among us": "Among Us",
+    "genshin": "Genshin Impact",
+    "honkai": "Honkai",
+    "wuthering waves": "Wuthering Waves",
+    "ark survival": "ARK: Survival Evolved",
+    "dayz": "DayZ",
+    "pubg": "PUBG",
+    "escape from tarkov": "Escape from Tarkov",
+    "the finals": "The Finals",
+    "helldivers": "Helldivers",
+    "ninja gaiden": "Ninja Gaiden",
+    "devil may cry": "Devil May Cry",
+    "professor layton": "Professor Layton",
+    # ── El catálogo propio del sitio ───────────────────────────────────────
+    # config/games.yaml es la lista de juegos CON logo en el frontend. Sin
+    # estas entradas, el filtro temático no reconocía la evidencia de juego en
+    # las noticias de las sagas que el sitio sigue, y el detector de nombres
+    # las etiquetaba como "Videojuegos".
+    "grand theft auto": "Grand Theft Auto",
+    "persona": "Persona",
+    "baldur s gate": "Baldur's Gate",
+    "elden ring": "Elden Ring",
+    "hollow knight": "Hollow Knight",
+    "pokemon": "Pokemon",
+    "rainbow six": "Rainbow Six",
+    "ea sports fc": "EA Sports FC",
+    "ea sports": "EA Sports",
+    # Los acentos se pierden al normalizar ("Baldur's Gate" → "baldur s
+    # gate"), pero la clave con apóstrofo se conserva por si el texto llega
+    # sin normalizar mediante otra ruta.
+    "baldur's gate": "Baldur's Gate",
 }
+# NOTAS sobre la ampliación anterior:
+# - "control", "rust" y "stray" se descartan deliberadamente: son palabras
+#   inglesas corrientes y con límites de palabra (`\bcontrol\b`) casarían con
+#   cualquier titular que las contenga.
+# - "death note" es manga, no un videojuego.
+# - minecraft / fortnite / resident evil / silent hill / the last of us /
+#   counter-strike / stardew valley ya estaban más arriba y no se duplican.
 
 _KNOWN_TITLE_PATTERNS: list[tuple[re.Pattern, str, int]] = [
     (re.compile(rf"\b(?:{re.escape(_normalize(key))})\b"), display, len(_normalize(key)))

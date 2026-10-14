@@ -99,10 +99,14 @@ def normalize_title(text: str) -> str:
     return text
 
 
-def jaccard_similarity(set1: set[str], set2: set[str]) -> float:
-    """Calcula similitud de Jaccard entre dos conjuntos."""
-    if not set1 and not set2:
-        return 1.0
+def jaccard_similarity(set1: set, set2: set) -> float:
+    """Similitud de Jaccard entre dos conjuntos.
+
+    Dos conjuntos VACÍOS significan "no hay información comparable", no
+    "idénticos". Devolver 1.0 hacía que dos noticias sin keywords
+    extraíbles (título en otro idioma, o solo palabras cortas) se
+    declarasen la MISMA historia y una se perdiera.
+    """
     if not set1 or not set2:
         return 0.0
     intersection = len(set1 & set2)
@@ -217,33 +221,83 @@ GAME_ALIASES = {
 }
 
 def normalize_game_name(game: str) -> str:
-    """Normalize game name to canonical form."""
+    """Normaliza un nombre de juego a su forma canónica.
+
+    Los alias se comprueban de MÁS ESPECÍFICO a MÁS GENÉRICO y con límites
+    de palabra. Antes se iteraba el dict en orden de inserción y se hacía
+    ``alias in normalized`` a pelo: "final fantasy vii" casaba con
+    "final fantasy" (ff) antes que con "ff7", y un alias corto como "ac"
+    o "cs" saltaba dentro de palabras cualesquiera.
+    """
     if not game:
         return ""
     normalized = game.lower().strip()
-    # Check aliases
+    best: tuple[int, str] | None = None
     for alias, canonical in GAME_ALIASES.items():
-        if alias in normalized:
-            return canonical
-    return normalized
+        if not re.search(rf"\b{re.escape(alias)}\b", normalized):
+            continue
+        # A igualdad de coincidencia, gana el alias más largo (el más
+        # específico): "final fantasy vii" debe ganar a "final fantasy".
+        if best is None or len(alias) > best[0]:
+            best = (len(alias), canonical)
+    return best[1] if best else normalized
 
 
-def extract_entities(title: str, body: str) -> set[str]:
-    """Extract key entities: game names, characters, events."""
-    entities = set()
-    text = f"{title} {body}".lower()
+#: Palabras vacías en inglés que NO deben contar como "entidad" aunque
+#: aparezcan en mayúsculas. Sin esta lista, el .upper() de abajo convertía
+#: THE/AND/NEW/THIS/WEEK en entidades y la similitud de entidades la
+#: dominaba, fusionando noticias distintas del mismo juego.
+_ENTITY_STOPWORDS = frozenset({
+    "the", "and", "for", "with", "new", "this", "that", "you", "not", "but",
+    "are", "was", "were", "has", "have", "had", "its", "his", "her", "our",
+    "out", "off", "own", "too", "can", "will", "all", "any", "how", "why",
+    "now", "one", "two", "get", "got", "say", "says", "see", "seen",
+    "day", "week", "year", "first", "last", "next", "more", "most", "much",
+    "adds", "added", "adding", "gets", "makes", "make", "made",
+    "what", "when", "where", "who", "into", "onto", "from", "just", "like",
+    "may", "could", "would", "should", "must", "than", "then", "them",
+    "they", "some", "both", "each", "other", "been", "being", "over",
+})
 
-    # Normalize game names from known aliases
-    for alias, canonical in GAME_ALIASES.items():
-        if alias in text:
-            entities.add(canonical)
 
-    # Version numbers (v1.0, 2.0, etc.)
-    entities.update(re.findall(r"\b(v?\d+(\.\d+)?)\b", text))
-    # Acronyms (2-5 uppercase letters)
-    entities.update(re.findall(r"\b[A-Z]{2,5}\b", text.upper()))
-    # Capitalized words (potential proper nouns)
-    entities.update(re.findall(r"\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})*\b", title))
+def extract_entities(title: str, body: str, game: str | None = None) -> set[str]:
+    """Extrae entidades clave: personajes, lugares, versiones.
+
+    Deliberadamente NO incluye el nombre canónico del juego: ``items_are_same_story``
+    ya exige que ambos items sean del mismo juego, así que el nombre del juego
+    estaba en ambos sets y ``ent_sim`` valía ~1.0 para CUALQUIER par del mismo
+    juego. Eso convertía la similitud de entidades en ruido: no distinguía dos
+    noticias distintas porque ambas contenían "Halo Infinite".
+
+    Además se corrigieron dos fallos reales de la versión anterior:
+    (a) ``re.findall`` con grupo de captura devolvía TUPLAS, no strings, así que
+    el set se llenaba de ('1.16', '.16'); (b) el ``.upper()`` previo al
+    ``findall`` de acrónimos convertía cualquier palabra corriente en entidad.
+    """
+    entities: set[str] = set()
+    text = f"{title} {body}"
+
+    # Números de versión (v1.0, 2.0, 3b…). SIN grupo de captura.
+    entities.update(re.findall(r"\b(?:v\d+(?:\.\d+)*|\d+(?:\.\d+)*[a-z]?)\b", text.lower()))
+
+    # Acrónimos: mayúsculas YA presentes en el original (sin .upper() global).
+    entities.update(re.findall(r"\b[A-Z]{2,5}\b", text))
+
+    # Nombres propios del titular, sin palabras vacías y sin los que ya son
+    # parte del nombre del juego (redundantes con la puerta de juego).
+    # Se comparan contra el NOMBRE CRUDO y contra el canónico: con solo el
+    # canónico, "Halo Infinite" (canónico "halo") no se excluía y quedaba
+    # como única entidad, dejando ent_sim = 1.0 para cualquier par del juego.
+    game_words: set[str] = set()
+    if game:
+        game_words |= set(re.sub(r"[^a-z0-9\s]", " ", game.lower()).split())
+        game_words |= set(normalize_game_name(game).split())
+    for word in re.findall(r"\b[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})*\b", title):
+        if word.lower() in _ENTITY_STOPWORDS:
+            continue
+        if set(word.lower().split()) <= game_words:
+            continue
+        entities.add(word)
 
     return entities
 
@@ -279,7 +333,7 @@ def compute_story_signature(item: FetchedItem) -> dict:
     """Genera una firma de historia para un artículo."""
     body = item.body_text or ""
     keywords = extract_keywords(f"{item.title} {body}")
-    entities = extract_entities(item.title, body)
+    entities = extract_entities(item.title, body, item.game)
     game = item.game or ""
 
     return {
@@ -290,14 +344,38 @@ def compute_story_signature(item: FetchedItem) -> dict:
     }
 
 
+#: Gamas de similitud para decidir si dos artículos cubren la misma historia.
+#: Calibradas contra pares reales: duplicados legítimos puntúan 0.28-0.42 y
+#: noticias distintas 0.19-0.50, es decir, AMBOS conjuntos se solapaban con
+#: el antiguo corte combinado `>= 0.2` (que fusionaba de todo y, al conservar
+#: un solo representante, hacía desaparecer noticias del digest).
+#:
+#: La regla es ahora CONJUNTIVA: una señal fuerte de texto basta; una señal
+#: débil (entidades) necesita corroboración del título. Sin esta exigencia,
+#: `ent_sim` vale ~1.0 para cualquier par del mismo juego, porque el nombre
+#: canónico estaba dentro del set de entidades y ya lo comprueba la puerta de
+#: juego: no aportaba ninguna información discriminante.
+KW_SIMILARITY_STRONG = 0.40
+TITLE_SIMILARITY_STRONG = 0.45
+ENTITY_SIMILARITY_WEAK = 0.50
+TITLE_SIMILARITY_CORROBORATION = 0.25
+
+
 def items_are_same_story(item1: FetchedItem, item2: FetchedItem, time_window_hours: int = 48) -> bool:
-    """Determina si dos artículos pertenecen a la misma historia."""
+    """Determina si dos artículos pertenecen a la misma historia.
+
+    Fusión EXIGE señal: se fusionan solo con coincidencia fuerte de
+    palabras clave o de título, o con entidades coincidentes Y título
+    corroborando. Ante la duda se conserva el artículo como noticia propia:
+    publicarlo de más es un problema menor que perderlo.
+    """
     # Capa 0: URL exacta
     if item1.url == item2.url:
         return True
 
-    # Deben ser del mismo juego
-    if item1.game != item2.game:
+    # Deben ser del mismo juego (comparación normalizada: "Elden Ring" y
+    # "elden ring" son el mismo juego y antes no se agrupaban nunca)
+    if normalize_game_name(item1.game or "") != normalize_game_name(item2.game or ""):
         return False
 
     # Ventana temporal
@@ -305,28 +383,22 @@ def items_are_same_story(item1: FetchedItem, item2: FetchedItem, time_window_hou
     if time_diff > time_window_hours:
         return False
 
-    # Firmas
     sig1 = compute_story_signature(item1)
     sig2 = compute_story_signature(item2)
 
-    # Similitud de palabras clave (peso alto)
     kw_sim = jaccard_similarity(sig1["keywords"], sig2["keywords"])
-    if kw_sim >= 0.4:
+    if kw_sim >= KW_SIMILARITY_STRONG:
         return True
 
-    # Similitud de entidades
-    ent_sim = jaccard_similarity(sig1["entities"], sig2["entities"])
-    if ent_sim >= 0.5:
-        return True
-
-    # Similitud de título (Jaccard de palabras)
     title_sim = word_overlap_similarity(sig1["title_words"], sig2["title_words"])
-    if title_sim >= 0.5:
+    if title_sim >= TITLE_SIMILARITY_STRONG:
         return True
 
-    # Similitud combinada
-    combined = (kw_sim * 0.5 + ent_sim * 0.3 + title_sim * 0.2)
-    return combined >= 0.2
+    ent_sim = jaccard_similarity(sig1["entities"], sig2["entities"])
+    return (
+        ent_sim >= ENTITY_SIMILARITY_WEAK
+        and title_sim >= TITLE_SIMILARITY_CORROBORATION
+    )
 
 
 def cluster_items(items: list[FetchedItem], time_window_hours: int = 48) -> list[StoryCluster]:

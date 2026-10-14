@@ -47,7 +47,11 @@ def fetch_steam_news(
             failures.append(str(exc))
     if steam.games and len(failures) == len(steam.games):
         raise FetchError(f"Steam: todas las apps fallaron ({failures[0]})")
-    return tuple(items[: limits.max_items_per_source])
+    # El tope se aplica POR JUEGO dentro de _fetch_app. Truncar aquí la lista
+    # acumulada hacía que, con `max_items_por_fuente: 20`, las noticias del
+    # segundo juego se descargaran y se descartaran: la primera app llenaba
+    # la cuota y el resto era trabajo desperdiciado.
+    return tuple(items)
 
 
 def _fetch_app(
@@ -66,11 +70,17 @@ def _fetch_app(
         payload = json.loads(content)
     except FetchError as exc:
         raise FetchError(f"{game.nombre}: {exc}") from exc
-    except json.JSONDecodeError as exc:
+    # `json.loads` sobre bytes puede lanzar UnicodeDecodeError (que es
+    # ValueError pero NO JSONDecodeError) si Steam devuelve algo que no es
+    # UTF-8. Sin esto, una sola app con respuesta rara tumbaba el run entero.
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise FetchError(f"{game.nombre}: respuesta JSON inválida") from exc
     if not isinstance(payload, dict) or "appnews" not in payload:
         raise FetchError(f"{game.nombre}: respuesta sin 'appnews'")
-    newsitems = (payload.get("appnews") or {}).get("newsitems") or []
+    appnews = payload.get("appnews")
+    if not isinstance(appnews, dict):
+        raise FetchError(f"{game.nombre}: 'appnews' no es un objeto")
+    newsitems = appnews.get("newsitems") or []
     if not isinstance(newsitems, list):
         raise FetchError(f"{game.nombre}: 'newsitems' no es una lista")
     items = [

@@ -121,7 +121,9 @@ def _read_digest_file(path: Path, *, label: str) -> list[NewsItem]:
             continue
         try:
             item = NewsItem.from_dict(_migrate_legacy_item(raw))
-        except (ModelValidationError, KeyError, TypeError, ValueError) as exc:
+        except (
+            ModelValidationError, KeyError, TypeError, ValueError, AttributeError
+        ) as exc:
             logger.warning(
                 "Item %d del histórico descartado por validación del contrato "
                 "(motivo: %s). Contexto: %s",

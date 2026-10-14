@@ -206,9 +206,20 @@ class TestNuevosOpcionales:
         assert make_item(author=None).author is None
         assert make_item(author="  Editor  ").author == "Editor"
 
-    def test_author_vacio_rechazado(self):
-        with pytest.raises(ModelValidationError, match="autor"):
-            make_item(author=" ")
+    def test_author_vacio_se_normaliza_a_none(self):
+        """CAMBIO DE CONTRATO: una cadena vacía ya no se rechaza.
+
+        `author: ""` es salida habitual de un RSS. Rechazarla descartaba el
+        item entero del histórico junto con su resumen de IA ya pagado, y la
+        próxima ejecución volvía a llamar al modelo por algo que ya tenía
+        en caché. Vacío significa "no hay dato", que es `None`.
+        """
+        assert make_item(author=" ").author is None
+        assert make_item(author="").author is None
+
+    def test_optional_text_rechaza_tipo_incorrecto(self):
+        with pytest.raises(ModelValidationError, match="str o None"):
+            make_item(author=123)
 
     def test_is_verified_booleano(self):
         assert make_item(is_verified=False).is_verified is False
@@ -222,9 +233,12 @@ class TestNuevosOpcionales:
         assert make_item(game_id=None).game_id is None
         assert make_item(game_id="gta5").game_id == "gta5"
 
-    def test_game_id_vacio_rechazado(self):
-        with pytest.raises(ModelValidationError, match="game_id"):
-            make_item(game_id="")
+    def test_game_id_vacio_se_normaliza_a_none(self):
+        assert make_item(game_id=" ").game_id is None
+
+    def test_game_id_vacio_rechazado_ya_no_rompe(self):
+        """Ver TestNuevosOpcionales.test_author_vacio_se_normaliza_a_none."""
+        assert make_item(game_id="") is not None
 
 
 class TestImageUrl:

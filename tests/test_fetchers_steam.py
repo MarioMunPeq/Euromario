@@ -1,5 +1,6 @@
 """Tests del cliente de Steam News API (fixtures locales, sin red real)."""
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -157,3 +158,57 @@ class TestResiliencia:
 
         with pytest.raises(FetchError, match="JSON"):
             fetch_steam_news(solo_gta, LIMITS, session=fake_session, now=NOW)
+
+    def test_respuesta_no_utf8_no_tumba_la_ejecucion(self, fake_session):
+        """`json.loads` sobre bytes no-UTF-8 lanza UnicodeDecodeError, que es
+        ValueError pero NO JSONDecodeError: se escapaba y abortaba el run."""
+        solo_gta = SteamConfig(games=(STEAM.games[0],))
+        fake_session.route(
+            "appid=271590", FakeResponse(content=b"<html>\xff\xfe error</html>")
+        )
+
+        with pytest.raises(FetchError, match="JSON"):
+            fetch_steam_news(solo_gta, LIMITS, session=fake_session, now=NOW)
+
+    def test_appnews_no_es_objeto_da_error_limpio(self, fake_session):
+        """`appnews: []` provocaba AttributeError en `.get()`, que escapaba
+        hasta el pipeline y mataba la ejecución."""
+        solo_gta = SteamConfig(games=(STEAM.games[0],))
+        fake_session.route(
+            "appid=271590", FakeResponse(content=b'{"appnews":[1,2,3]}')
+        )
+
+        with pytest.raises(FetchError, match="appnews"):
+            fetch_steam_news(solo_gta, LIMITS, session=fake_session, now=NOW)
+
+
+class TestTopePorJuego:
+    """El corte se hacía sobre la lista ACUMULADA de todas las apps, así que
+    con `max_items_por_fuente: 20` el segundo juego se descargaba entero y se
+    tiraba a la basura: la primera app llenaba la cuota."""
+
+    def test_el_tope_se_aplica_por_app(self, fake_session):
+        many = {
+            "appnews": {
+                "appid": 271590,
+                "newsitems": [
+                    {"gid": str(i),
+                     "title": f"GTA noticia {i}",
+                     "url": f"https://store.steampowered.com/news/app/271590/view/{i}",
+                     "contents": "<p>Contenido</p>",
+                     "date": 1776000000 + i}
+                    for i in range(30)
+                ],
+            }
+        }
+        fake_session.route(
+            "appid=271590", FakeResponse(content=json.dumps(many).encode("utf-8"))
+        )
+        fake_session.route("appid=1687950", FakeResponse(content=PERSONA_JSON))
+
+        items = fetch_steam_news(STEAM, LIMITS, session=fake_session, now=NOW)
+
+        gta = [i for i in items if "Grand Theft Auto" in i.source.name]
+        persona = [i for i in items if "Persona" in i.source.name]
+        assert len(gta) == LIMITS.max_items_per_source
+        assert len(persona) == 1, "las noticias del segundo juego se perdían"

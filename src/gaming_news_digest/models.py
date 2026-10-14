@@ -78,12 +78,20 @@ def _required_text(value: object, label: str) -> str:
 
 
 def _optional_text(value: str | None, label: str) -> str | None:
+    """Normaliza un campo de texto opcional.
+
+    Una cadena vacía significa "no hay dato" y se colapsa a ``None``. Antes se
+    rechazaba, lo que descartaba el item entero del histórico junto con su
+    resumen de IA ya pagado: ``author: ""`` es salida habitual de un RSS y
+    ``game_id: ""`` también. Perder una caché por un campo vacío era un
+    coste real en llamadas al modelo.
+    """
     if value is None:
         return None
+    if not isinstance(value, str):
+        raise ModelValidationError(f"{label} debe ser str o None, no {type(value)}")
     text = value.strip()
-    if not text:
-        raise ModelValidationError(f"{label}: usa None en vez de una cadena vacía")
-    return text
+    return text or None
 
 
 def _ensure_utc(value: object) -> datetime:
@@ -121,14 +129,39 @@ def to_iso_utc(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+#: Parámetros de tracking que no cambian el contenido del artículo. Si se
+#: dejaran en la URL, `…/articulo?utm_source=rss` y `…/articulo` deriveban
+#: ids distintos y claves de caché distintas → el mismo artículo se
+#: deduplicaba dos veces y se pagaban dos inferencias al LLM.
+_TRACKING_QUERY_PARAMS = frozenset({
+    "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
+    "utm_id", "utm_name", "utm_reader", "utm_brand", "utm_social",
+    "utm_social-type", "utm_pubreferrer", "utm_swu", "utm_viz_id",
+    "fbclid", "gclid", "dclid", "msclkid", "twclid", "igshid",
+    "mc_cid", "mc_eid", "yclid", "_ga", "_gl", "ref", "ref_src", "source",
+    "amp", "at_medium", "at_campaign", "cmpid", "smid", "partner",
+})
+
+
 def normalize_url(url: str) -> str:
     """Devuelve la forma canónica de una URL para derivar ids estables.
 
-    Elimina espacios y fragmento (`#...`), pasa esquema y host a
-    minúsculas y quita las barras finales del path. El resto del path se
-    respeta tal cual (puede distinguir mayúsculas por diseño del sitio).
+    Elimina espacios, fragmento (`#...`) y parámetros de tracking, pasa
+    esquema y host a minúsculas y quita las barras finales del path. El
+    resto del path y los parámetros con significado real se respetan tal
+    cual (el path puede distinguir mayúsculas por diseño del sitio).
     """
     cleaned = url.strip().split("#", 1)[0]
+
+    path_part, sep, query = cleaned.partition("?")
+    if sep:
+        kept = []
+        for param in query.split("&"):
+            key, _has_eq, value = param.partition("=")
+            if key and key.lower() not in _TRACKING_QUERY_PARAMS:
+                kept.append(f"{key}={value}" if _has_eq else key)
+        cleaned = f"{path_part}?{'&'.join(kept)}" if kept else path_part
+
     scheme, sep, remainder = cleaned.partition("://")
     if not sep:
         return cleaned.rstrip("/")

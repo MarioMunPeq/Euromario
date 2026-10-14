@@ -2,6 +2,8 @@
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from gaming_news_digest.clustering.story_cluster import (
     cluster_and_select_representatives,
     cluster_items,
@@ -280,3 +282,107 @@ class TestClusterAndSelectRepresentatives:
         reps = cluster_and_select_representatives(items)
         assert len(reps) == 1
         assert reps[0].title == "Unique news"
+
+
+class TestNoPierdeNoticias:
+    """Una fusión es IRREVERSIBLE: `cluster_and_select_representatives` publica
+    un único representante por cluster, así que cualquier noticia fusionada por
+    error desaparece del digest. El coste es asimétrico — mostrar de más un
+    duplicado es tolerable; perder una noticia no lo es — y por eso la regla
+    sesga hacia conservar el artículo."""
+
+    @pytest.mark.parametrize(
+        "t1,t2,game",
+        [
+            ("Halo Infinite campaign update adds new mission",
+             "Halo Infinite co-op campaign difficulty options detailed", "Halo Infinite"),
+            ("GTA 6 launches in 2025",
+             "GTA Online receives new update", "Grand Theft Auto"),
+            ("Elden Ring Shadow of the Erdtree expansion announced",
+             "Elden Ring player beats optional boss without damage", "Elden Ring"),
+            ("Pokemon Scarlet DLC announced",
+             "Pokemon Scarlet version 1.4 patch notes", "Pokemon"),
+            ("Starfield ships on PS5",
+             "Starfield player discovers hidden planet", "Starfield"),
+        ],
+    )
+    def test_noticias_distintas_del_mismo_juego_no_se_fusionan(self, t1, t2, game):
+        assert items_are_same_story(
+            make_item(t1, "https://a.test/1", game=game, hours_ago=1),
+            make_item(t2, "https://b.test/2", game=game, hours_ago=2),
+        ) is False
+
+    @pytest.mark.parametrize(
+        "t1,t2,game",
+        [
+            ("Elden Ring Shadow of the Erdtree expansion announced",
+             "Shadow of the Erdtree Elden Ring DLC revealed", "Elden Ring"),
+            ("Nintendo Switch 2 announced",
+             "New Nintendo Switch 2 console officially revealed", "Nintendo Switch 2"),
+            ("Cyberpunk 2077 update 2.1 released",
+             "CD Projekt Red releases Cyberpunk 2077 patch 2.1", "Cyberpunk"),
+        ],
+    )
+    def test_duplicados_si_se_fusionan(self, t1, t2, game):
+        assert items_are_same_story(
+            make_item(t1, "https://a.test/1", game=game, hours_ago=1),
+            make_item(t2, "https://b.test/2", game=game, hours_ago=2),
+        ) is True
+
+    def test_el_cluster_no_descarta_noticias_reales(self):
+        items = [
+            make_item("Halo Infinite campaign update adds new mission",
+                      "https://a.test/1", game="Halo Infinite", hours_ago=1),
+            make_item("Halo Infinite co-op campaign difficulty options detailed",
+                      "https://b.test/2", game="Halo Infinite", hours_ago=2),
+        ]
+        assert len(cluster_and_select_representatives(items)) == 2
+
+
+class TestEntidadesSinRuido:
+    """Regresiones de `extract_entities`: cada una inflaba la similitud y
+    provocaba fusiones falsas."""
+
+    def test_versiones_no_producen_tuplas(self):
+        """`re.findall` con grupo de captura devuelve tuplas: el set se llenaba
+        de ('1.16', '.16') en vez de strings."""
+        entities = extract_entities("Halo Infinite update 1.16 adds mission", "")
+        assert all(isinstance(e, str) for e in entities), (
+            f"entidades no textuales: {[e for e in entities if not isinstance(e, str)]}"
+        )
+        assert "1.16" in entities
+
+    def test_palabras_comunes_no_son_entidades(self):
+        """El `.upper()` previo convertía THE/NEW/THIS/WEEK en acrónimos."""
+        entities = extract_entities("The New Game This Week Is Not Bad", "")
+        for word in ("THE", "NEW", "THIS", "WEEK", "NOT", "BAD", "GAME"):
+            assert word not in entities, f"palabra común {word} tratada como entidad"
+
+    def test_el_nombre_del_juego_no_es_entidad(self):
+        """El nombre canónico estaba en ambos sets, así que ent_sim valía 1.0
+        para cualquier par del mismo juego y no discriminaba nada."""
+        entities = extract_entities("Halo Infinite adds new mission", "", "Halo Infinite")
+        assert "Halo Infinite" not in entities
+
+    def test_entidades_de_verdad_se_conservan(self):
+        entities = extract_entities("Vader strikes in Fallen Jedi", "")
+        assert "Vader" in entities and "Fallen Jedi" in entities
+
+    def test_jaccard_de_vacios_no_es_uno(self):
+        """Dos conjuntos vacíos no son 'idénticos': son 'no comparables'."""
+        assert jaccard_similarity(set(), set()) == 0.0
+
+    def test_nombre_de_juego_normalizado_compara_igual(self):
+        """'Elden Ring' y 'elden ring' son el mismo juego."""
+        assert items_are_same_story(
+            make_item("Elden Ring boss defeated", "https://a.test/1",
+                      game="Elden Ring", hours_ago=1),
+            make_item("Elden Ring boss defeated live", "https://b.test/2",
+                      game="elden ring", hours_ago=1),
+        ) is True
+
+    def test_alias_corto_no_casaba_dentro_de_palabras(self):
+        from gaming_news_digest.clustering.story_cluster import normalize_game_name
+
+        # 'ac' no debe aparecer dentro de 'sac'; 'ff' dentro de 'offline'
+        assert normalize_game_name("sac") != "ac"

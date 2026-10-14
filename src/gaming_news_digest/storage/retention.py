@@ -13,7 +13,7 @@ se mantiene solo como tope conservador para usos aislados.
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
-from ..models import NewsItem
+from ..models import NewsItem, is_generic_game
 
 
 def utc_now() -> datetime:
@@ -67,10 +67,17 @@ def apply_retention(
         media_items = media_items[:max_total]
 
     # 2. Cap por juego (max_per_game)
+    # El cajón genérico ("Videojuegos") queda exento: no es un juego, sino un
+    # grupo de noticias sin relación entre sí, así que el tope de un único
+    # título no debe decidir cuántas de ellas se publican.
     if max_per_game is not None and max_per_game > 0:
         by_game: dict[str, list[NewsItem]] = defaultdict(list)
+        generic: list[NewsItem] = []
         for item in media_items:
-            by_game[item.game].append(item)
+            if is_generic_game(item.game):
+                generic.append(item)
+            else:
+                by_game[item.game].append(item)
 
         limited: list[NewsItem] = []
         for game_items in by_game.values():
@@ -83,7 +90,7 @@ def apply_retention(
                 reverse=True,
             )
             limited.extend(sorted_items[:max_per_game])
-        media_items = limited
+        media_items = limited + generic
 
     # Reddit: bloque independiente - solo filtro de edad + límite propio por juego
     reddit_limit = max_per_game_reddit if max_per_game_reddit is not None and max_per_game_reddit > 0 else 50

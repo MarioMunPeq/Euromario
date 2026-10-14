@@ -1,586 +1,428 @@
 /**
- * EuroMario — Frontend App
- * Vanilla JS: fetch, filters, URL sync, rendering, error handling
- * Gaming Pulse editorial card design with cover images
+ * EuroMario — frontend app
+ * Vanilla JS. Fetch → filter → render. No dependencies.
+ *
+ * State model: one game filter + one section filter, both optional,
+ * mirrored in the URL (?game=&section=).
  */
 
-// ============================================================
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
 // Configuration
-// ============================================================
+// ══════════════════════════════════════════════════════════════
 
 const CONFIG = {
-  appTitle: 'EuroMario',
   dataUrl: 'data/news.json',
   gamesUrl: 'data/games.json',
-  cacheBustParam: 'v',
-  itemsPerPage: 50,
+  // Games surfaced in the top bar, in this order.
+  featuredGames: ['Grand Theft Auto', 'Pokemon'],
+  labels: {
+    'Grand Theft Auto': 'GTA',
+    Pokemon: 'Pokémon',
+  },
+  // Logos that ship as solid black glyphs and need inverting on a dark bar.
+  // Logos that already carry light pixels (e.g. GTA) must NOT be inverted.
+  darkLogos: new Set(['Pokemon']),
+  // Cap the stagger so late cards don't wait seconds to appear.
+  maxStagger: 14,
 };
 
-const CATEGORY_LABELS = {
-  lanzamiento: 'Release',
-  actualizacion: 'Update',
-  rumor: 'Rumor',
-  analisis: 'Analysis',
-};
+const SECTIONS = ['all', 'news', 'rumors'];
 
-
-
-const CATEGORY_COLORS = {
-  lanzamiento: 'var(--cat-lanzamiento)',
-  actualizacion: 'var(--cat-actualizacion)',
-  rumor: 'var(--cat-rumor)',
-  analisis: 'var(--cat-analisis)',
-};
-
-// ============================================================
+// ══════════════════════════════════════════════════════════════
 // State
-// ============================================================
+// ══════════════════════════════════════════════════════════════
 
 const state = {
-  allNews: [],
-  filteredNews: [],
-  gameLogos: {},
-  filters: {
-    game: null,
-    section: 'news',
-  },
-  ui: {
-    loading: false,
-    error: null,
-  },
+  news: [],
+  logos: {},
+  game: null,
+  section: 'all',
 };
 
-// ============================================================
-// DOM Elements
-// ============================================================
+let els = {};
 
-const els = {
-  title: document.getElementById('app-title'),
-  stateLoading: document.getElementById('state-loading'),
-  stateError: document.getElementById('state-error'),
-  stateEmpty: document.getElementById('state-empty'),
-  errorTitle: document.getElementById('error-title'),
-  errorMessage: document.getElementById('error-message'),
-  newsList: document.getElementById('news-list'),
-  retryBtn: document.getElementById('retry-btn'),
-  clearFiltersBtn: document.getElementById('clear-filters-btn'),
-  headerGameFiltersDesktop: document.getElementById('header-game-filters-desktop'),
-  headerGameFiltersMobile: document.getElementById('header-game-filters-mobile'),
-  headerNavButtons: document.querySelectorAll('.header__nav-btn'),
-};
+// ══════════════════════════════════════════════════════════════
+// Helpers
+// ══════════════════════════════════════════════════════════════
 
-// ============================================================
-// Utilities
-// ============================================================
+const escapeHtml = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
 
-function formatDate(date) {
-  return date.toLocaleDateString('en', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+const formatDate = (value) =>
+  new Date(value).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
   });
+
+const formatStamp = (value) =>
+  new Date(value).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+
+const gameLabel = (name) => CONFIG.labels[name] || name;
+
+const sourceName = (item) => {
+  const raw = typeof item.source === 'string' ? item.source : item.source?.name;
+  return raw || 'Unknown';
+};
+
+const sourceType = (item) =>
+  item.source_type ?? item.source?.type ?? 'media';
+
+const sourceInitials = (name) => {
+  const words = name.replace(/\s*·\s*.+$/, '').trim().split(/\s+/);
+  if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
+  return words.slice(0, 3).map((w) => w[0]).join('').toUpperCase();
+};
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+// ══════════════════════════════════════════════════════════════
+// Data
+// ══════════════════════════════════════════════════════════════
+
+async function fetchJson(url) {
+  const res = await fetch(`${url}?v=${Date.now()}`, {
+    cache: 'no-store',
+    headers: { Accept: 'application/json' },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+async function loadNews() {
+  const data = await fetchJson(CONFIG.dataUrl);
+  if (!Array.isArray(data?.news)) throw new Error('Malformed news payload');
+  return data;
 }
 
-function getGameInitial(name) {
-  return name.charAt(0).toUpperCase();
-}
-
-
-function getSourceInitials(name) {
-  if (!name) return '?';
-  const cleaned = name.replace(/\s*\u00b7\s*.+$/, '').trim();
-  const words = cleaned.split(/\s+/);
-  if (words.length === 1) return words[0].substring(0, 3).toUpperCase();
-  if (words.length === 2) return (words[0][0] + words[1][0]).toUpperCase();
-  return words.slice(0, 3).map(w => w[0]).join('').toUpperCase();
-}
-
-function getCategoryColor(category) {
-  return CATEGORY_COLORS[category] || 'var(--accent)';
-}
-
-// ============================================================
-// Source Helpers (soporta ambos formatos: plano y anidado)
-// ============================================================
-
-function getSourceName(source, sourceType) {
-  // source puede ser string (formato nuevo) u objeto {name, type, subreddit} (formato histórico)
-  const name = typeof source === 'string' ? source : (source?.name ?? 'Unknown');
-  if (sourceType === 'reddit') return 'Reddit';
-  return name;
-}
-
-function getSourceType(item) {
-  // source_type puede venir como campo plano (formato nuevo) o dentro de source (formato histórico)
-  return item.source_type ?? item.source?.type ?? 'media';
-}
-
-function getSourceSubreddit(item) {
-  return item.source?.subreddit ?? null;
-}
-
-// ============================================================
-// Game Tiles (visual filter with logo support)
-// ============================================================
-
-const DARK_BG_SVGS = new Set([
-  'baldurs-gate', 'call-of-duty', 'cyberpunk', 'elden-ring', 'final-fantasy',
-  'god-of-war', 'helldivers', 'hollow-knight', 'minecraft', 'persona', 'pokemon',
-  'pubg', 'rainbow-six', 'roblox', 'starfield', 'super-mario', 'zelda',
-]);
-
-const TILES_MOBILE_MQL = window.matchMedia('(max-width: 768px)');
-
-// Juegos prioritarios para header filters
-const PRIORITY_GAMES = ['Grand Theft Auto', 'Pokemon'];
-
-function renderAllTiles(newsItems, games) {
-  // Render header game filters (desktop + mobile) - just GTA and Pokemon
-  const priorityGames = PRIORITY_GAMES.filter(g => games.includes(g));
-  const createHeaderTile = (game, size) => {
-    const logo = state.gameLogos[game];
-    const label = game === 'Grand Theft Auto' ? 'GTA' : escapeHtml(game);
-    if (logo) {
-      return `
-        <button type="button" class="header__game-filter" data-game="${escapeHtml(game)}" aria-pressed="false" aria-label="${label}">
-          <img class="header__game-filter-icon" src="${escapeHtml(logo)}" alt="" aria-hidden="true" width="${size}" height="${size}">
-        </button>`;
+async function loadLogos() {
+  try {
+    const data = await fetchJson(CONFIG.gamesUrl);
+    const logos = {};
+    for (const game of data?.games ?? []) {
+      if (game?.name && game?.logo) logos[game.name] = `assets/games/${game.logo}`;
     }
+    return logos;
+  } catch {
+    return {}; // Logos are decorative; never block content on them.
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Filtering
+// ══════════════════════════════════════════════════════════════
+
+function visibleNews() {
+  return state.news.filter((item) => {
+    if (state.game && item.game !== state.game) return false;
+    if (state.section === 'news' && item.category === 'rumor') return false;
+    if (state.section === 'rumors' && item.category !== 'rumor') return false;
+    return true;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// Rendering — cards
+// ══════════════════════════════════════════════════════════════
+
+function renderMedia(item) {
+  const scrim = `
+    <div class="card__scrim">
+      <p class="card__game"><span>${escapeHtml(item.game || 'Gaming')}</span></p>
+    </div>`;
+
+  if (item.image) {
     return `
-      <button type="button" class="header__game-filter" data-game="${escapeHtml(game)}" aria-pressed="false" aria-label="${label}">
-        <span class="header__game-filter-icon">${getGameInitial(game)}</span>
-      </button>`;
-  };
-
-  // Desktop: 48px icons
-  if (els.headerGameFiltersDesktop) {
-    els.headerGameFiltersDesktop.innerHTML = priorityGames.map(g => createHeaderTile(g, 48)).join('');
-  }
-
-  // Mobile: 32px icons
-  if (els.headerGameFiltersMobile) {
-    els.headerGameFiltersMobile.innerHTML = priorityGames.map(g => createHeaderTile(g, 32)).join('');
-  }
-
-  // Show/hide based on screen size
-  const isMobile = TILES_MOBILE_MQL.matches;
-  if (els.headerGameFiltersDesktop) {
-    els.headerGameFiltersDesktop.hidden = isMobile;
-  }
-  if (els.headerGameFiltersMobile) {
-    els.headerGameFiltersMobile.hidden = !isMobile;
-  }
-
-  // Attach game handlers to header filters (desktop + mobile)
-  if (els.headerGameFiltersDesktop) {
-    attachGameHandlers(els.headerGameFiltersDesktop);
-  }
-  if (els.headerGameFiltersMobile) {
-    attachGameHandlers(els.headerGameFiltersMobile);
-  }
-}
-
-const attachGameHandlers = (container) => {
-  // Simple click on header__game-filter (both desktop and mobile)
-  container.querySelectorAll('.header__game-filter').forEach(tile => {
-    tile.addEventListener('click', () => {
-      const game = tile.dataset.game;
-      const wasActive = tile.getAttribute('aria-pressed') === 'true';
-
-      // Update both filter areas
-      document.querySelectorAll('.header__game-filter, [data-game]').forEach(t => {
-        t.classList.remove('active');
-        t.setAttribute('aria-pressed', 'false');
-      });
-
-      if (wasActive) {
-        state.filters.game = null;
-      } else {
-        state.filters.game = game;
-      }
-      applyFilters();
-      pushUrl();
-      syncFilterUIFromState();
-    });
-  });
-};
-
-// ============================================================
-// Header Section Navigation (NEWS / RUMORS)
-// ============================================================
-
-function initHeaderNav() {
-  els.headerNavButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const section = btn.dataset.section;
-      const wasActive = btn.getAttribute('aria-checked') === 'true';
-
-      els.headerNavButtons.forEach(b => {
-        b.setAttribute('aria-checked', 'false');
-      });
-
-      if (wasActive) {
-        state.filters.section = null;
-      } else {
-        state.filters.section = section;
-        btn.setAttribute('aria-checked', 'true');
-      }
-      applyFilters();
-      pushUrl();
-    });
-  });
-}
-
-// ============================================================
-// Rendering — Gaming Pulse Card Design
-// ============================================================
-
-function getAvatarColor(sourceType) {
-  if (sourceType === 'reddit') return 'var(--reddit, #FF4500)';
-  if (sourceType === 'steam') return 'var(--steam, #66C0F4)';
-  return 'var(--surface-elevated)';
-}
-
-// Text inside the avatar circle. Steam blue is light: #fff sobre #66C0F4 es 2.02:1
-// (falla AA); navy alcanza 9.17:1. Reddit naranja con letras blancas es su identidad
-// y pasa AA large-text (3.44:1).
-function getAvatarTextColor(sourceType) {
-  if (sourceType === 'steam') return 'var(--bg)';
-  return '#fff';
-}
-
-function renderNewsCard(item) {
-  const category = item.category || '';
-  const catColor = getCategoryColor(category);
-  const sourceType = getSourceType(item);
-  const sourceName = getSourceName(item.source, sourceType);
-  const gameName = item.game || sourceName;
-  const isHighRelevance = item.relevance >= 4;
-
-  const sectionLabel = category === 'rumor' ? 'RUMOR' : 'NEWS';
-  const isReddit = sourceType === 'reddit';
-
-  const overlayHtml = `
-      <div class="news-card__overlay news-card__overlay--placeholder">
-        <div class="news-card__overlay-content">
-          <span class="news-card__section">${sectionLabel}</span>
-          <span class="news-card__game">${escapeHtml(gameName.toUpperCase())}</span>
-        </div>
+      <div class="card__media">
+        <img class="card__img" src="${escapeHtml(item.image)}" alt="" loading="lazy" decoding="async"
+             data-initials="${escapeHtml(sourceInitials(sourceName(item)))}">
+        ${scrim}
       </div>`;
-
-  let mediaHtml;
-  if (isReddit) {
-    mediaHtml = `
-      <div class="news-card__placeholder news-card__placeholder--reddit" role="img" aria-label="Reddit">
-        <img src="assets/icons/reddit.svg" alt="" class="news-card__placeholder-logo"/>
-      </div>
-      ${overlayHtml}`;
-  } else if (item.image) {
-    mediaHtml = `
-      <img src="${escapeHtml(item.image)}" alt="" class="news-card__image" loading="lazy"/>
-      ${overlayHtml}`;
-  } else {
-    mediaHtml = `
-      <div class="news-card__placeholder" style="--cat-color: ${catColor}">
-        <span class="news-card__placeholder-initials">${escapeHtml(getSourceInitials(getSourceName(item.source, sourceType)))}</span>
-      </div>
-      ${overlayHtml}`;
   }
 
-  const dateObj = new Date(item.published_at);
-  const dateStr = formatDate(dateObj);
-  const sourceLabel = escapeHtml(sourceName.toUpperCase());
-  const metaLine = `${sourceLabel} · ${dateStr}`;
+  const placeholder = sourceType(item) === 'reddit'
+    ? `<img class="card__fallback-logo" src="assets/icons/reddit.svg" alt="" aria-hidden="true">`
+    : `<span class="card__fallback-initials">${escapeHtml(sourceInitials(sourceName(item)))}</span>`;
 
   return `
-    <article class="news-card${isHighRelevance ? ' news-card--high' : ''}" data-id="${item.id}" data-category="${category}" style="--cat-color: ${catColor}">
-      <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" class="news-card__media-link">
-        <div class="news-card__media">
-          ${mediaHtml}
-        </div>
-      </a>
-      <div class="news-card__content">
-        <div class="news-card__meta">
-          <time class="news-card__date" datetime="${dateObj.toISOString()}">${metaLine}</time>
-        </div>
-        <h3 class="news-card__title">
-          <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">
-            ${escapeHtml(item.title)}
-          </a>
+    <div class="card__media">
+      <div class="card__fallback${sourceType(item) === 'reddit' ? ' card__fallback--reddit' : ''}">
+        ${placeholder}
+      </div>
+      ${scrim}
+    </div>`;
+}
+
+function renderCard(item, index) {
+  const published = new Date(item.published_at);
+  const meta = `
+    <p class="card__meta">
+      <span class="card__source">${escapeHtml(sourceName(item))}</span>
+      <span class="card__meta-dot">·</span>
+      <time datetime="${published.toISOString()}">${formatDate(published)}</time>
+    </p>`;
+
+  const summary = item.summary
+    ? `<p class="card__summary">${escapeHtml(item.summary)}</p>`
+    : '';
+
+  return `
+    <article class="card" data-category="${escapeHtml(item.category || 'news')}" style="--i:${Math.min(index, CONFIG.maxStagger)}">
+      ${renderMedia(item)}
+      <div class="card__body">
+        ${meta}
+        <h3 class="card__title">
+          <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>
         </h3>
-${item.summary ? `<p class="news-card__summary">${escapeHtml(item.summary)}</p>` : ''}
+        ${summary}
       </div>
     </article>`;
 }
 
-function renderNewsList(items) {
-  if (!items.length) {
-    els.newsList.innerHTML = '';
-    setState('empty');
-    return;
-  }
+/** Fade in images as they decode; swap to the initials block if one 404s. */
+function hydrateImages(scope) {
+  scope.querySelectorAll('.card__img').forEach((img) => {
+    const settle = (ok) => {
+      if (!ok) {
+        const media = img.closest('.card__media');
+        if (media) {
+          media.querySelector('.card__img')?.remove();
+          const fallback = document.createElement('div');
+          fallback.className = 'card__fallback';
+          const initials = document.createElement('span');
+          initials.className = 'card__fallback-initials';
+          initials.textContent = img.dataset.initials || '?';
+          fallback.append(initials);
+          media.prepend(fallback);
+        }
+        return;
+      }
+      img.classList.add('is-loaded');
+    };
 
-  els.newsList.innerHTML = items.map(renderNewsCard).join('');
-  setState('content');
-}
-
-function setAppTitle() {
-  if (els.title) {
-    els.title.textContent = CONFIG.appTitle;
-    document.title = CONFIG.appTitle;
-  }
-}
-
-// ============================================================
-// State Management
-// ============================================================
-
-function setState(stateName) {
-  els.stateLoading.hidden = true;
-  els.stateError.hidden = true;
-  els.stateEmpty.hidden = true;
-  els.newsList.hidden = true;
-
-  const stateEl = document.getElementById(`state-${stateName}`);
-  if (stateEl) {
-    stateEl.hidden = false;
-    if (stateName === 'empty') {
-      els.clearFiltersBtn.hidden = !hasActiveFilters();
+    if (img.complete) {
+      settle(img.naturalWidth > 0);
+    } else {
+      img.addEventListener('load', () => settle(true), { once: true });
+      img.addEventListener('error', () => settle(false), { once: true });
     }
-  } else if (stateName === 'content') {
-    els.newsList.hidden = false;
-  }
+  });
 }
 
-function hasActiveFilters() {
-  return Boolean(
-    state.filters.game ||
-    state.filters.section
-  );
+function renderGrid(items) {
+  els.grid.innerHTML = items.map(renderCard).join('');
+  hydrateImages(els.grid);
+  syncToolbar(items.length);
+}
+
+// ══════════════════════════════════════════════════════════════
+// Rendering — toolbar
+// ══════════════════════════════════════════════════════════════
+
+function activeFilterLabels() {
+  const labels = [];
+  if (state.game) labels.push(gameLabel(state.game));
+  if (state.section !== 'all') labels.push(state.section === 'news' ? 'News' : 'Rumors');
+  return labels;
+}
+
+function syncToolbar(count) {
+  const labels = activeFilterLabels();
+  const scope = state.section === 'all' ? '' : ` · ${state.section}`;
+
+  els.count.innerHTML = `<b>${count}</b> ${count === 1 ? 'story' : 'stories'}${scope}`;
+
+  const hasFilters = labels.length > 0;
+  els.toolbar.hidden = false;
+  els.clear.hidden = !hasFilters;
+  els.clearLabel.textContent = hasFilters ? labels.join(' · ') : 'Clear filters';
+  els.emptyReset.hidden = !hasFilters;
+  els.emptyReset.textContent = hasFilters ? `Clear ${labels.join(' · ')}` : 'Clear filters';
+}
+
+// ══════════════════════════════════════════════════════════════
+// Rendering — controls
+// ══════════════════════════════════════════════════════════════
+
+function renderGameFilters(availableGames) {
+  const games = CONFIG.featuredGames.filter((g) => availableGames.has(g) || state.logos[g]);
+  if (!games.length) return;
+
+  els.gameFilters.innerHTML = games.map((game) => {
+    const logo = state.logos[game];
+    const mark = logo
+      ? `<img class="gamefilter__mark${CONFIG.darkLogos.has(game) ? ' gamefilter__mark--invert' : ''}" src="${escapeHtml(logo)}" alt="" aria-hidden="true" width="32" height="32">`
+      : `<span class="gamefilter__mark" aria-hidden="true"></span>`;
+    return `
+      <button type="button" class="gamefilter" data-game="${escapeHtml(game)}"
+              aria-pressed="false" aria-label="${escapeHtml(gameLabel(game))}">
+        ${mark}
+      </button>`;
+  }).join('');
+
+  els.gameFilters.hidden = false;
+}
+
+function syncControls() {
+  document.querySelectorAll('.gamefilter').forEach((btn) => {
+    btn.setAttribute('aria-pressed', String(btn.dataset.game === state.game));
+  });
+
+  els.sectionButtons.forEach((btn) => {
+    btn.setAttribute('aria-checked', String(btn.dataset.section === state.section));
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// State views
+// ══════════════════════════════════════════════════════════════
+
+function showView(view) {
+  els.loading.hidden = view !== 'loading';
+  els.error.hidden = view !== 'error';
+  els.empty.hidden = view !== 'empty';
+  els.grid.hidden = view !== 'content';
+  els.toolbar.hidden = view === 'loading' || view === 'error';
+}
+
+function showError(message, title) {
+  els.errorTitle.textContent = title;
+  els.errorMessage.textContent = message;
+  showView('error');
+}
+
+// ══════════════════════════════════════════════════════════════
+// Apply / sync
+// ══════════════════════════════════════════════════════════════
+
+function apply() {
+  const items = visibleNews();
+  if (!items.length) {
+    els.grid.innerHTML = '';
+    hydrateImages(els.grid);
+    syncToolbar(0);
+    showView('empty');
+  } else {
+    renderGrid(items);
+    showView('content');
+  }
+  syncControls();
+}
+
+function writeUrl() {
+  const params = new URLSearchParams();
+  if (state.game) params.set('game', state.game);
+  if (state.section !== 'all') params.set('section', state.section);
+  const query = params.toString();
+  history.replaceState(null, '', query ? `${location.pathname}?${query}` : location.pathname);
+}
+
+function readUrl() {
+  const params = new URLSearchParams(location.search);
+  const game = params.get('game');
+  const section = params.get('section');
+
+  state.game = game || null;
+  state.section = SECTIONS.includes(section) ? section : 'all';
 }
 
 function resetFilters() {
-  state.filters.game = null;
-  state.filters.section = null;
-  syncFilterUIFromState();
-  applyFilters();
-  pushUrl();
+  state.game = null;
+  state.section = 'all';
+  apply();
+  writeUrl();
 }
 
-function setLoading(loading) {
-  state.ui.loading = loading;
-  if (loading) {
-    setState('loading');
-  } else {
-    setState('content');
-  }
-}
+// ══════════════════════════════════════════════════════════════
+// Events
+// ══════════════════════════════════════════════════════════════
 
-function setError(message, title = 'Failed to load') {
-  state.ui.error = message;
-  state.ui.loading = false;
-  els.errorTitle.textContent = title;
-  els.errorMessage.textContent = message;
-  setState('error');
-}
-
-function clearError() {
-  state.ui.error = null;
-}
-
-// ============================================================
-// Filtering
-// ============================================================
-
-function applyFilters() {
-  const { game, section } = state.filters;
-
-  state.filteredNews = state.allNews.filter(item => {
-    if (game) {
-      if (!item.game || item.game !== game) return false;
-    }
-
-    // Section filter: NEWS = all except rumor, RUMORS = only rumor
-    if (section === 'news') {
-      if (item.category === 'rumor') return false;
-    } else if (section === 'rumors') {
-      if (item.category !== 'rumor') return false;
-    }
-
-    return true;
+function bindEvents() {
+  els.gameFilters.addEventListener('click', (e) => {
+    const btn = e.target.closest('.gamefilter');
+    if (!btn) return;
+    state.game = state.game === btn.dataset.game ? null : btn.dataset.game;
+    apply();
+    writeUrl();
   });
 
-  renderNewsList(state.filteredNews);
-}
-
-function syncFilterUIFromState() {
-  const currentGame = state.filters.game || '';
-
-  // Sync mobile carousel and header game filters
-  document.querySelectorAll('[data-game], [data-game-clone], .header__game-filter').forEach(tile => {
-    const game = tile.dataset.game || tile.dataset.gameClone || '';
-    const isActive = game === currentGame;
-    tile.classList.toggle('active', isActive);
-    tile.setAttribute('aria-pressed', String(isActive));
-  });
-
-  els.headerNavButtons.forEach(btn => {
-    const section = btn.dataset.section;
-    const isActive = state.filters.section === section;
-    btn.setAttribute('aria-checked', String(isActive));
-  });
-}
-
-// ============================================================
-// URL Synchronization
-// ============================================================
-
-function filtersToUrlParams() {
-  const params = new URLSearchParams();
-  if (state.filters.game) params.set('game', state.filters.game);
-  if (state.filters.section) params.set('section', state.filters.section);
-  return params.toString();
-}
-
-function syncUrlToState() {
-  const params = new URLSearchParams(window.location.search);
-  state.filters.game = params.get('game') || null;
-  state.filters.section = params.get('section') || null;
-}
-
-function pushUrl() {
-  const params = filtersToUrlParams();
-  const url = params.toString() ? `?${params.toString()}` : window.location.pathname;
-  history.replaceState(null, '', url);
-}
-
-// ============================================================
-// Event Handlers
-// ============================================================
-
-function onRetry() {
-  clearError();
-  loadData();
-}
-
-// ============================================================
-// Data Fetching
-// ============================================================
-
-async function fetchNews() {
-  const url = `${CONFIG.dataUrl}?${CONFIG.cacheBustParam}=${Date.now()}`;
-  try {
-    const response = await fetch(url, {
-      cache: 'no-store',
-      headers: { 'Accept': 'application/json' },
+  els.sectionButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.section = state.section === btn.dataset.section ? 'all' : btn.dataset.section;
+      apply();
+      writeUrl();
     });
+  });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    if (!data || !Array.isArray(data.news)) {
-      throw new Error('Formato de datos inv\u00e1lido');
-    }
-
-    return data;
-  } catch (err) {
-    throw err;
-  }
-}
-
-async function fetchGameData() {
-  const url = `${CONFIG.gamesUrl}?${CONFIG.cacheBustParam}=${Date.now()}`;
-  try {
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) return { logos: {}, platforms: {}, names: new Set() };
-    const data = await response.json();
-    if (!data || !Array.isArray(data.games)) return { logos: {}, platforms: {}, names: new Set() };
-    const logos = {};
-    const platforms = {};
-    const names = new Set();
-    for (const g of data.games) {
-      if (g.name) {
-        names.add(g.name);
-        if (g.logo) logos[g.name] = `assets/games/${g.logo}`;
-        if (Array.isArray(g.platform)) platforms[g.name] = g.platform;
-      }
-    }
-    return { logos, platforms, names };
-  } catch {
-    return { logos: {}, platforms: {}, names: new Set() };
-  }
-}
-
-// ============================================================
-// Data Loading
-// ============================================================
-
-async function loadData() {
-  setLoading(true);
-  clearError();
-
-  try {
-    const [data, gameData] = await Promise.all([fetchNews(), fetchGameData()]);
-    state.allNews = data.news;
-    state.filteredNews = data.news;
-    state.gameLogos = gameData.logos;
-
-    const configNames = gameData.names || new Set();
-    const games = [...configNames].sort();
-    renderAllTiles(data.news, games);
-    initHeaderNav();
-
-    syncUrlToState();
-    syncFilterUIFromState();
-    applyFilters();
-    setAppTitle();
-  } catch (err) {
-    setError(
-      err.message.includes('404') || err.message.includes('Failed to fetch')
-        ? 'No news found (first run pending).'
-        : `Network error: ${err.message}`,
-      'Failed to load news'
-    );
-    return;
-  }
-
-  setState(state.filteredNews.length > 0 ? 'content' : 'empty');
-}
-
-// ============================================================
-// Initialization
-// ============================================================
-
-function init() {
-  setAppTitle();
-
-  els.retryBtn.addEventListener('click', onRetry);
-  els.clearFiltersBtn.addEventListener('click', resetFilters);
+  els.retry.addEventListener('click', boot);
+  els.clear.addEventListener('click', resetFilters);
+  els.emptyReset.addEventListener('click', resetFilters);
 
   window.addEventListener('popstate', () => {
-    syncUrlToState();
-    syncFilterUIFromState();
-    applyFilters();
+    readUrl();
+    apply();
   });
-
-  loadData();
 }
 
-function getSectionName(section) {
-  return section === 'news' ? 'NEWS' : 'RUMORS';
-}
-
-// ============================================================
+// ══════════════════════════════════════════════════════════════
 // Boot
-// ============================================================
+// ══════════════════════════════════════════════════════════════
+
+function renderFooterStamp(generatedAt) {
+  if (!generatedAt) return;
+  els.footerUpdated.textContent = `Updated ${formatStamp(generatedAt)}`;
+}
+
+async function boot() {
+  showView('loading');
+
+  try {
+    const [news, logos] = await Promise.all([loadNews(), loadLogos()]);
+    state.news = news.news;
+    state.logos = logos;
+
+    renderFooterStamp(news.generated_at);
+    renderGameFilters(new Set(state.news.map((n) => n.game)));
+    readUrl();
+    apply();
+  } catch (err) {
+    showError(
+      String(err.message || err).includes('404')
+        ? 'The digest has not been generated yet. Check back shortly.'
+        : 'Could not reach the digest. Check your connection and try again.',
+      'Failed to load news',
+    );
+  }
+}
+
+function init() {
+  els = {
+    gameFilters: document.getElementById('game-filters'),
+    sectionButtons: document.querySelectorAll('.segments__btn'),
+    toolbar: document.getElementById('toolbar'),
+    count: document.getElementById('toolbar-count'),
+    clear: document.getElementById('clear-filters'),
+    clearLabel: document.getElementById('clear-filters-label'),
+    loading: document.getElementById('state-loading'),
+    error: document.getElementById('state-error'),
+    errorTitle: document.getElementById('error-title'),
+    errorMessage: document.getElementById('error-message'),
+    empty: document.getElementById('state-empty'),
+    emptyReset: document.getElementById('empty-reset-btn'),
+    grid: document.getElementById('news-grid'),
+    retry: document.getElementById('retry-btn'),
+    footerUpdated: document.getElementById('footer-updated'),
+    title: document.getElementById('app-title'),
+  };
+
+  document.title = els.title.textContent;
+  bindEvents();
+  boot();
+}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);

@@ -66,20 +66,22 @@ class OllamaClient(AIClient):
         else:
             category_instruction = '- "category": "lanzamiento" | "actualizacion" | "rumor" | "analisis"\n'
         
-        # INSTRUCCIÓN CRÍTICA: El campo Game viene determinado por un matcher
-        # determinista externo. NUNCA adivines/inventes/cambies el juego.
-        # - Si Game = "Videojuegos" → significa que NO se identificó juego concreto.
-        # - NO dejes que un juego adivinado influya en relevance/category/summary.
-        # - El summary/relevance/category deben basarse SOLO en el contenido real.
+        # IDENTIFICACIÓN DEL JUEGO: el campo Game llega del matcher determinista.
+        # - Si Game ya es un título real (≠ "Videojuegos") → se repite EXACTO.
+        # - Si Game = "Videojuegos" → el matcher falló: la IA lee titular y cuerpo
+        #   y nombra el juego/franquicia concreto del que trata la noticia.
+        # - Si la noticia es de industria/negocio/hardware → "" (no inventar).
         game_instruction = (
-            "CRITICAL: The Game field is set by an external deterministic matcher.\n"
-            "DO NOT guess, invent, or change the game name. If Game is \"Videojuegos\", "
-            "it means no specific game was identified — treat it as a generic topic.\n"
-            "Do NOT let any guessed game influence relevance, category, or summary.\n"
-            "The pipeline only sends articles already classified as video game news. "
-            "If an article seems off-topic (movies, TV, comics), still treat it as a "
-            "video game story and base the summary ONLY on the article content. "
-            "Never use off-topic ambiguity to change or filter the article.\n"
+            "Identify WHICH GAME the article is about.\n"
+            "If the Game field is already a real title (not \"Videojuegos\"), repeat it "
+            "EXACTLY as given — never correct it.\n"
+            "If Game is \"Videojuegos\", the external matcher failed to identify the "
+            "game: read the title and body and name the specific game, franchise or "
+            "series the article is about. Use the name a player would recognise "
+            "(\"Arc Raiders\", \"The Witcher\", \"EA Sports College Football\"), not a "
+            "publisher, platform, studio or industry topic.\n"
+            "If the article is about the industry, business or hardware rather than one "
+            "game, return \"\" (empty string) — do not invent a game.\n"
         )
         
         return f"""You are a video game news editor. Write a summary of the news in 1-2 short lines, ALWAYS IN ENGLISH.
@@ -88,7 +90,8 @@ Add value beyond the title: include ONE concrete, checkable detail found in the 
 Return ONLY valid JSON with these exact keys:
 - "summary": str (1-2 lines, always written in English, regardless of the article's original language)
 - "relevance": int (1-5; 5 = major announcement of a followed saga)
-{category_instruction}- "language": "en" (the summary must always be written in English)
+{category_instruction}- "game": str (the specific game, franchise or series this article is about; "" if the article is about the industry, a publisher, or hardware instead of one game)
+- "language": "en" (the summary must always be written in English)
 
 Title: {title}
 Body: {body}

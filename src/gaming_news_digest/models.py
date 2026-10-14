@@ -14,6 +14,19 @@ from enum import StrEnum
 
 _HTTP_PREFIX = re.compile(r"^https?://", re.IGNORECASE)
 
+#: Nombre genérico para noticias cuyo juego no se pudo identificar. No es un
+#: juego: es un cajón de sastre, así que los topes "por juego" no deben contar
+#: sus noticias como si todas fueran del mismo título.
+DEFAULT_GAME_NAME = "Videojuegos"
+
+#: Otros nombres genéricos que la IA puede devolver sin querer.
+_GENERIC_GAME_NAMES = frozenset({DEFAULT_GAME_NAME.casefold(), "videojuego", "gaming"})
+
+
+def is_generic_game(name: object) -> bool:
+    """``True`` si ``name`` es el cajón genérico, no un juego concreto."""
+    return not isinstance(name, str) or name.strip().casefold() in _GENERIC_GAME_NAMES
+
 
 class ModelValidationError(ValueError):
     """Datos inválidos al construir un modelo de dominio."""

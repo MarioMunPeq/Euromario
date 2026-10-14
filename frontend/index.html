@@ -2,21 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#0A0A0B">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="theme-color" content="#08080A">
+  <meta name="description" content="Daily AI-curated gaming digest: releases, updates, rumors and analysis from the best sources, in one place.">
+
   <title>EuroMario — Gaming news, release radar &amp; rumors</title>
-  <meta name="description" content="Daily AI-curated gaming digest: release dates, updates, rumors and analysis from the best sources, in one place.">
+
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
   <link rel="shortcut icon" href="favicon.ico">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="EuroMario">
   <meta property="og:title" content="EuroMario — Gaming news, release radar &amp; rumors">
-  <meta property="og:description" content="Daily AI-curated gaming digest: release dates, updates, rumors and analysis from the best sources, in one place.">
+  <meta property="og:description" content="Daily AI-curated gaming digest: releases, updates, rumors and analysis from the best sources, in one place.">
   <meta property="og:url" content="https://mariomunpeq.github.io/Euromario/">
   <meta property="og:image" content="https://mariomunpeq.github.io/Euromario/assets/og-banner.png">
   <meta property="og:image:type" content="image/png">
@@ -25,143 +27,116 @@
   <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="EuroMario — Gaming news, release radar &amp; rumors">
-  <meta name="twitter:description" content="Daily AI-curated gaming digest: release dates, updates, rumors and analysis from the best sources, in one place.">
+  <meta name="twitter:description" content="Daily AI-curated gaming digest: releases, updates, rumors and analysis from the best sources, in one place.">
   <meta name="twitter:image" content="https://mariomunpeq.github.io/Euromario/assets/og-banner.png">
-  <link rel="stylesheet" href="css/style.css">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap">
+  <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
-  <header class="header">
-    <div class="header__inner">
-      <a href="/" class="header__brand" aria-label="EuroMario - Home">
-        <img class="header__logo" src="assets/logo.svg" alt="" aria-hidden="true">
-        <span class="header__title" id="app-title">EuroMario</span>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- ══════════════════════════════════════════════════════════
+       Top bar — brand · game filters · section switch
+       ══════════════════════════════════════════════════════════ -->
+  <header class="topbar">
+    <div class="topbar__inner">
+
+      <a href="./" class="brand" aria-label="EuroMario, home">
+        <img class="brand__mark" src="assets/logo.svg" alt="" aria-hidden="true" width="30" height="30">
+        <span class="brand__name" id="app-title">EuroMario</span>
       </a>
 
-      <!-- Game filters (GTA, Pokemon) - desktop center -->
-      <div class="header__game-filters header__game-filters--desktop" id="header-game-filters-desktop" role="group" aria-label="Game filters" hidden>
-        <button type="button" class="header__game-filter" data-game="Grand Theft Auto" aria-pressed="false" aria-label="GTA">
-          <img class="header__game-filter-icon" src="assets/games/gta.svg" alt="" aria-hidden="true" width="48" height="48">
+      <!-- Game filters. Populated from data/games.json (GTA, Pokémon). -->
+      <nav class="gamefilters" id="game-filters" aria-label="Filter by game" hidden></nav>
+
+      <!-- Section switch. Single-select: All / News / Rumors. -->
+      <div class="segments" role="radiogroup" aria-label="Filter by section">
+        <span class="segments__thumb" aria-hidden="true"></span>
+        <button type="button" class="segments__btn" data-section="all" role="radio" aria-checked="true">
+          <img class="segments__icon" src="assets/icons/all.svg" alt="" aria-hidden="true" width="16" height="16">
+          <span class="segments__text">All</span>
         </button>
-        <button type="button" class="header__game-filter" data-game="Pokemon" aria-pressed="false" aria-label="Pokémon">
-          <img class="header__game-filter-icon" src="assets/games/pokemon.svg" alt="" aria-hidden="true" width="48" height="48">
+        <button type="button" class="segments__btn" data-section="news" role="radio" aria-checked="false">
+          <img class="segments__icon" src="assets/icons/news.svg" alt="" aria-hidden="true" width="16" height="16">
+          <span class="segments__text">News</span>
+        </button>
+        <button type="button" class="segments__btn" data-section="rumors" role="radio" aria-checked="false">
+          <img class="segments__icon" src="assets/icons/rumors.svg" alt="" aria-hidden="true" width="16" height="16">
+          <span class="segments__text">Rumors</span>
         </button>
       </div>
 
-      <!-- Game filters (GTA, Pokemon) - mobile right side -->
-      <div class="header__game-filters header__game-filters--mobile" id="header-game-filters-mobile" role="group" aria-label="Game filters" hidden>
-        <button type="button" class="header__game-filter" data-game="Grand Theft Auto" aria-pressed="false" aria-label="GTA">
-          <img class="header__game-filter-icon" src="assets/games/gta.svg" alt="" aria-hidden="true" width="32" height="32">
-        </button>
-        <button type="button" class="header__game-filter" data-game="Pokemon" aria-pressed="false" aria-label="Pokémon">
-          <img class="header__game-filter-icon" src="assets/games/pokemon.svg" alt="" aria-hidden="true" width="32" height="32">
-        </button>
-      </div>
-
-      <nav class="header__nav" aria-label="Sections" role="radiogroup">
-        <button type="button" class="header__nav-btn" data-section="news" role="radio" aria-checked="true" aria-label="News">
-          <img class="header__nav-icon" src="assets/icons/news.svg" alt="" aria-hidden="true" width="22" height="22">
-          <span class="header__nav-text">NEWS</span>
-        </button>
-        <button type="button" class="header__nav-btn" data-section="rumors" role="radio" aria-checked="false" aria-label="Rumors">
-          <img class="header__nav-icon" src="assets/icons/rumors.svg" alt="" aria-hidden="true" width="22" height="22">
-          <span class="header__nav-text">RUMORS</span>
-        </button>
-      </nav>
     </div>
   </header>
 
-  <main class="main">
-    <section class="news-grid" id="news-grid" aria-live="polite" aria-label="News">
-      <div class="state state--loading" id="state-loading" role="status" aria-live="polite" hidden>
-        <div class="skeleton-grid" aria-hidden="true">
-          <div class="skeleton-card">
-            <div class="skeleton__media"></div>
-            <div class="skeleton__body">
-              <div class="skeleton__line w-40"></div>
-              <div class="skeleton__line w-90"></div>
-              <div class="skeleton__line w-75"></div>
-              <div class="skeleton__line w-60"></div>
-              <div class="skeleton__line w-35"></div>
-            </div>
-          </div>
-          <div class="skeleton-card">
-            <div class="skeleton__media"></div>
-            <div class="skeleton__body">
-              <div class="skeleton__line w-40"></div>
-              <div class="skeleton__line w-90"></div>
-              <div class="skeleton__line w-75"></div>
-              <div class="skeleton__line w-60"></div>
-              <div class="skeleton__line w-35"></div>
-            </div>
-          </div>
-          <div class="skeleton-card">
-            <div class="skeleton__media"></div>
-            <div class="skeleton__body">
-              <div class="skeleton__line w-40"></div>
-              <div class="skeleton__line w-90"></div>
-              <div class="skeleton__line w-75"></div>
-              <div class="skeleton__line w-60"></div>
-              <div class="skeleton__line w-35"></div>
-            </div>
-          </div>
-          <div class="skeleton-card">
-            <div class="skeleton__media"></div>
-            <div class="skeleton__body">
-              <div class="skeleton__line w-40"></div>
-              <div class="skeleton__line w-90"></div>
-              <div class="skeleton__line w-75"></div>
-              <div class="skeleton__line w-60"></div>
-              <div class="skeleton__line w-35"></div>
-            </div>
-          </div>
-          <div class="skeleton-card">
-            <div class="skeleton__media"></div>
-            <div class="skeleton__body">
-              <div class="skeleton__line w-40"></div>
-              <div class="skeleton__line w-90"></div>
-              <div class="skeleton__line w-75"></div>
-              <div class="skeleton__line w-60"></div>
-              <div class="skeleton__line w-35"></div>
-            </div>
-          </div>
-          <div class="skeleton-card">
-            <div class="skeleton__media"></div>
-            <div class="skeleton__body">
-              <div class="skeleton__line w-40"></div>
-              <div class="skeleton__line w-90"></div>
-              <div class="skeleton__line w-75"></div>
-              <div class="skeleton__line w-60"></div>
-              <div class="skeleton__line w-35"></div>
-            </div>
-          </div>
-        </div>
-        <p class="state__label">Loading news&hellip;</p>
+  <!-- ══════════════════════════════════════════════════════════
+       Main
+       ══════════════════════════════════════════════════════════ -->
+  <main class="main" id="main">
+
+    <!-- Result summary + active filter chip -->
+    <div class="toolbar" id="toolbar" hidden>
+      <p class="toolbar__count" id="toolbar-count"></p>
+      <div class="toolbar__actions">
+        <button type="button" class="chip chip--clear" id="clear-filters" hidden>
+          <span id="clear-filters-label">Clear filters</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
-      <div class="state state--error" id="state-error" hidden>
-        <svg class="error__icon" aria-hidden="true" viewBox="0 0 24 24" width="48" height="48">
-          <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-          <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <h2 id="error-title">Failed to load</h2>
-        <p id="error-message">Could not load news.</p>
-        <button type="button" class="btn btn--primary" id="retry-btn">Retry</button>
+    </div>
+
+    <!-- ── Loading ── -->
+    <div class="panel" id="state-loading">
+      <div class="skeletons" aria-hidden="true">
+        <div class="skeleton"><div class="skeleton__media"></div><div class="skeleton__body"><span class="skeleton__line w-35"></span><span class="skeleton__line w-95"></span><span class="skeleton__line w-70"></span></div></div>
+        <div class="skeleton"><div class="skeleton__media"></div><div class="skeleton__body"><span class="skeleton__line w-35"></span><span class="skeleton__line w-95"></span><span class="skeleton__line w-70"></span></div></div>
+        <div class="skeleton"><div class="skeleton__media"></div><div class="skeleton__body"><span class="skeleton__line w-35"></span><span class="skeleton__line w-95"></span><span class="skeleton__line w-70"></span></div></div>
       </div>
-      <div class="state state--empty" id="state-empty" hidden>
-        <svg class="empty__icon" aria-hidden="true" viewBox="0 0 24 24" width="48" height="48">
-          <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z" fill="currentColor"/>
-          <path d="M11 7h2v2h-2zm0 4h2v6h-2z" fill="currentColor" opacity="0.5"/>
-        </svg>
-        <h2>No news found</h2>
-        <p>No news matches the current filters.</p>
-        <button type="button" class="btn btn--primary" id="clear-filters-btn" hidden>Clear filters</button>
-      </div>
-      <div class="news-grid__list state" id="news-list" role="list" aria-label="News" hidden></div>
-    </section>
+      <p class="visually-hidden" role="status">Loading news</p>
+    </div>
+
+    <!-- ── Error ── -->
+    <div class="panel panel--message" id="state-error" hidden>
+      <svg class="panel__icon" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M12 7.5v5.5M12 16.2v.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <h2 class="panel__title" id="error-title">Failed to load</h2>
+      <p class="panel__body" id="error-message">Something went wrong.</p>
+      <button type="button" class="btn" id="retry-btn">Try again</button>
+    </div>
+
+    <!-- ── Empty ── -->
+    <div class="panel panel--message" id="state-empty" hidden>
+      <svg class="panel__icon" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
+        <rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M7.5 9.5h9M7.5 13h6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <h2 class="panel__title">Nothing here yet</h2>
+      <p class="panel__body">No stories match the current filters.</p>
+      <button type="button" class="btn" id="empty-reset-btn" hidden>Clear filters</button>
+    </div>
+
+    <!-- ── Cards ── -->
+    <section class="grid" id="news-grid" aria-label="Stories" hidden></section>
+
   </main>
+
+  <!-- ══════════════════════════════════════════════════════════
+       Footer
+       ══════════════════════════════════════════════════════════ -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <p class="footer__brand">EuroMario</p>
+      <p class="footer__note">AI-curated gaming digest · <span id="footer-updated">Updated daily</span></p>
+    </div>
+  </footer>
 
   <script src="js/app.js"></script>
 </body>

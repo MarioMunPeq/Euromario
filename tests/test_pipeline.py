@@ -7,7 +7,7 @@ import pytest
 
 from gaming_news_digest.ai.base import AIError, AISummary, Category, Language
 from gaming_news_digest.models import FetchedItem, NewsItem, Source
-from gaming_news_digest.pipeline import Pipeline
+from gaming_news_digest.pipeline import Pipeline, _resolve_game_name
 
 # Reloj fijo para todos los filtros temporales del pipeline (PROBLEMA 7):
 # hoy = 2026-08-30. Las fixtures publican relativo a NOW, así que pasan la
@@ -45,13 +45,40 @@ def make_reddit_item(title="GTA VI leak", game="Grand Theft Auto"):
     )
 
 
-def make_ai_summary(summary="ok", relevance=3, category=Category.UPDATE, language=Language.ENGLISH):
+def make_ai_summary(summary="ok", relevance=3, category=Category.UPDATE, language=Language.ENGLISH, game=""):
     return AISummary(
         summary=summary,
         relevance=relevance,
         category=category,
         language=language,
+        game=game,
     )
+
+
+class TestResolveGameName:
+    """El matcher determinista siempre gana; la IA solo rescata los genéricos."""
+
+    def test_matcher_concreto_gana_a_la_ia(self):
+        assert _resolve_game_name("Grand Theft Auto", "Arc Raiders") == (
+            "Grand Theft Auto",
+            "matcher",
+        )
+
+    def test_la_ia_rescata_el_generico(self):
+        assert _resolve_game_name("Videojuegos", "Arc Raiders") == ("Arc Raiders", "ai")
+
+    def test_sin_nombre_del_matcher_la_ia_manda(self):
+        assert _resolve_game_name(None, "The Witcher") == ("The Witcher", "ai")
+        assert _resolve_game_name("", "The Witcher") == ("The Witcher", "ai")
+
+    def test_sin_conclusion_queda_generico(self):
+        assert _resolve_game_name("Videojuegos", "") == ("Videojuegos", "generico")
+        assert _resolve_game_name("Videojuegos", None) == ("Videojuegos", "generico")
+        assert _resolve_game_name(None, "unknown") == ("Videojuegos", "generico")
+
+    def test_la_ia_no_puede_sabotear_un_nombre_configurado(self):
+        """Ni siquiera si devuelve basura: el nombre del matcher se mantiene."""
+        assert _resolve_game_name("Pokemon", "  ")[0] == "Pokemon"
 
 
 def make_news_item(title="Noticia", game="Persona", relevance=3, hours_ago=1):
@@ -112,6 +139,72 @@ def test_ollama_ok_groq_no_usado():
     assert results[0].summary == "ok1"
     assert results[1].summary == "ok2"
     assert ollama.summarize.call_count == 2
+
+
+def test_ia_identifica_el_juego_cuando_el_matcher_falla():
+    """El caso "Videojuegos": si la IA nombra el juego, se usa ese nombre."""
+    ollama = Mock()
+    ollama.summarize.return_value = make_ai_summary(
+        "La incursión introduce un nuevo tipo de enemigo.", 3, Category.UPDATE,
+        game="Arc Raiders",
+    )
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.ollama = ollama
+    pipeline.groq = Mock()
+    pipeline.current_client = ollama
+    pipeline._consecutive_ai_errors = 0
+
+    item = make_item(
+        "'Boarding The Frigate' quest walkthrough in Arc Raiders",
+        "Cuerpo",
+        game="Videojuegos",
+        url_suffix="arc",
+    )
+    results = list(pipeline._enrich_with_ai([item]))
+
+    assert results[0].game == "Arc Raiders"
+
+
+def test_la_ia_no_sobrescribe_un_juego_ya_identificado():
+    """El matcher determinista manda aunque la IA propose otro juego."""
+    ollama = Mock()
+    ollama.summarize.return_value = make_ai_summary(
+        "Fuga de la mapa.", 4, Category.RUMOR, game="Cyberpunk 2077",
+    )
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.ollama = ollama
+    pipeline.groq = Mock()
+    pipeline.current_client = ollama
+    pipeline._consecutive_ai_errors = 0
+
+    item = make_item("GTA 6 leak", "Cuerpo", game="Grand Theft Auto", url_suffix="gta")
+    results = list(pipeline._enrich_with_ai([item]))
+
+    assert results[0].game == "Grand Theft Auto"
+
+
+def test_noticia_de_industria_sigue_siendo_generica():
+    """Si no hay juego concreto (ni para la IA), se conserva "Videojuegos"."""
+    ollama = Mock()
+    ollama.summarize.return_value = make_ai_summary(
+        "El estudio se repliega.", 3, Category.UPDATE, game="",
+    )
+    pipeline = Pipeline.__new__(Pipeline)
+    pipeline._ai_cache = {}
+    pipeline.ollama = ollama
+    pipeline.groq = Mock()
+    pipeline.current_client = ollama
+    pipeline._consecutive_ai_errors = 0
+
+    item = make_item(
+        "Xbox 'Won't Survive' Without New IP, CEO Says", "Cuerpo",
+        game="Videojuegos", url_suffix="xbox",
+    )
+    results = list(pipeline._enrich_with_ai([item]))
+
+    assert results[0].game == "Videojuegos"
 
 
 def test_reddit_siempre_rumor_sobreescribe_a_la_ia():
@@ -291,6 +384,47 @@ def test_limit_por_juego_con_relevancia_prioriza_relevancia():
     limited = _limit_stories_per_game(items, max_per_game=3)
 
     assert [it.relevance for it in limited] == [5, 4, 3]
+
+
+def test_el_cajon_generico_no_cuenta_como_un_juego():
+    """"Videojuegos" agrupa noticias sin relación entre sí: aplicarle el tope
+    de un único título mataría stories de juegos distintos sin identificar."""
+    from gaming_news_digest.pipeline import _limit_stories_per_game
+
+    genericos = [
+        make_news_item(f"sin-juego-{i}", game="Videojuegos", hours_ago=i)
+        for i in range(20, 0, -1)
+    ]
+    limited = _limit_stories_per_game(genericos, max_per_game=3)
+
+    assert len(limited) == 20
+
+
+def test_el_limite_conserva_el_orden_de_entrada():
+    from gaming_news_digest.pipeline import _limit_stories_per_game
+
+    items = [
+        make_news_item(f"h-{r}", game="Persona", relevance=r, hours_ago=r)
+        for r in (5, 4, 3, 2, 1)
+    ] + [make_news_item("generico", game="Videojuegos", hours_ago=6)]
+    limited = _limit_stories_per_game(items, max_per_game=2)
+
+    titles = [it.title for it in limited]
+    # Las dos más relevantes de Persona + el genérico, reinsertado en su sitio.
+    assert set(titles) == {"h-5", "h-4", "generico"}
+    assert titles.index("generico") > titles.index("h-4")
+
+
+def test_el_limite_post_ia_tampoco_capa_el_generico():
+    from gaming_news_digest.pipeline import _limit_stories_per_game_separate
+
+    genericos = [
+        make_news_item(f"sin-juego-{i}", game="Videojuegos", hours_ago=i)
+        for i in range(12, 0, -1)
+    ]
+    limited = _limit_stories_per_game_separate(genericos, media_limit=8, reddit_limit=15)
+
+    assert len(limited) == 12
 
 
 def test_limite_por_juego_se_aplica_antes_de_la_ia(monkeypatch):

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-from gaming_news_digest.ai.base import AIClient, AIError
+from gaming_news_digest.ai.base import AIClient, AIError, clean_game_name
 from gaming_news_digest.ai.groq_client import GroqClient
 from gaming_news_digest.ai.ollama_client import OllamaClient
 from gaming_news_digest.clustering import cluster_and_select_representatives
@@ -39,11 +39,13 @@ from gaming_news_digest.filtering.topic import (
     classify_video_game_article as _classify_video_game_article,
 )
 from gaming_news_digest.models import (
+    DEFAULT_GAME_NAME,
     Category,
     FetchedItem,
     ModelValidationError,
     NewsItem,
     SourceType,
+    is_generic_game,
 )
 from gaming_news_digest.storage.json_store import save_digest, save_games_config
 from gaming_news_digest.storage.retention import apply_retention, utc_now
@@ -52,7 +54,8 @@ logger = logging.getLogger(__name__)
 
 # Nombre genérico para noticias de medios cuyo juego no se puede identificar
 # (y no está excluido). Sin whitelist: la noticia se publica de todos modos.
-_DEFAULT_GAME_NAME = "Videojuegos"
+# Reexportado desde models para que todo el pipeline use la misma constante.
+_DEFAULT_GAME_NAME = DEFAULT_GAME_NAME
 
 # Ventana temporal del digest DIARIO. Política ÚNICA en config.py: una noticia
 # solo se publica si fue publicada en las últimas 24 h (fecha real, no fecha de
@@ -72,7 +75,31 @@ _SAFE_FALLBACK = {
     "summary": None,
     "relevance": 1,
     "category": "rumor",
+    "game": "",
 }
+
+
+def _resolve_game_name(
+    matched: str | None, ai_game: str | None
+) -> tuple[str, str]:
+    """Decide el nombre final del juego y de dónde salió.
+
+    Prioridad ABSOLUTA del matcher determinista: si el matcher encontró algo
+    concreto, ese nombre gana y la IA no puede tocarlo. Solo cuando el
+    matcher no concluyó (genérico o vacío) se acepta el nombre que proposes
+    la IA, ya saneado por ``clean_game_name``.
+
+    Devuelve ``(nombre, origen)`` donde origen ∈ {"matcher", "ai", "generico"}.
+    """
+    deterministic = (matched or "").strip()
+    if deterministic and deterministic != _DEFAULT_GAME_NAME:
+        return deterministic, "matcher"
+
+    detected = clean_game_name(ai_game)
+    if detected:
+        return detected, "ai"
+
+    return _DEFAULT_GAME_NAME, "generico"
 
 
 # ============================================================
@@ -289,14 +316,23 @@ def _limit_stories_per_game(
 
     Si ``skip_reddit_before_ai`` es True, los items de SourceType.REDDIT
     no se limitan en la fase ANTES de la IA (sí en la posterior).
+
+    El cajón genérico ("Videojuegos") queda EXENTO: agrupa noticias sin relación
+    entre sí, así que aplicarles el tope de un solo juego descartaría stories
+    de juegos distintos que aún no han sido identificados. Antes de la IA es
+    especialmente grave: la noticia muere sin que nada pueda nominarla.
     """
     if max_per_game <= 0:
         return items
 
     # Agrupar por juego
     by_game: dict[str, list[FetchedItem | NewsItem]] = defaultdict(list)
+    generic: list[FetchedItem | NewsItem] = []
     for item in items:
-        by_game[item.game].append(item)
+        if is_generic_game(item.game):
+            generic.append(item)
+        else:
+            by_game[item.game].append(item)
 
     # Para cada juego, ordenar por relevancia (desc) y luego por fecha (más reciente primero)
     # y quedarse con los max_per_game primeros
@@ -324,7 +360,16 @@ def _limit_stories_per_game(
         # Los items de Reddit siempre pasan (en pre-límite) o se limitan (en post-límite)
         limited.extend(reddit_items)
 
-    return limited
+    # El cajón genérico no se limita: son noticias de juegos distintos aún sin
+    # identificar. Se reinsertan respetando el ORDEN DE ENTRADA, igual que el
+    # resto, para que la fase siguiente no vea la lista reordenada.
+    if not generic:
+        return limited
+
+    order = {id(it): i for i, it in enumerate(items)}
+    merged = limited + generic
+    merged.sort(key=lambda it: order[id(it)])
+    return merged
 
 
 def _limit_stories_per_game_separate(
@@ -336,14 +381,19 @@ def _limit_stories_per_game_separate(
 
     - Medios/Steam: límite media_limit
     - Reddit: límite reddit_limit (típicamente más alto para rumores)
+    - Cajón genérico ("Videojuegos"): exento, igual que en el pre-límite
     """
     if media_limit <= 0 and reddit_limit <= 0:
         return items
 
     # Agrupar por juego
     by_game: dict[str, list[FetchedItem | NewsItem]] = defaultdict(list)
+    generic: list[FetchedItem | NewsItem] = []
     for item in items:
-        by_game[item.game].append(item)
+        if is_generic_game(item.game):
+            generic.append(item)
+        else:
+            by_game[item.game].append(item)
 
     limited: list[NewsItem] = []
     for game_items in by_game.values():
@@ -374,7 +424,13 @@ def _limit_stories_per_game_separate(
                 )
                 limited.extend(sorted_items[:reddit_limit])
 
-    return limited
+    if not generic:
+        return limited
+
+    order = {id(it): i for i, it in enumerate(items)}
+    merged = limited + generic
+    merged.sort(key=lambda it: order[id(it)])
+    return merged
 
 
 class Pipeline:
@@ -422,6 +478,10 @@ class Pipeline:
                     "relevance": item.relevance,
                     "category": item.category,
                     "is_fallback": item.summary_is_fallback,
+                    # ``game`` solo se guarda si vino de la IA; el JSON
+                    # publicado no distingue el origen del nombre. Es opcional:
+                    # las entradas cacheadas antes de este cambio no lo tienen.
+                    "game": "" if item.game == _DEFAULT_GAME_NAME else None,
                 }
                 cached += 1
         if cached:
@@ -794,6 +854,10 @@ class Pipeline:
             "reddit_fallback": 0,
             "media_fallback": 0,
         }
+        # Origen del nombre de juego FINAL (tras la IA): "matcher" = el
+        # determinista acertó, "ai" = la IA rescató un "Videojuegos",
+        # "generico" = nadie pudo identificarlo.
+        game_stats = {"matcher": 0, "ai": 0, "generico": 0}
         
         for i, item in enumerate(items):
             if self.current_client is self.groq and i > 0:
@@ -838,6 +902,7 @@ class Pipeline:
                         "relevance": ai_data["relevance"],
                         "category": ai_data["category"],
                         "is_fallback": False,
+                        "game": ai_data.get("game") or "",
                     }
                     if is_reddit:
                         ai_stats["reddit_new"] += 1
@@ -851,12 +916,22 @@ class Pipeline:
             category = ai_data["category"]
             if is_reddit:
                 category = Category.RUMOR.value
+
+            # Juego final: el matcher manda; la IA solo rescues los "Videojuegos".
+            game, game_origin = _resolve_game_name(item.game, ai_data.get("game"))
+            game_stats[game_origin] += 1
+            if game_origin == "ai":
+                logger.info(
+                    'GAME MATCH (IA): "%s" -> %s [el matcher no identificó juego]',
+                    item.title, game,
+                )
+
             try:
                 yield NewsItem(
                     title=item.title,
                     url=item.url,
                     source=item.source,
-                    game=item.game or "",
+                    game=game,
                     language=item.language.value if item.language else "en",
                     published_at=item.published_at,
                     fetched_at=item.fetched_at,
@@ -892,6 +967,14 @@ class Pipeline:
             ai_stats["reddit_fallback"],
             ai_stats["media_fallback"],
         )
+        logger.info(
+            "DIAGNÓSTICO JUEGO FINAL: matcher=%d, ia=%d, generico=%d (identificados=%d/%d)",
+            game_stats["matcher"],
+            game_stats["ai"],
+            game_stats["generico"],
+            game_stats["matcher"] + game_stats["ai"],
+            sum(game_stats.values()),
+        )
         StageStats.log_separator()
 
     def _summarize_with_fallback(self, item) -> dict | None:
@@ -914,6 +997,7 @@ class Pipeline:
                     "summary": result.summary,
                     "relevance": result.relevance,
                     "category": result.category.value,
+                    "game": result.game,
                 }
             except Exception as exc:
                 if isinstance(exc, AIError):

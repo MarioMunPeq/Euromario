@@ -1,9 +1,43 @@
 """Interfaz común y excepciones para clientes de IA (Ollama / Groq)."""
 
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from ..models import Category, Language
+
+# Respuestas que NO identifican un juego concreto: son el "no lo sé" del
+# modelo y equivalen a "sin identificar" (→ nombre genérico).
+_NON_GAME_ANSWERS = frozenset({
+    "", "none", "null", "n/a", "na", "unknown", "desconocido", "no",
+    "videojuegos", "videojuego", "gaming", "game", "games", "juego",
+    "juegos", "video game", "video games", "generic", "varios", "various",
+})
+
+# Techo del nombre: los títulos legibles más largos del digest rondan los 40
+# caracteres. Más largo = el modelo devolvió una frase, no un juego.
+_MAX_GAME_NAME_LEN = 48
+_MAX_GAME_NAME_WORDS = 6
+
+
+def clean_game_name(value: object) -> str:
+    """Normaliza el nombre de juego devuelto por la IA.
+
+    Devuelve ``""`` (sin identificación) cuando la respuesta no parece un
+    nombre de juego: no es texto, es una frase, o es un "no lo sé".
+    El nombre se muestra al usuario en la tarjeta, así que se normaliza
+    a un formato acotado y estable.
+    """
+    if not isinstance(value, str):
+        return ""
+    name = re.sub(r"\s+", " ", value).strip().strip("\"'“”«».,:;!?()[]-—_")
+    if not name or len(name) > _MAX_GAME_NAME_LEN:
+        return ""
+    if len(name.split()) > _MAX_GAME_NAME_WORDS:
+        return ""
+    if name.casefold() in _NON_GAME_ANSWERS:
+        return ""
+    return name
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +48,9 @@ class AISummary:
     relevance: int          # 1-5
     category: Category
     language: Language
+    # Juego/franquicia detectado por la IA. Vacío = no identifica ninguno.
+    # El pipeline solo lo usa cuando el matcher determinista NO conclusó.
+    game: str = ""
 
     def __post_init__(self):
         if not isinstance(self.relevance, int) or not (1 <= self.relevance <= 5):
@@ -24,6 +61,8 @@ class AISummary:
             raise TypeError(f"language debe ser Language enum, no {type(self.language)}")
         if not isinstance(self.summary, str) or not self.summary.strip():
             raise ValueError("summary no puede estar vacío")
+        if not isinstance(self.game, str):
+            raise TypeError(f"game debe ser str, no {type(self.game)}")
 
 
 class AIError(Exception):
@@ -118,4 +157,7 @@ class AIClient(ABC):
             relevance=rel,
             category=category,
             language=language,
+            # "game" es OPCIONAL: si el modelo no lo devuelve (o devuelve algo
+            # que no es un nombre) el matcher determinista sigue mandando.
+            game=clean_game_name(data.get("game")),
         )

@@ -1,4 +1,4 @@
-"""Tests de retención (apply_retention)."""
+﻿"""Tests de retenciÃ³n (apply_retention)."""
 
 from datetime import datetime, timedelta
 
@@ -24,7 +24,7 @@ def make_item(title: str, hours_ago: int, game: str = "Persona", now: datetime |
 
 class TestApplyRetention:
     def test_solo_antiguedad(self):
-        """Items >48 horas se eliminan, ≤48 horas se conservan."""
+        """Items >48 horas se eliminan, â‰¤48 horas se conservan."""
         now = utc_now()
         items = [
             NewsItem(
@@ -49,7 +49,7 @@ class TestApplyRetention:
         assert all(it.published_at >= now - timedelta(hours=48) for it in result)
 
     def test_solo_cap(self):
-        """Si >max_total, recorta conservando los más nuevos."""
+        """Si >max_total, recorta conservando los mÃ¡s nuevos."""
         now = utc_now()
         items = [
             NewsItem(
@@ -75,7 +75,7 @@ class TestApplyRetention:
         assert result[-1].title == "Item 5"
 
     def test_cap_bug_slicing_descendente(self):
-        """REGRESIÓN: items[:max_total] conserva los más NUEVOS en orden descendente."""
+        """REGRESIÃ“N: items[:max_total] conserva los mÃ¡s NUEVOS en orden descendente."""
         now = utc_now()
         items = [
             NewsItem(
@@ -156,7 +156,7 @@ class TestApplyRetention:
         assert len(result) == 200
 
     def test_item_de_47h59m_se_conserva(self):
-        """Un item con 47 h 59 m de antigüedad queda dentro de la ventana
+        """Un item con 47 h 59 m de antigÃ¼edad queda dentro de la ventana
         de 48 horas y se conserva."""
         now = utc_now()
         item = NewsItem(
@@ -175,7 +175,7 @@ class TestApplyRetention:
         assert result == [item]
 
     def test_item_exactamente_48h_sigue_convencion_boundary(self):
-        """Convención existente: el corte es inclusivo (published_at >= cutoff);
+        """ConvenciÃ³n existente: el corte es inclusivo (published_at >= cutoff);
         un item de exactamente 48 h se conserva."""
         now = utc_now()
         cutoff = now - timedelta(hours=48)
@@ -195,7 +195,7 @@ class TestApplyRetention:
         assert result == [item]
 
     def test_item_mas_de_48h_se_elimina(self):
-        """Un item con más de 48 h (48 h 1 m) supera la ventana y se elimina."""
+        """Un item con mÃ¡s de 48 h (48 h 1 m) supera la ventana y se elimina."""
         now = utc_now()
         item = NewsItem(
             title="Fuera de ventana",
@@ -213,7 +213,7 @@ class TestApplyRetention:
         assert result == []
 
     def test_maximo_200_items_se_mantiene(self):
-        """El máximo de 200 items no cambia: se mantiene el cap con la
+        """El mÃ¡ximo de 200 items no cambia: se mantiene el cap con la
         nueva ventana de 48 horas."""
         now = utc_now()
         items = []
@@ -242,7 +242,7 @@ class TestApplyRetention:
 
 class TestApplyRetentionPerGame:
     def test_limite_por_juego(self):
-        """Limita el número de noticias por juego."""
+        """Limita el nÃºmero de noticias por juego."""
         now = utc_now()
         items = [
             NewsItem(
@@ -277,11 +277,11 @@ class TestApplyRetentionPerGame:
         result = apply_retention(items, max_per_game=5, now=now)
         gta_count = sum(1 for r in result if r.game == "Grand Theft Auto")
         fifa_count = sum(1 for r in result if r.game == "FIFA 24")
-        assert gta_count == 5  # límite de 5
-        assert fifa_count == 3  # por debajo del límite, se conservan todas
+        assert gta_count == 5  # lÃ­mite de 5
+        assert fifa_count == 3  # por debajo del lÃ­mite, se conservan todas
 
     def test_varios_juegos_respetan_limite(self):
-        """Cada juego respeta su límite independientemente."""
+        """Cada juego respeta su lÃ­mite independientemente."""
         now = utc_now()
         items = [
             NewsItem(
@@ -359,7 +359,7 @@ class TestApplyRetentionPerGame:
                 source=Source(name="IGN", type="media"),
                 game="Grand Theft Auto",
                 language="en",
-                published_at=now - timedelta(hours=36),  # más antiguo (antes: 50h > ventana 48h)
+                published_at=now - timedelta(hours=36),  # mÃ¡s antiguo (antes: 50h > ventana 48h)
                 fetched_at=now - timedelta(hours=36),
                 relevance=5,  # alta relevancia
                 category="actualizacion",
@@ -368,13 +368,13 @@ class TestApplyRetentionPerGame:
         ]
 
         result = apply_retention(items, max_per_game=3, now=now)
-        # Debe conservar el de alta relevancia aunque sea más antiguo
+        # Debe conservar el de alta relevancia aunque sea mÃ¡s antiguo
         titles = [r.title for r in result if r.game == "Grand Theft Auto"]
         assert "GTA High Relevance" in titles
         assert len([t for t in titles if t.startswith("GTA Low")]) == 2  # solo 2 de los 3 low
 
     def test_juegos_por_debajo_limite_no_afectados(self):
-        """Juegos con menos items que el límite no se ven afectados."""
+        """Juegos con menos items que el lÃ­mite no se ven afectados."""
         now = utc_now()
         items = [
             NewsItem(
@@ -396,7 +396,7 @@ class TestApplyRetentionPerGame:
         assert len(result) == 3  # todos se conservan
 
     def test_retencion_global_y_por_juego_combinadas(self):
-        """La retención global se aplica primero, luego la por juego."""
+        """La retenciÃ³n global se aplica primero, luego la por juego."""
         now = utc_now()
         items = []
         # 10 items GTA (recientes) + 10 items FIFA (antiguos >48 horas)
@@ -436,7 +436,7 @@ class TestApplyRetentionPerGame:
         gta_count = sum(1 for r in result if r.game == "Grand Theft Auto")
         fifa_count = sum(1 for r in result if r.game == "FIFA 24")
         assert gta_count == 5  # limitado por max_per_game
-        assert fifa_count == 0  # eliminado por antigüedad
+        assert fifa_count == 0  # eliminado por antigÃ¼edad
         assert len(result) == 5  # total 5
 
     def test_urls_y_datos_conservados(self):
@@ -474,7 +474,7 @@ class TestApplyRetentionPerGame:
         result = apply_retention(items, max_per_game=1, now=now)
         assert len(result) == 1
         rep = result[0]
-        # El de mayor relevancia (5) debe ganar aunque sea más antiguo
+        # El de mayor relevancia (5) debe ganar aunque sea mÃ¡s antiguo
         assert rep.relevance == 5
         assert rep.image_url == "https://img2.jpg"
 
@@ -507,7 +507,7 @@ class TestApplyRetentionReddit:
             NewsItem(
                 title=f"Reddit Rumor {i}",
                 url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
-                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                source=Source(name="Reddit Â· r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
                 game="Grand Theft Auto",
                 language="en",
                 published_at=now - timedelta(hours=i),
@@ -521,7 +521,7 @@ class TestApplyRetentionReddit:
         items = media_items + reddit_items
         items.reverse()
 
-        # max_total=200, pero Reddit no cuenta para este límite
+        # max_total=200, pero Reddit no cuenta para este lÃ­mite
         result = apply_retention(items, max_age_hours=48, max_total=200, max_per_game=8, max_per_game_reddit=15, now=now)
 
         reddit_count = sum(1 for r in result if r.source.type.value == "reddit")
@@ -534,13 +534,13 @@ class TestApplyRetentionReddit:
         assert len(result) == 170  # 160 media + 10 reddit
 
     def test_reddit_limite_propio_por_juego_max_per_game_reddit(self):
-        """Reddit respeta su propio límite por juego (max_per_game_reddit=15)."""
+        """Reddit respeta su propio lÃ­mite por juego (max_per_game_reddit=15)."""
         now = utc_now()
         reddit_items = [
             NewsItem(
                 title=f"GTA Rumor {i}",
                 url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
-                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                source=Source(name="Reddit Â· r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
                 game="Grand Theft Auto",
                 language="en",
                 published_at=now - timedelta(hours=i),
@@ -554,21 +554,21 @@ class TestApplyRetentionReddit:
         items = reddit_items
         items.reverse()
 
-        # max_per_game_reddit=5, así que solo 5 deben sobrevivir
+        # max_per_game_reddit=5, asÃ­ que solo 5 deben sobrevivir
         result = apply_retention(items, max_age_hours=48, max_total=200, max_per_game=8, max_per_game_reddit=5, now=now)
 
         reddit_count = sum(1 for r in result if r.source.type.value == "reddit")
-        assert reddit_count == 5, f"Esperados 5 Reddit (límite 5), got {reddit_count}"
+        assert reddit_count == 5, f"Esperados 5 Reddit (lÃ­mite 5), got {reddit_count}"
 
     def test_reddit_sin_limite_por_juego_si_max_per_game_reddit_none_o_cero(self):
-        """Si max_per_game_reddit es None o <=0, no hay límite por juego para Reddit."""
+        """Si max_per_game_reddit es None o <=0, no hay lÃ­mite por juego para Reddit."""
         now = utc_now()
         reddit_items = [
             NewsItem(
                 title=f"GTA Rumor {i}",
                 url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
-                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
-                game=f"Game{i}",  # 49 juegos diferentes para evitar límite por juego
+                source=Source(name="Reddit Â· r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                game=f"Game{i}",  # 49 juegos diferentes para evitar lÃ­mite por juego
                 language="en",
                 published_at=now - timedelta(hours=i),  # 0-48 horas (49 items)
                 fetched_at=now - timedelta(hours=i),
@@ -581,20 +581,20 @@ class TestApplyRetentionReddit:
         items = reddit_items
         items.reverse()
 
-        # max_per_game_reddit=0 -> no límite por juego para Reddit
+        # max_per_game_reddit=0 -> no lÃ­mite por juego para Reddit
         result = apply_retention(items, max_age_hours=48, max_total=200, max_per_game=8, max_per_game_reddit=0, now=now)
 
         reddit_count = sum(1 for r in result if r.source.type.value == "reddit")
         assert reddit_count == 49, f"Esperados 49 Reddit (0-48h), got {reddit_count}"
 
     def test_reddit_solo_filtro_edad(self):
-        """Reddit items >48 horas se eliminan, ≤48 horas se conservan (solo filtro edad)."""
+        """Reddit items >48 horas se eliminan, â‰¤48 horas se conservan (solo filtro edad)."""
         now = utc_now()
         reddit_items = [
             NewsItem(
                 title=f"Rumor {i}",
                 url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
-                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                source=Source(name="Reddit Â· r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
                 game="Grand Theft Auto",
                 language="en",
                 published_at=now - timedelta(hours=h),
@@ -637,7 +637,7 @@ class TestApplyRetentionReddit:
             NewsItem(
                 title=f"Reddit {i}",
                 url=f"https://reddit.com/r/gamingleaksandrumours/{i}",
-                source=Source(name="Reddit · r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
+                source=Source(name="Reddit Â· r/gamingleaksandrumours", type="reddit", subreddit="gamingleaksandrumours"),
                 game="Grand Theft Auto",
                 language="en",
                 published_at=now - timedelta(hours=i),
@@ -659,3 +659,16 @@ class TestApplyRetentionReddit:
         assert reddit_count == 15, f"Todos 15 Reddit deben sobrevivir, got {reddit_count}"
         assert media_count == 200, f"Media limitado a 200, got {media_count}"
         assert len(result) == 215
+
+
+def test_retencion_no_capa_el_cajon_generico():
+    """El cajón "Videojuegos" no es un juego: no debe sufrir el tope por juego."""
+    now = utc_now()
+    items = [
+        make_item(f"sin-juego-{i}", hours_ago=i, game="Videojuegos")
+        for i in range(12)
+    ]
+
+    result = apply_retention(items, max_age_hours=48, max_total=200, max_per_game=8, now=now)
+
+    assert len(result) == 12

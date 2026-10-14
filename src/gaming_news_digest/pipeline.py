@@ -1045,7 +1045,3 @@ class Pipeline:
                 entry["platform"] = list(rule.platform)
             games_data.append(entry)
         save_games_config(games_data)
-
-
-def create_pipeline(sources, games, limits) -> Pipeline:
-    return Pipeline(sources, games, limits)

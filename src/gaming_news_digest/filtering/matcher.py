@@ -11,17 +11,8 @@ Principios:
 
 import re
 import unicodedata
-from dataclasses import dataclass
 
 from ..config import GameRule
-
-
-@dataclass(frozen=True, slots=True)
-class _CompiledRule:
-    """Regla de juego con patrón ya compilado."""
-
-    name: str
-    pattern: re.Pattern
 
 
 def _normalize(text: str) -> str:

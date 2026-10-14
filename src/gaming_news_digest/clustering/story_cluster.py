@@ -317,17 +317,6 @@ class StoryCluster:
     def count(self) -> int:
         return len(self.items)
 
-    @property
-    def sources_list(self) -> list[str]:
-        return sorted(self.sources)
-
-    @property
-    def date_range_str(self) -> str:
-        start, end = self.time_range
-        if start.date() == end.date():
-            return start.strftime("%Y-%m-%d")
-        return f"{start.strftime('%Y-%m-%d')} a {end.strftime('%Y-%m-%d')}"
-
 
 def compute_story_signature(item: FetchedItem) -> dict:
     """Genera una firma de historia para un artículo."""

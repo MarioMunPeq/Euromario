@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -39,10 +39,7 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       Top bar â€” brand Â· game filters Â· section switch
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
+  <!-- Top bar: brand / game filters / section switch -->
   <header class="topbar">
     <div class="topbar__inner">
 
@@ -51,7 +48,7 @@
         <span class="brand__name" id="app-title">EuroMario</span>
       </a>
 
-      <!-- Game filters. Populated from data/games.json (GTA, PokÃ©mon). -->
+      <!-- Game filters. Populated from data/games.json (GTA, Pokemon). -->
       <nav class="gamefilters" id="game-filters" aria-label="Filter by game" hidden></nav>
 
       <!-- Section switch. Single-select: All / News / Rumors. -->
@@ -73,9 +70,7 @@
     </div>
   </header>
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       Main
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- Main -->
   <main class="main" id="main">
 
     <!-- Result summary + active filter chip -->
@@ -91,7 +86,7 @@
       </div>
     </div>
 
-    <!-- â”€â”€ Loading â”€â”€ -->
+    <!-- Loading -->
     <div class="panel" id="state-loading">
       <div class="skeletons" aria-hidden="true">
         <div class="skeleton"><div class="skeleton__media"></div><div class="skeleton__body"><span class="skeleton__line w-35"></span><span class="skeleton__line w-95"></span><span class="skeleton__line w-70"></span></div></div>
@@ -101,7 +96,7 @@
       <p class="visually-hidden" role="status">Loading news</p>
     </div>
 
-    <!-- â”€â”€ Error â”€â”€ -->
+    <!-- Error -->
     <div class="panel panel--message" id="state-error" hidden>
       <svg class="panel__icon" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
         <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -112,7 +107,7 @@
       <button type="button" class="btn" id="retry-btn">Try again</button>
     </div>
 
-    <!-- â”€â”€ Empty â”€â”€ -->
+    <!-- Empty -->
     <div class="panel panel--message" id="state-empty" hidden>
       <svg class="panel__icon" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
         <rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -123,18 +118,16 @@
       <button type="button" class="btn" id="empty-reset-btn" hidden>Clear filters</button>
     </div>
 
-    <!-- â”€â”€ Cards â”€â”€ -->
+    <!-- Cards -->
     <section class="grid" id="news-grid" aria-label="Stories" hidden></section>
 
   </main>
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       Footer
-       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <!-- Footer -->
   <footer class="footer">
     <div class="footer__inner">
       <p class="footer__brand">EuroMario</p>
-      <p class="footer__note">AI-curated gaming digest Â· <span id="footer-updated">Updated daily</span></p>
+      <p class="footer__note">AI-curated gaming digest &middot; <span id="footer-updated">Updated daily</span></p>
     </div>
   </footer>
 

@@ -352,12 +352,11 @@ frontend/
 ├── js/
 │   └── app.js
 ├── assets/
-│   ├── games/
-│   ├── icons/
-│   └── platforms/
+│   ├── games/          # un logo por juego declarado en games.yaml
+│   └── icons/          # iconos de la interfaz (filtro de sección, Reddit)
 └── data/
-    ├── games.json
-    └── news.json
+    ├── games.json      # generado: nombre -> logo -> plataforma
+    └── news.json       # generado: el digest publicado
 ```
 
 ---

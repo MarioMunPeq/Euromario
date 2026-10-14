@@ -56,7 +56,7 @@ env:
   # válido (0 de 22 en el run del 2026-10-14, con 22 de 66 tarjetas publicadas
   # sin resumen). Para cambiar de modelo basta con editar esta variable.
   # llama3-8b-8192: alias estable, siempre disponible en free tier, soporta json_object.
-  GROQ_MODEL: llama3-8b-8192
+  GROQ_MODEL: llama-3.1-8b-instant
 
 jobs:
   actualizar-digest:

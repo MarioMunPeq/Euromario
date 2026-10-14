@@ -2,12 +2,32 @@
 
 on:
   schedule:
-    # Digest DIARIO, ~09:00 hora de Madrid en verano.
-    # 07:00 UTC = 09:00 CEST (hora de verano). En invierno (CET = UTC+1)
-    # el cron dispara a las 08:00 hora de Madrid: GitHub Actions solo acepta
-    # cron en UTC y no aplica cambios de horario (limitación documentada).
-    - cron: "0 7 * * *"
+    # 4 ejecuciones al día a las 07:23 / 13:23 / 19:23 / 01:23 hora de Madrid.
+    #
+    # El minuto 23 NO es arbitrario: GitHub documenta que los workflows
+    # programados se retrasan con cargas altas y que "high load times include
+    # the start of every hour". Con `0 7` (en punto) el retraso medido llegó a
+    # 5 h 52 m. Mover el disparo fuera de la cúspide es la única palanca que la
+    # propia documentación reconoce.
+    #
+    # Y 4 veces al día, no 1: aunque el retraso baje, sigue siendo Variable.
+    # Publicar más a menudo acota el caso peor (de ~6 h a ~1,5 h de desfase)
+    # sin ninguna infraestructura externa. Son ~28 min de runner al día.
+    #
+    # `timezone` está soportado (IANA, con DST), así que 07:23 es 07:23 en
+    # Madrid todo el año: en verano CEST y en invierno CET.
+    - cron: "23 1,7,13,19 * * *"
       timezone: "Europe/Madrid"
+
+  # Regenerar el digest al tocar config o código del pipeline, sin esperar al cron.
+  push:
+    branches: [master]
+    paths:
+      - "config/**"
+      - "src/**"
+      - "requirements.txt"
+      - ".github/workflows/digest.yml"
+
   workflow_dispatch:
 
 permissions:
@@ -17,11 +37,18 @@ permissions:
 
 concurrency:
   group: digest
-  cancel-in-progress: false
+  # Una ejecución programada que tarda 55 min bloquea a las siguientes. Como el
+  # digest se regenera desde cero siempre, una ejecución más nueva deja obsoleta
+  # a la anterior: se cancela. Los runs manuales NUNCA se cancelan, para poder
+  # depurar sin que les salpiente una ejecución programada de fondo.
+  cancel-in-progress: ${{ github.event_name == 'schedule' }}
 
 env:
   PYTHONPATH: src
   OLLAMA_MODEL: llama3.2:3b
+  # A nivel de JOB (no de paso) para que los `if:` de los pasos puedan leerlo:
+  # los secretos no son accesibles directamente en condiciones, sí vía `env`.
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
 jobs:
   actualizar-digest:
@@ -32,6 +59,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -41,7 +70,11 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
+      # Ollama solo se instala si NO hay clave de Groq. Con clave, el pipeline
+      # arranca directamente contra Groq (~1-3 s por noticia) y se ahorra el
+      # install + la descarga del modelo (~1 min, y varios más si falla caché).
       - name: Caché de modelos Ollama
+        if: ${{ env.GROQ_API_KEY == '' }}
         uses: actions/cache@v4
         with:
           # El modelo se descarga cada día (~1-2 GB); cachearlo entre
@@ -53,6 +86,7 @@ jobs:
 
       - name: Instalar e iniciar Ollama
         id: ollama
+        if: ${{ env.GROQ_API_KEY == '' }}
         continue-on-error: true
         run: |
           curl -fsSL https://ollama.com/install.sh | sh
@@ -72,32 +106,50 @@ jobs:
           done
           ollama pull "$OLLAMA_MODEL"
 
+      # `always()` sin más: el pipeline corre también cuando el paso de Ollama
+      # se omite (porque hay clave de Groq) o falla. Antes se condicionaba a
+      # `steps.ollama.outcome != 'skipped'`, lo que se saltaría el pipeline
+      # entero justo en el caso de Groq.
       - name: Ejecutar pipeline
-        if: always() && steps.ollama.outcome != 'skipped'
-        env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        if: always()
         run: python -m gaming_news_digest
 
+      # `always()` para que un fallo del pipeline no deje la web sin desplegar:
+      # los datos válidos del último run siguen siendo mejores que nada.
       - name: Commit de los datos actualizados
+        if: always()
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add frontend/data
           if git diff --cached --quiet; then
             echo "Sin cambios en los datos."
-          else
-            git commit -m "chore(datos): actualizar digest automático"
-            git push
+            exit 0
           fi
+          git commit -m "chore(datos): actualizar digest automático"
+          # Rebase antes de subir: si algo entró al repo mientras corríamos
+          # (un push manual, otra ejecución), el push directo fallaría DESPUÉS
+          # de haber hecho todo el trabajo y se perdería el digest.
+          for attempt in 1 2 3; do
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push && exit 0
+            echo "Push fallido (intento ${attempt}/3); reintentando en 10s"
+            sleep 10
+          done
+          echo "::error::No se pudieron subir los datos tras 3 intentos"
+          exit 1
 
       - name: Configure Pages
+        if: always()
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
+        if: always()
         uses: actions/upload-pages-artifact@v3
         with:
           path: frontend
 
       - id: deployment
         name: Deploy to GitHub Pages
+        if: always()
         uses: actions/deploy-pages@v4

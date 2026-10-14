@@ -1,6 +1,7 @@
 """Orquestador del pipeline con lógica de fallback Ollama→Groq."""
 
 import logging
+import os
 import re
 import time
 from collections import defaultdict
@@ -449,8 +450,16 @@ class Pipeline:
             re.compile(p, re.IGNORECASE) for p in self.quality.exclude_url_patterns
         ]
         self.ollama = OllamaClient()
-        self.groq = GroqClient()  # puede lanzar ValueError si no hay API key
-        self.current_client: AIClient = self.ollama
+        # Groq es un fallback OPCIONAL: sin GROQ_API_KEY el pipeline sigue
+        # funcionando con Ollama. Antes, la ausencia de la clave abortaba la
+        # construcción del Pipeline y tumbaba toda la ejecución.
+        self.groq: GroqClient | None = None
+        if os.getenv("GROQ_API_KEY", "").strip():
+            self.groq = GroqClient()
+        # Con clave disponible se empieza por Groq: es cloud, va de 1 a 3 s
+        # por noticia, mientras que llama3.2:3b en un runner de 2 vCPU tarda
+        # 10-30 s. Con más de 40 noticias la diferencia decide el runtime.
+        self.current_client: AIClient = self.groq or self.ollama
         self._consecutive_ai_errors = 0
         self._ai_cache: dict[str, dict] = {}  # url -> {summary, relevance, category, is_fallback}
 
@@ -1001,7 +1010,7 @@ class Pipeline:
                 }
             except Exception as exc:
                 if isinstance(exc, AIError):
-                    if self.current_client is self.ollama:
+                    if self.current_client is self.ollama and self.groq is not None:
                         self._consecutive_ai_errors += 1
                         if self._consecutive_ai_errors >= self.ollama.MAX_CONSECUTIVE_ERRORS:
                             logger.warning(
@@ -1016,8 +1025,10 @@ class Pipeline:
                     logger.warning("AIError en %s: fallback seguro", item.title)
                     return None
                 if isinstance(exc, (ConnectionError, TimeoutError, requests.HTTPError)):
-                    if self.current_client is self.groq:
-                        logger.critical("Fallo crítico en Groq: %s", exc)
+                    # Sin clave de Groq no hay a dónde saltar: el fallo de
+                    # infraestructura es irrecuperable y hay que abortar.
+                    if self.groq is None or self.current_client is self.groq:
+                        logger.critical("Sin cliente de IA alternativo disponible: %s", exc)
                         raise
                     logger.warning("Ollama infra: %s -> switch a Groq", exc)
                     self.current_client = self.groq

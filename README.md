@@ -229,7 +229,7 @@ EuroMario uses a provider-neutral AI interface:
 
 ### Ollama
 
-The primary local client uses Ollama's HTTP API.
+The local client uses Ollama's HTTP API.
 
 Default model:
 
@@ -237,11 +237,11 @@ Default model:
 llama3.2:3b
 ```
 
-The GitHub Actions workflow installs Ollama and pulls the configured model on the runner.
+The GitHub Actions workflow installs Ollama and pulls the configured model on the runner — but only when `GROQ_API_KEY` is not set.
 
 ### Groq
 
-Groq provides the cloud fallback through an OpenAI-compatible chat-completions endpoint.
+Groq provides the cloud client through an OpenAI-compatible chat-completions endpoint. It is used as the **primary** client when `GROQ_API_KEY` is present, and as the fallback when Ollama fails.
 
 Default model configured by the client:
 
@@ -505,7 +505,15 @@ env:
 
 **Never commit the key to the repository.**
 
-> **Implementation note:** the current `Pipeline` constructor instantiates `GroqClient` immediately, so a local run without `GROQ_API_KEY` can fail during startup even when Ollama is available. This is an implementation detail of the current version, not a reason to put the key in source control.
+`GROQ_API_KEY` is fully optional. The pipeline detects it at startup:
+
+| `GROQ_API_KEY` | Behaviour |
+|---|---|
+| set | Starts on Groq. In CI, this also skips the Ollama install and model pull entirely. |
+| unset | Starts on Ollama. Groq stays `None`; there is no cloud fallback. |
+
+If neither is reachable, a client failure is re-raised rather than silently
+producing a digest full of `summary: null`.
 
 ---
 
@@ -639,10 +647,21 @@ The project uses a single workflow.
 Runs:
 
 ```text
-Every day at 07:00 UTC (09:00 in Madrid during summer, 08:00 in winter;
-GitHub Actions schedules in UTC only, see the workflow comment)
+Every day at 01:23, 07:23, 13:23 and 19:23 Europe/Madrid
+(timezone-aware, so DST is handled by GitHub)
+plus on every push touching config/, src/, requirements.txt or the workflow
 plus manual triggers via workflow_dispatch
 ```
+
+> **Why four times a day, and why minute 23?**
+> GitHub's scheduled runners are shared infrastructure and the dispatch itself
+> is delayed under load — measured on this repo at a **median of 3 h 04 m and a
+> maximum of 5 h 52 m**, and growing month over month. GitHub's own docs note
+> that "high load times include the start of every hour" and recommend moving
+> off the hour boundary, which is why the cron is on `:23` and not `:00`. The
+> queue delay *before* the job starts is the dominant factor here: the job
+> itself takes ~7 minutes. Running more often does not fix the delay, it caps
+> how stale the site can get while waiting for it.
 
 The workflow:
 
@@ -650,15 +669,25 @@ The workflow:
 2. installs Python 3.12;
 3. restores pip cache;
 4. installs Python dependencies;
-5. restores the cached Ollama model;
-6. installs and starts Ollama;
+5. restores the cached Ollama model — **skipped when `GROQ_API_KEY` is set**;
+6. installs and starts Ollama — **also skipped when `GROQ_API_KEY` is set**;
 7. pulls the configured model (from cache when available);
 8. runs `python -m gaming_news_digest`;
 9. commits updated frontend data;
-10. pushes the generated data back to `master`;
-11. deploys `frontend/` to GitHub Pages (`configure-pages` → `upload-pages-artifact` → `deploy-pages`), only when all previous steps succeeded.
+10. rebases and pushes it back to `master`, retrying up to 3 times so a concurrent push does not waste the run;
+11. deploys `frontend/` to GitHub Pages (`configure-pages` → `upload-pages-artifact` → `deploy-pages`).
 
-A concurrency group prevents overlapping digest executions.
+Steps 8–11 run with `if: always()`: a pipeline failure still deploys the last
+known-good data rather than leaving the site without an update.
+
+A concurrency group prevents overlapping digest executions. Scheduled runs
+supersede a still-running scheduled run (`cancel-in-progress`); manual runs are
+never cancelled, so debugging is not interrupted.
+
+Without `GROQ_API_KEY` the workflow installs Ollama and runs fully local. With
+it, Ollama is skipped entirely and the pipeline uses Groq from the start — which
+is also faster, since `llama3.2:3b` on a CPU-only runner needs 10–30 s per
+article against Groq's 1–3 s.
 
 Manual frontend changes are deployed by triggering the workflow with `workflow_dispatch`.
 
@@ -914,7 +943,8 @@ http://localhost:8000
 
 ### `GROQ_API_KEY no configurada`
 
-The current pipeline constructs `GroqClient` during startup. Set `GROQ_API_KEY` in the environment before running the pipeline.
+Not an error. The pipeline falls back to Ollama and, in CI, skips the Ollama
+install step entirely because there is nothing to fall back *from*.
 
 ### Ollama is not available
 
@@ -925,11 +955,36 @@ ollama list
 ollama pull llama3.2:3b
 ```
 
+Without a reachable client the pipeline aborts rather than publishing a digest
+full of empty summaries.
+
 ### GitHub Actions takes a long time
 
-The CI workflow installs Ollama and downloads the model on the hosted runner. The runner may also run Ollama without a GPU. This setup is intentionally self-contained, but model startup and inference can dominate execution time.
+Check which of the two problems you are actually seeing, because they have very
+different fixes:
 
-The pipeline mitigates this by applying the per-game limit before AI inference and by supporting Groq fallback.
+1. **The run shows up late in the Actions tab.** This is GitHub's shared cron
+   infrastructure, not the runner. The delay happens before the job starts: the
+   queue wait is ~0 s while the dispatch itself measured a median of 3 h and a
+   max of 5 h 52 m on this repo. Nothing in this codebase can fix it beyond
+   scheduling off the hour boundary (`:23`) and running more often.
+2. **The job itself takes long.** It takes ~7 minutes, of which ~5 is the
+   pipeline and ~1 is the Ollama install. If the workflow logs show Ollama being
+   installed, `GROQ_API_KEY` is not reaching the job — with it, the job skips
+   that step and runs several times faster.
+
+### The digest says `Videojuegos` for everything
+
+`Videojuegos` is the catch-all for stories whose game could not be identified.
+The deterministic matcher runs first; when it concludes nothing, the AI is asked
+to name the game. The log line to check is:
+
+```text
+DIAGNÓSTICO JUEGO FINAL: matcher=N, ia=N, generico=N
+```
+
+A high `generico` count with a low `ia` count means the model returned empty
+strings (genuinely about the industry) or is not being reached at all.
 
 ### The frontend shows no data locally
 

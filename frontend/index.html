@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#08080A">
   <meta name="description" content="Daily AI-curated gaming digest: releases, updates, rumors and analysis from the best sources, in one place.">
 
-  <title>EuroMario — Gaming news, release radar &amp; rumors</title>
+  <title>EuroMario â€” Gaming news, release radar &amp; rumors</title>
 
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -17,7 +17,7 @@
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="EuroMario">
-  <meta property="og:title" content="EuroMario — Gaming news, release radar &amp; rumors">
+  <meta property="og:title" content="EuroMario â€” Gaming news, release radar &amp; rumors">
   <meta property="og:description" content="Daily AI-curated gaming digest: releases, updates, rumors and analysis from the best sources, in one place.">
   <meta property="og:url" content="https://mariomunpeq.github.io/Euromario/">
   <meta property="og:image" content="https://mariomunpeq.github.io/Euromario/assets/og-banner.png">
@@ -26,7 +26,7 @@
   <meta property="og:image:height" content="630">
   <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="EuroMario — Gaming news, release radar &amp; rumors">
+  <meta name="twitter:title" content="EuroMario â€” Gaming news, release radar &amp; rumors">
   <meta name="twitter:description" content="Daily AI-curated gaming digest: releases, updates, rumors and analysis from the best sources, in one place.">
   <meta name="twitter:image" content="https://mariomunpeq.github.io/Euromario/assets/og-banner.png">
 
@@ -39,9 +39,9 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- ══════════════════════════════════════════════════════════
-       Top bar — brand · game filters · section switch
-       ══════════════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       Top bar â€” brand Â· game filters Â· section switch
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <header class="topbar">
     <div class="topbar__inner">
 
@@ -50,22 +50,21 @@
         <span class="brand__name" id="app-title">EuroMario</span>
       </a>
 
-      <!-- Game filters. Populated from data/games.json (GTA, Pokémon). -->
+      <!-- Game filters. Populated from data/games.json (GTA, PokÃ©mon). -->
       <nav class="gamefilters" id="game-filters" aria-label="Filter by game" hidden></nav>
 
       <!-- Section switch. Single-select: All / News / Rumors. -->
       <div class="segments" role="radiogroup" aria-label="Filter by section">
-        <span class="segments__thumb" aria-hidden="true"></span>
         <button type="button" class="segments__btn" data-section="all" role="radio" aria-checked="true">
-          <img class="segments__icon" src="assets/icons/all.svg" alt="" aria-hidden="true" width="16" height="16">
+          <img class="segments__icon" src="assets/icons/all.svg" alt="" aria-hidden="true" width="17" height="17">
           <span class="segments__text">All</span>
         </button>
         <button type="button" class="segments__btn" data-section="news" role="radio" aria-checked="false">
-          <img class="segments__icon" src="assets/icons/news.svg" alt="" aria-hidden="true" width="16" height="16">
+          <img class="segments__icon" src="assets/icons/news.svg" alt="" aria-hidden="true" width="17" height="17">
           <span class="segments__text">News</span>
         </button>
         <button type="button" class="segments__btn" data-section="rumors" role="radio" aria-checked="false">
-          <img class="segments__icon" src="assets/icons/rumors.svg" alt="" aria-hidden="true" width="16" height="16">
+          <img class="segments__icon" src="assets/icons/rumors.svg" alt="" aria-hidden="true" width="17" height="17">
           <span class="segments__text">Rumors</span>
         </button>
       </div>
@@ -73,9 +72,9 @@
     </div>
   </header>
 
-  <!-- ══════════════════════════════════════════════════════════
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        Main
-       ══════════════════════════════════════════════════════════ -->
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <main class="main" id="main">
 
     <!-- Result summary + active filter chip -->
@@ -91,7 +90,7 @@
       </div>
     </div>
 
-    <!-- ── Loading ── -->
+    <!-- â”€â”€ Loading â”€â”€ -->
     <div class="panel" id="state-loading">
       <div class="skeletons" aria-hidden="true">
         <div class="skeleton"><div class="skeleton__media"></div><div class="skeleton__body"><span class="skeleton__line w-35"></span><span class="skeleton__line w-95"></span><span class="skeleton__line w-70"></span></div></div>
@@ -101,7 +100,7 @@
       <p class="visually-hidden" role="status">Loading news</p>
     </div>
 
-    <!-- ── Error ── -->
+    <!-- â”€â”€ Error â”€â”€ -->
     <div class="panel panel--message" id="state-error" hidden>
       <svg class="panel__icon" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
         <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -112,7 +111,7 @@
       <button type="button" class="btn" id="retry-btn">Try again</button>
     </div>
 
-    <!-- ── Empty ── -->
+    <!-- â”€â”€ Empty â”€â”€ -->
     <div class="panel panel--message" id="state-empty" hidden>
       <svg class="panel__icon" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
         <rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
@@ -123,18 +122,18 @@
       <button type="button" class="btn" id="empty-reset-btn" hidden>Clear filters</button>
     </div>
 
-    <!-- ── Cards ── -->
+    <!-- â”€â”€ Cards â”€â”€ -->
     <section class="grid" id="news-grid" aria-label="Stories" hidden></section>
 
   </main>
 
-  <!-- ══════════════════════════════════════════════════════════
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        Footer
-       ══════════════════════════════════════════════════════════ -->
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <footer class="footer">
     <div class="footer__inner">
       <p class="footer__brand">EuroMario</p>
-      <p class="footer__note">AI-curated gaming digest · <span id="footer-updated">Updated daily</span></p>
+      <p class="footer__note">AI-curated gaming digest Â· <span id="footer-updated">Updated daily</span></p>
     </div>
   </footer>
 

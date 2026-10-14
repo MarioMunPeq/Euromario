@@ -255,7 +255,7 @@ function renderGameFilters(availableGames) {
   els.gameFilters.innerHTML = games.map((game) => {
     const logo = state.logos[game];
     const mark = logo
-      ? `<img class="gamefilter__mark${CONFIG.darkLogos.has(game) ? ' gamefilter__mark--invert' : ''}" src="${escapeHtml(logo)}" alt="" aria-hidden="true" width="32" height="32">`
+      ? `<img class="gamefilter__mark${CONFIG.darkLogos.has(game) ? ' gamefilter__mark--invert' : ''}" src="${escapeHtml(logo)}" alt="" aria-hidden="true" width="34" height="34">`
       : `<span class="gamefilter__mark" aria-hidden="true"></span>`;
     return `
       <button type="button" class="gamefilter" data-game="${escapeHtml(game)}"

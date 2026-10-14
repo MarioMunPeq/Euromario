@@ -243,11 +243,8 @@ Antes de pushear: `pytest` verde y `ruff check src tests` limpio. Si cambia el c
 
 ## 9. Issues conocidos del frontend
 
-Bugs reales detectados y pendientes. No son "decorativos": fallan checks de `scripts/verify-visual.js` y algún día deben arreglarse. Cada uno lleva su marcador `TODO(known-issue)` en el propio test.
+Ninguno abierto.
 
-| ID | Síntoma | Origen | Archivos implicados | Cómo reproducirlo |
-|----|---------|--------|---------------------|-------------------|
-| `KI-01` | Check `header shows noticias` en `verify-visual.js` falla (`header-count` no contiene "noticias") | Tras el rework de la topbar se eliminó la stats bar ("X noticias · Actualizado") que poblaba `header-count`; el elemento sigue referenciado desde `renderStats` pero quedó huérfano o ya no está en el DOM | `frontend/js/app.js` (`renderStats`, `els.headerCount`), `frontend/index.html`, `scripts/verify-visual.js` | `node scripts/verify-visual.js` → 1er FAIL de TEST 1 |
-| `KI-02` | Check `first tile (ALL) has icon` en `verify-visual.js` falla (`firstTileHasIcon` es false) | Tras el rework de los filtros, el tile "Todos" de juegos ya no expone un `.game-tile__icon` detectable, o el selector del check no coincide con la estructura actual | `frontend/js/app.js` (`renderGameTiles`), `frontend/css/style.css`, `scripts/verify-visual.js` | `node scripts/verify-visual.js` → 2º FAIL de TEST 1 |
+Los dos issues que había (`KI-01` stats bar huérfana con `renderStats`/`headerCount`, `KI-02` tile "Todos" sin `.game-tile__icon`) disappearían con el rediseño del frontend: la stats bar se sustituyó por la barra de resultados (`#toolbar-count`) y el tile "Todos" por el control segmentado **All / News / Rumors**. Ninguna de las dos funciones sigue existiendo en `frontend/js/app.js`.
 
-**Nota:** ambos se marcaron como "pre-existentes" (ya fallaban antes del rediseño de cards de noticias), pero siguen siendo bugs reales: el objetivo es que `verify-visual.js` acabe en verde completo.
+Con ellos se eliminaron también los scripts de verificación visual del frontend (`scripts/verify-visual.js` y compañía), que comprobaban contra selectores de la estructura anterior y ya no tenían nada que verificar. La cobertura del frontend es manual; la validación automática la aporta `pytest` sobre `src/`.

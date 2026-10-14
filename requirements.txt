@@ -1,10 +1,12 @@
-# Runtime del pipeline
+# Runtime del pipeline.
+# Los clientes de IA (Ollama y Groq) hablan HTTP con `requests` directamente,
+# contra /api/generate y /chat/completions. Los SDK `ollama` y `groq` no se
+# usan en ningún punto del código: instalarlos solo costaba tiempo en el runner.
+
 feedparser>=6.0,<7
 requests>=2.32,<3
 beautifulsoup4>=4.12,<5
 PyYAML>=6.0,<7
-ollama>=0.4,<1
-groq>=0.9,<2
 
 # Desarrollo
 pytest>=8.0,<9

@@ -207,6 +207,58 @@ def test_noticia_de_industria_sigue_siendo_generica():
     assert results[0].game == "Videojuegos"
 
 
+class TestGroqOpcional:
+    """Sin GROQ_API_KEY el pipeline debe funcionar con Ollama, no abortar.
+
+    Antes, ``Pipeline.__init__`` construía ``GroqClient()`` sin condiciones y
+    el ValueError tumbaba toda la ejecución antes de hacer nada.
+    """
+
+    def _build(self, monkeypatch, key):
+        import pathlib
+
+        from gaming_news_digest.config import load_games, load_sources
+
+        monkeypatch.delenv("GROQ_API_KEY", raising=False)
+        if key is not None:
+            monkeypatch.setenv("GROQ_API_KEY", key)
+        cfg = pathlib.Path("config")
+        return Pipeline(
+            sources=load_sources(cfg / "sources.yaml"),
+            games=load_games(cfg / "games.yaml"),
+            limits=load_sources(cfg / "sources.yaml").limits,
+        )
+
+    def test_sin_clave_arranca_con_ollama(self, monkeypatch):
+        pipeline = self._build(monkeypatch, None)
+        assert pipeline.groq is None
+        assert pipeline.current_client is pipeline.ollama
+
+    def test_con_clave_arranca_con_groq(self, monkeypatch):
+        pipeline = self._build(monkeypatch, "sk-test")
+        assert pipeline.groq is not None
+        assert pipeline.current_client is pipeline.groq
+
+    def test_clave_vacia_cuenta_como_ausente(self, monkeypatch):
+        pipeline = self._build(monkeypatch, "   ")
+        assert pipeline.groq is None
+
+    def test_sin_fallback_la_infra_rota_se_propaga(self, monkeypatch):
+        """Sin Groq no hay a dónde saltar: el fallo debe abortar, no publicarse."""
+        pipeline = self._build(monkeypatch, None)
+        pipeline._ai_cache = {}
+        pipeline._consecutive_ai_errors = 0
+
+        def boom(**_kwargs):
+            raise ConnectionError("Ollama no disponible")
+
+        pipeline.ollama.summarize = boom
+        item = make_item("Noticia", "Cuerpo", url_suffix="boom")
+
+        with pytest.raises(ConnectionError):
+            list(pipeline._enrich_with_ai([item]))
+
+
 def test_reddit_siempre_rumor_sobreescribe_a_la_ia():
     """La regla determinista fuerza rumor para cualquier item de subreddit,
     aunque el modelo lo haya clasificado como lanzamiento."""

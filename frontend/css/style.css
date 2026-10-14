@@ -217,24 +217,23 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   color: var(--ink);
 }
 
+/* Logos: siempre en blanco puro. El estado activo lo marca el fondo y el
+   borde del botón, nunca la opacidad del icono (esa era la causa del gris). */
 .gamefilter__mark {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   flex: none;
   object-fit: contain;
-  opacity: 0.6;
-  transition: opacity var(--t-fast), transform var(--t-fast);
+  transition: transform var(--t-fast);
 }
 /* Only for logos that are solid black glyphs — see CONFIG.darkLogos. */
 .gamefilter__mark--invert { filter: brightness(0) invert(1); }
-.gamefilter:hover .gamefilter__mark { opacity: 0.9; transform: scale(1.08); }
+.gamefilter:hover .gamefilter__mark { transform: scale(1.08); }
 
 .gamefilter[aria-pressed='true'] {
   background: var(--accent-soft);
   border-color: var(--accent-line);
-  color: var(--accent);
 }
-.gamefilter[aria-pressed='true'] .gamefilter__mark { opacity: 1; }
 
 /* ── Section segmented control ──────────────────────────────── */
 
@@ -265,22 +264,37 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   transition: color var(--t-base);
 }
 .segments__btn:hover { color: var(--ink-muted); }
-.segments__btn[aria-checked='true'] { color: var(--ink); }
-.segments__btn[data-section='rumors'][aria-checked='true'] { color: var(--rumor); }
+
+/* Activo = píldora de fondo, no icono más brillante: los iconos van siempre
+   en blanco y quien marca la selección es el contenedor. */
+.segments__btn[aria-checked='true'] {
+  color: var(--ink);
+  background: var(--surface-3);
+}
+.segments__btn[data-section='rumors'][aria-checked='true'] {
+  color: var(--rumor);
+  background: var(--rumor-soft);
+}
 
 .segments__icon {
-  width: 14px;
-  height: 14px;
+  width: 17px;
+  height: 17px;
   flex: none;
   filter: brightness(0) invert(1);
-  opacity: 0.6;
 }
-.segments__btn[aria-checked='true'] .segments__icon { opacity: 1; }
+
+/* Pantallas estrechas: el nombre se va y solo queda el isotipo. Con el texto
+   completo, marca (114) + 2 logos (104) + segmentado (116) no caben en 320 px
+   y los logos se recortaban a la mitad. */
+@media (max-width: 420px) {
+  .brand__name { display: none; }
+  .gamefilter { padding: 6px; }
+}
 
 @media (max-width: 400px) {
   .segments__text { display: none; }
   .segments__btn { padding: var(--s2); }
-  .segments__icon { width: 16px; height: 16px; }
+  .segments__icon { width: 18px; height: 18px; }
 }
 
 /* ── Layout shell ───────────────────────────────────────────── */
@@ -681,7 +695,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   .gamefilters { gap: var(--s3); }
 
   .gamefilter { padding: var(--s3); }
-  .gamefilter__mark { width: 38px; height: 38px; }
+  .gamefilter__mark { width: 42px; height: 42px; }
 
   .brand__mark { width: 30px; height: 30px; }
   .brand__name { font-size: var(--step-2); }

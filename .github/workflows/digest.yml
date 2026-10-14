@@ -55,7 +55,8 @@ env:
   # canal aparte que el parser no entendía y NINGUNA llamada devolvió JSON
   # válido (0 de 22 en el run del 2026-10-14, con 22 de 66 tarjetas publicadas
   # sin resumen). Para cambiar de modelo basta con editar esta variable.
-  GROQ_MODEL: llama-3.3-70b-versatile
+  # llama-3.1-8b-instant: siempre disponible en free tier, rápido, soporta json_object.
+  GROQ_MODEL: llama-3.1-8b-instant
 
 jobs:
   actualizar-digest:

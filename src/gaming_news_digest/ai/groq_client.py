@@ -98,24 +98,23 @@ class GroqClient(AIClient):
 
         for attempt in range(self.MAX_RETRIES + 1):
             try:
+                payload = {
+                    "model": self.model,
+                    "messages": [
+                        {"role": "system", "content": self._system_prompt(source_type)},
+                        {"role": "user", "content": self._user_prompt(title, body, game, source_language, source_type)},
+                    ],
+                    "temperature": 0.1,
+                    "max_tokens": 300,
+                }
+                logger.debug("Groq request payload: %s", payload)
                 response = requests.post(
                     self.api_url,
                     headers={
                         "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
                     },
-                    json={
-                        "model": self.model,
-                        "messages": [
-                            {"role": "system", "content": self._system_prompt(source_type)},
-                            {"role": "user", "content": self._user_prompt(title, body, game, source_language, source_type)},
-                        ],
-                        "temperature": 0.1,
-                        "max_tokens": 300,
-                        # Usamos llama3-8b-8192 (free tier) que NO soporta
-                        # response_format: json_object (da 400). El prompt pide JSON
-                        # y parse_model_json lo extrae del texto: funciona con CUALQUIER modelo.
-                    },
+                    json=payload,
                     timeout=30,
                 )
                 response.raise_for_status()
@@ -128,6 +127,9 @@ class GroqClient(AIClient):
                 raise ConnectionError("Groq no disponible") from exc
             except requests.HTTPError as exc:
                 status = exc.response.status_code if exc.response is not None else 0
+                # Log del cuerpo de la respuesta para diagnosticar 400/404
+                if exc.response is not None:
+                    logger.error("Groq HTTP %s response: %s", status, exc.response.text[:500])
                 if status == 429:
                     # Solo UN reintento tras 429 y el tiempo que nos digan: el
                     # backoff a ciegas (2^n) convertía un rate limit en minutos

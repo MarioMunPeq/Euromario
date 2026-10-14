@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 #: que se limpia en `base.py`, así que la respuesta llegaba al `json.loads`
 #: con el razonamiento pegado y TODAS las llamadas terminaban en AIError.
 #: Los modelos instruct de Llama respetan `response_format: json_object`.
-DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_MODEL = "llama-3.1-70b-versatile"
 
 
 def _excerpt(raw: str | None, limit: int = 300) -> str:

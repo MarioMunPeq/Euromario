@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 #: que se limpia en `base.py`, así que la respuesta llegaba al `json.loads`
 #: con el razonamiento pegado y TODAS las llamadas terminaban en AIError.
 #: Los modelos instruct de Llama respetan `response_format: json_object`.
-DEFAULT_GROQ_MODEL = "llama-3.1-70b-versatile"
+# llama-3.1-8b-instant: siempre disponible en free tier, rápido, soporta json_object.
+# El 70B a veces da 404 si la cuota del día se agotó o el modelo se retirara.
+DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
 
 
 def _excerpt(raw: str | None, limit: int = 300) -> str:
@@ -79,6 +81,7 @@ class GroqClient(AIClient):
             raise ValueError("GROQ_API_KEY no configurada")
         self.base_url = base_url.rstrip("/")
         self.api_url = f"{self.base_url}/chat/completions"
+        logger.info("GroqClient inicializado con modelo=%s", self.model)
 
     def summarize(
         self,

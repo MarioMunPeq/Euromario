@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 #: Los modelos instruct de Llama respetan `response_format: json_object`.
 # llama3-8b-8192: nombre estable, siempre disponible en free tier, rápido, soporta json_object.
 # Los nombres "3.1-instant" a veces cambian; este es el alias clásico que no falla.
-DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
+DEFAULT_GROQ_MODEL = "llama3-8b-8192"
 
 
 def _excerpt(raw: str | None, limit: int = 300) -> str:
@@ -112,11 +112,9 @@ class GroqClient(AIClient):
                         ],
                         "temperature": 0.1,
                         "max_tokens": 300,
-                        # Groq lo soporta en los modelos instruct de Llama y
-                        # obliga a que la SALIDA sea JSON válido. Elimina por
-                        # construcción toda la familia de fallos de parseo, en
-                        # lugar de raspar el texto con regex a posteriori.
-                        "response_format": {"type": "json_object"},
+                        # Usamos llama3-8b-8192 (free tier) que NO soporta
+                        # response_format: json_object (da 400). El prompt pide JSON
+                        # y parse_model_json lo extrae del texto: funciona con CUALQUIER modelo.
                     },
                     timeout=30,
                 )

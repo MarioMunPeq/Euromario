@@ -71,6 +71,16 @@ _DIGEST_WINDOW_HOURS: int = DIGEST_MAX_AGE_HOURS
 _PRE_RANK_TARGET_MAX = 60
 _PRE_RANK_REDDIT_FLOOR = 8
 
+#: Intentos de IA a partir de los cuales, si NINGUNO tiene éxito, se aborta la
+#: ejecución en lugar de publicar un digest sin resúmenes. Con 1 o 2 fallos
+#: sueltos el comportamiento normal (fallback de ese item) es correcto.
+_AI_FAILURE_ABORT_THRESHOLD = 3
+
+
+class AIRuntimeError(RuntimeError):
+    """La IA falló de forma masiva y no se puede producir un digest válido."""
+
+
 # Fallback seguro para items que fallan la IA
 _SAFE_FALLBACK = {
     "summary": None,
@@ -191,22 +201,22 @@ def _filter_by_age(
         pub = item.published_at
         if pub is None:
             rejected.append(item)
-            logger.info('FECHA: DESCARTADO "%s" [sin fecha de publicación]', item.title)
+            logger.debug('FECHA: DESCARTADO "%s" [sin fecha de publicación]', item.title)
             continue
         age = now - pub
         if age.total_seconds() < 0:
             kept.append(item)
-            logger.info(
+            logger.debug(
                 'FECHA: OK "%s" [publicación futura, tratada como reciente]',
                 item.title,
             )
             continue
         if age.total_seconds() <= max_age_hours * 3600:
             kept.append(item)
-            logger.info('FECHA: OK "%s" [edad=%s]', item.title, _format_age(age))
+            logger.debug('FECHA: OK "%s" [edad=%s]', item.title, _format_age(age))
         else:
             rejected.append(item)
-            logger.info(
+            logger.debug(
                 'FECHA: DESCARTADO "%s" [edad=%s > max_age=%dh]',
                 item.title,
                 _format_age(age),
@@ -487,10 +497,11 @@ class Pipeline:
                     "relevance": item.relevance,
                     "category": item.category,
                     "is_fallback": item.summary_is_fallback,
-                    # ``game`` solo se guarda si vino de la IA; el JSON
-                    # publicado no distingue el origen del nombre. Es opcional:
-                    # las entradas cacheadas antes de este cambio no lo tienen.
-                    "game": "" if item.game == _DEFAULT_GAME_NAME else None,
+                    # Solo se reutiliza como "juego de la IA" si el JSON
+                    # registra ese origen. Antes se ponía siempre None salvo
+                    # que el nombre fuera el genérico, lo que borraba de hecho
+                    # la identificación por IA en cada cache hit.
+                    "game": item.game if item.game_origin == "ai" else None,
                 }
                 cached += 1
         if cached:
@@ -734,13 +745,13 @@ class Pipeline:
                     if not ok_topic:
                         topic_stats["descartados"] += 1
                         topic_stats[topic_reason] += 1
-                        logger.info(
+                        logger.debug(
                             'TEMÁTICA: DESCARTADO "%s" [%s]', item.title, topic_reason
                         )
                         continue
                     topic_stats["aceptados"] += 1
                     topic_stats[topic_reason] += 1
-                    logger.info(
+                    logger.debug(
                         'TEMÁTICA: OK "%s" [%s]', item.title, topic_reason
                     )
 
@@ -783,11 +794,11 @@ class Pipeline:
                 # (GAME MATCH: "título" -> juego o None [motivo]).
                 shown = game or "None"
                 if game is None:
-                    logger.info('GAME MATCH: "%s" -> None [%s]', item.title, reason)
+                    logger.debug('GAME MATCH: "%s" -> None [%s]', item.title, reason)
                     game = _DEFAULT_GAME_NAME
                     game_stats["videojuegos"] += 1
                 else:
-                    logger.info('GAME MATCH: "%s" -> %s [%s]', item.title, shown, reason)
+                    logger.debug('GAME MATCH: "%s" -> %s [%s]', item.title, shown, reason)
                 item = FetchedItem(
                     title=item.title,
                     url=item.url,
@@ -838,7 +849,7 @@ class Pipeline:
         )
         if stats_out.reddit_titles:
             for i, title in enumerate(stats_out.reddit_titles):
-                logger.info("  Filtro Reddit[%d]: %s", i + 1, title)
+                logger.debug("  Filtro Reddit[%d]: %s", i + 1, title)
         return kept
 
     def _is_excluded(self, item: FetchedItem) -> bool:
@@ -952,6 +963,7 @@ class Pipeline:
                     summary_is_fallback=is_fallback,
                     game_id=item.game_id,
                     is_verified=is_verified,
+                    game_origin=game_origin,
                 )
             except ModelValidationError as exc:
                 # regla P0: un item inválido se descarta; nunca tumba el resto
@@ -985,6 +997,28 @@ class Pipeline:
             sum(game_stats.values()),
         )
         StageStats.log_separator()
+
+        # Falla ruidosa si la IA está caída por completo. Publicar un digest
+        # entero sin resúmenes es peor que no publicar: el 2026-10-14 la IA
+        # salió 0 de 22 llamadas y el resultado fueron 22 de 66 tarjetas
+        # publicadas sin texto. Si abortamos aquí, `save_digest` no se ejecuta
+        # y la web se queda con el digest anterior, que sí es utilizable.
+        # El workflow despliega igual (`if: always()`), así que el sitio nunca
+        # se queda a oscuras.
+        #
+        # Ojo con los contadores: `*_new` suma los ÉXITOS y `*_fallback` los
+        # fallos, así que los intentos son la suma de ambos.
+        ia_exitos = ai_stats["reddit_new"] + ai_stats["media_new"]
+        ia_fallos = ai_stats["reddit_fallback"] + ai_stats["media_fallback"]
+        ia_intentos = ia_exitos + ia_fallos
+        if ia_intentos >= _AI_FAILURE_ABORT_THRESHOLD and ia_exitos == 0:
+            raise AIRuntimeError(
+                f"La IA no produjo ni una sola salida válida en {ia_intentos} "
+                f"intentos. No se publica nada (el digest anterior se conserva). "
+                f"Cliente: {type(self.current_client).__name__} "
+                f"modelo: {getattr(self.current_client, 'model', 'n/d')}. "
+                f"Revisa los warnings de AIError anteriores para el motivo."
+            )
 
     def _summarize_with_fallback(self, item) -> dict | None:
         """

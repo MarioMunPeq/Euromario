@@ -530,7 +530,38 @@ _KNOWN_GAME_TITLES: dict[str, str] = {
     "helldivers": "Helldivers",
     "ninja gaiden": "Ninja Gaiden",
     "devil may cry": "Devil May Cry",
+    "castlevania": "Castlevania",
+    "mgsv": "Metal Gear Solid V",
     "professor layton": "Professor Layton",
+    # ── Rotos en la cobertura real (vistos en no_confident_match) ────────
+    # Sin ellos, el filtro temático descartaba medio lote de cómo-hacer y el
+    # detector de nombres losaba como "Videojuegos".
+    "valor mortis": "Valor Mortis",
+    "rimworld": "RimWorld",
+    "hytale": "Hytale",
+    "going medieval": "Going Medieval",
+    "warlock": "Warlock",
+    "callisto protocol": "The Callisto Protocol",
+    "deep dish dungeon": "Deep Dish Dungeon",
+    "send in the clown": "Send in the Clown",
+    # "peak" y "kingdom" quedan fuera a propósito: son palabras inglesas
+    # corrientes ("peak performance", "United Kingdom") y se colarían en
+    # titulares que no hablan de juegos. Para Peak basta la heurística.
+    "marvel tokon": "Marvel Tōkon",
+    "invincible vs": "Invincible VS",
+    "arc raiders": "Arc Raiders",
+    "silksong": "Hollow Knight: Silksong",
+    "hollow knight silksong": "Hollow Knight: Silksong",
+    "wow": "World of Warcraft",
+    "warcraft": "World of Warcraft",
+    "apex legends": "Apex Legends",
+    "deep rock galactic": "Deep Rock Galactic",
+    "satisfactory": "Satisfactory",
+    "factorio": "Factorio",
+    "subnautica": "Subnautica",
+    "terraria": "Terraria",
+    "slay the spire": "Slay the Spire",
+    "kingdom come": "Kingdom Come: Deliverance",
     # ── El catálogo propio del sitio ───────────────────────────────────────
     # config/games.yaml es la lista de juegos CON logo en el frontend. Sin
     # estas entradas, el filtro temático no reconocía la evidencia de juego en
@@ -695,6 +726,46 @@ def _detect_after_playing(title: str) -> str | None:
     return None
 
 
+#: Candidatos que la heurística de ancla produce pero que NO son un juego.
+#: Casi todos son Stuff + un verbo de anuncio ("9 Newly Announced Games…",
+#: "$150 God of War Collector Box…"). Se descartan en vez de publicarse.
+_ANCHOR_JUNK = re.compile(r"^[^A-Za-zÀ-ÿ]+")  # empieza por dígito, $ o símbolo
+
+#: Lugares que se cuelan como sujeto del titular ("Japan is getting an
+#: exclusive Midnight Black PlayStation 5" → "Japan"). No son juegos.
+_NOT_A_GAME_PLACE = frozenset({
+    "japan", "china", "korea", "europe", "america", "usa", "uk", "britain",
+    "france", "germany", "spain", "italy", "canada", "australia", "india",
+    "brazil", "mexico", "russia", "sweden", "poland", "netherlands",
+    "seoul", "tokyo", "osaka", "beijing", "shanghai", "london", "paris",
+    "berlin", "madrid", "rome", "new york", "los angeles", "california",
+    "texas", "florida", "washington", "the us", "the uk", "the eu",
+})
+
+
+def _clean_anchor_candidate(candidate: str | None) -> str | None:
+    """Filtra los candidatos claramente-tontos de la heurística de ancla.
+
+    Devuelve ``None`` si el candidato no es un nombre de juego plausible, de
+    modo que el detector siga probando las demás estrategias en vez de
+    publicar "9 Newly" en la tarjeta.
+    """
+    if not candidate:
+        return None
+    cand = candidate.strip(" :;—,-")
+    if not cand:
+        return None
+    if _ANCHOR_JUNK.match(cand):
+        return None
+    if cand.casefold() in _NOT_A_GAME_PLACE:
+        return None
+    if len(cand.split()) < 2:
+        # Un título de juego tiene al menos dos palabras ("Hades", "Tekken"
+        # y "Hades II" están ya cubiertos por la lista curada).
+        return None
+    return cand
+
+
 def _detect_game_name_with_reason(
     title: str, body: str = "", *, hint: str | None = None
 ) -> tuple[str | None, str | None]:
@@ -710,12 +781,26 @@ def _detect_game_name_with_reason(
 
     title_clean = title.strip()
     if title_clean:
-        cand = _detect_via_anchor(title_clean)
-        if cand:
-            return cand, "anchor"
-        cand = _detect_via_known_title(title_clean)
-        if cand:
-            return cand, "known_title"
+        # ORDEN DE CONFIANZA. La lista curada es fiable; la heurística de
+        # ancla es una suposición y produce basura ("9 Newly", "Japan").
+        #
+        # Pero la lista curada a veces contiene la entrada CORTA de una saga
+        # que ya tiene subtítulo: "Hollow Knight" cuando el juego es "Hollow
+        # Knight Silksong", o "Grand Theft Auto" cuando es "GTA VI". Cuando
+        # el título curado es prefijo del candidato de ancla, gana el ancla
+        # por ser más específico. En cualquier otro caso gana la lista.
+        known = _detect_via_known_title(title_clean)
+        anchor = _clean_anchor_candidate(_detect_via_anchor(title_clean))
+
+        if known and anchor:
+            if _normalize(anchor).startswith(_normalize(known)):
+                return anchor, "anchor"
+            return known, "known_title"
+        if known:
+            return known, "known_title"
+        if anchor:
+            return anchor, "anchor"
+
         cand = _detect_leading_contrast_subject(title_clean)
         if cand:
             return cand, "subject"

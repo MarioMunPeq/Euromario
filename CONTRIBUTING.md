@@ -14,7 +14,7 @@ Este documento define las pautas obligatorias para desarrollar G-Patch Notes: pr
 
 - **Coste económico cero.** Nada puede depender de servicios de pago.
 - **Todo el cómputo corre en GitHub Actions gratuito** (runners ubuntu-latest, cron diario, job con timeout de ~55 min para no acercarse al límite de 6 h).
-- **La IA es local vía Ollama** (modelo pequeño cuantizado, CPU). El fallback a Groq existe solo por rendimiento de CI, debe ser opcional (secreto `GROQ_API_KEY`) y fácilmente intercambiable: misma interfaz, misma entrada/salida.
+- **La IA es intercambiable**: Groq en cloud (secreto `GROQ_API_KEY`, es el cliente **primario** cuando está presente) y Ollama local (modelo pequeño cuantizado, CPU) como fallback. Ambos cumplen el mismo contrato en `ai/base.py`: misma interfaz, misma entrada/salida. Sin `GROQ_API_KEY` el pipeline arranca en Ollama y no tiene fallback cloud.
 - **Idiomas de fuente:** español e inglés aceptados tal cual; el resumen se genera en el idioma original, nunca se traduce.
 - **Reddit siempre se marca como categoría aparte** ("Reddit / Rumores"): es contenido no verificado de comunidad y debe distinguirse visualmente de las noticias de medios oficiales.
 
@@ -87,6 +87,7 @@ Es el único archivo que consumen frontend y backend en común. Cambiar su schem
       "source_type": "media",
       "game": "Persona",
       "game_id": null,
+      "game_origin": "matcher",
       "language": "en",
       "published_at": "2026-08-23T09:15:00Z",
       "fetched_at": "2026-08-23T12:04:30Z",
@@ -108,6 +109,7 @@ Invariantes:
 - `source_type`: enum cerrado `"media"` | `"steam"` | `"reddit"`. Si es `"reddit"`, el frontend lo muestra como "Reddit / Rumores".
 - `game`: string con el nombre del juego. Canónico si está en `config/games.yaml`; si el juego no está configurado, el nombre detectado del titular (o el de la app de Steam). Una noticia no se descarta por no estar en la lista.
 - `game_id`: string opcional con identificador externo (ej. Steam `app_id` como `"1687950"`), o `null`.
+- `game_origin`: `"matcher"` | `"ai"` | `"generico"`. De dónde salió `game`. Se persiste porque, sin él, no se puede distinguir al releer el JSON un nombre puesto por el matcher de uno puesto por la IA, y la caché de IA solo reutiliza el resumen: el juego identificado por la IA se perdía en cada ejecución posterior. El JSON publicado antes de existir este campo se lee como `"matcher"`.
 - `category`: `"lanzamiento"` | `"actualizacion"` | `"rumor"` | `"analisis"`.
 - `relevance`: entero 1–5 asignado por la IA (5 = anuncio mayor de una saga seguida; 1 = mención menor).
 - `language`: `"es"` o `"en"`; `summary` va en ese mismo idioma.
@@ -128,7 +130,8 @@ Ejecutado una vez al día (07:00 UTC ≈ 09:00 en Madrid en verano, 08:00 en inv
 1. **Fetch** — `fetchers/` descarga todas las fuentes declaradas en `config/sources.yaml` (RSS de medios, Steam News por `app_id`, RSS de subreddits). Cada item se normaliza a `NewsItem` y se deduplica por `id` contra lo ya almacenado.
 2. **Filtrado** — `filtering/matcher.py` aplica `config/games.yaml`: **cualquier noticia de medios/Steam se publica**, excepto las que mencionan un juego de exclusión (la exclusión gana siempre; ver sección 6). Si el juego está en `incluir`, entra con su nombre canónico; si no está configurado, se conserva igualmente detectando su nombre del titular (o el de la app en Steam) sin que haga falta añadirlo a la lista.
 3. **Pre-ranking barato pre-IA** — `pipeline.py::_pre_rank_for_ai` ordena todo lo que superó el límite por juego y recorta el trabajo de la IA a un máximo de **60 noticias** usando señales sin LLM: frescura (decaimiento de 48 h), valor de noticia en el titular (update/anuncios/trailers), bonus para juegos de `incluir`, bonus para fuentes verificadas, y un **mínimo de 8 rumores de Reddit** para que la sección nunca quede vacía. Nunca descarta un juego por no estar configurado: solo elige a qué gastar inferencia.
-4. **Resumen y clasificación IA** — `ai/` genera por noticia: `summary`, `relevance` y `category`. Motor por defecto: Ollama local (`ollama_client.py`). Fallback: si Ollama no está disponible, supera el timeout por ítem o acumula demasiados errores, `groq_client.py` asume el resto de la ejecución (misma interfaz definida en `base.py`). Respuestas inválidas → reintento simple → si persiste, la noticia entra sin `summary` (`null`) pero nunca bloquea el pipeline.
+4. **Resumen y clasificación IA** — `ai/` genera por noticia: `summary`, `relevance`, `category` y, cuando el matcher determinista NO identifica el juego, también el nombre del juego. Cliente: Groq si hay `GROQ_API_KEY`, si no Ollama local; si el activo falla por infraestructura (timeout, conexión, ≥3 `AIError` seguidos) se cambia al otro y se reintenta el ítem (misma interfaz en `base.py`). Respuestas inválidas → reintento → si persiste, la noticia entra sin `summary` (`null`) pero nunca bloquea el pipeline. **Salvedad deliberada**: si la IA no consigue *ninguna* salida válida en ≥3 intentos, la ejecución aborta antes de escribir nada y la web conserva el digest anterior, en vez de publicar un digest entero sin resúmenes.
+5. **El resumen nunca se pierde por un fallo puntual** — `summary: null` significa "la IA no lo supo en ESTA pasada", no "este artículo no tiene resumen". Al fusionar con el histórico (`_merge_by_id`) se hereda el resumen previo si esta pasada no lo tiene. Con la regla "nuevo gana" a secas, un fallo transitorio de la IA pisaba un resumen ya pagado, la caché deja de encontrarlo al día siguiente y la pérdida se vuelve permanente: el 2026-10-14 dejó 22 de 66 tarjetas publicadas sin resumen y envenenó 39 entradas del histórico.
 5. **Retención** — `storage/retention.py` limpia el histórico cuando se cumple **cualquiera** de: la noticia más antigua supera **~24 horas** (ventana de 26 h con tolerancia, alineada con la cadencia diaria), o el total supera **200 noticias** (recorte eliminando primero las más antiguas). Ambas condiciones combinadas, evaluadas tras cada merge.
 6. **Escritura atómica y commit** — si el JSON resultante difiere del actual, se escribe de forma atómica en `frontend/data/news.json` y el workflow hace commit con el bot `github-actions[bot]` (`chore(datos): actualizar digest automático`). Ese commit toca `frontend/**`, así que dispara automáticamente el redeploy en Pages. Sin cambios → sin commit.
 

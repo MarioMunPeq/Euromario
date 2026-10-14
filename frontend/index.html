@@ -52,7 +52,8 @@
       <nav class="gamefilters" id="game-filters" aria-label="Filter by game" hidden></nav>
 
       <!-- Section switch. Single-select: All / News / Rumors. -->
-      <div class="segments" role="radiogroup" aria-label="Filter by section">
+      <div class="segments" id="segments" role="radiogroup" aria-label="Filter by section">
+        <span class="segments__thumb" aria-hidden="true" hidden></span>
         <button type="button" class="segments__btn" data-section="all" role="radio" aria-checked="true">
           <img class="segments__icon" src="assets/icons/all.svg" alt="" aria-hidden="true" width="17" height="17">
           <span class="segments__text">All</span>

@@ -40,6 +40,97 @@ def clean_game_name(value: object) -> str:
     return name
 
 
+# ---------------------------------------------------------------------------
+# Parseo de la respuesta del modelo
+#
+# Distintos proveedores emiten el razonamiento de forma distinta. Con
+# `openai/gpt-oss-20b` (modelo de razonamiento) llega un canal
+# `<channel>analysis<|message|>` que el antiguo regex `<think>...` no
+# quitaba, así que la respuesta llegaba al `json.loads` con el análisis
+# pegado y TODAS las llamadas terminaban en AIError (0 de 22 con éxito en
+# el run del 2026-10-14). Estas funciones cubren las variantes conocidas.
+# ---------------------------------------------------------------------------
+
+
+def _strip_reasoning(raw: str) -> str:
+    """Quita el razonamiento del modelo y deja solo el JSON."""
+    text = raw
+    # Canal de razonamiento de gpt-oss: <channel>analysis<|message|>{...}
+    text = re.sub(r"<channel>.*?<\|message\|>", " ", text, flags=re.DOTALL)
+    # Bloques <think>...</think> / <thinking> / <reasoning>
+    text = re.sub(r"<(think|thinking|reasoning)>.*?</\1>", " ", text, flags=re.DOTALL)
+    # thinking sin cerrar: el modelo se corta por max_tokens
+    text = re.sub(r"<(think|thinking|reasoning)>.*\Z", " ", text, flags=re.DOTALL)
+    # Bloques cercados ```json ... ```
+    text = re.sub(r"^\s*```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```\s*$", "", text)
+    return text.strip()
+
+
+def _extract_json_object(text: str) -> str | None:
+    """Recorta el primer objeto JSON balanceado del texto.
+
+    Localiza la primera llave y avanza contando llaves FUERA de comillas
+    hasta emparejarla. Cubre que el modelo añada texto antes o después.
+    """
+    start = text.find("{")
+    if start == -1:
+        return None
+    depth = 0
+    in_string = False
+    escaped = False
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : index + 1]
+    return None
+
+
+def parse_model_json(raw: str) -> dict:
+    """Convierte la respuesta cruda del modelo en un dict.
+
+    Dos pasadas: primero tal cual, y si no parsea, recortando el objeto JSON
+    balanceado. Lanza AIError con la respuesta original adjunta para poder
+    diagnosticar el fallo desde el log.
+    """
+    import json
+
+    cleaned = _strip_reasoning(raw)
+    data = None
+    try:
+        data = json.loads(cleaned)
+    except json.JSONDecodeError as first_exc:
+        candidate = _extract_json_object(cleaned)
+        if candidate is not None:
+            try:
+                data = json.loads(candidate)
+            except json.JSONDecodeError:
+                data = None
+        if data is None:
+            raise AIError(f"JSON inválido: {first_exc}", raw_response=raw) from first_exc
+
+    if not isinstance(data, dict):
+        raise AIError(
+            f"la respuesta no es un objeto JSON: {type(data).__name__}",
+            raw_response=raw,
+        )
+    return data
+
+
 @dataclass(frozen=True, slots=True)
 class AISummary:
     """Salida validada de la IA para una noticia."""
@@ -49,7 +140,7 @@ class AISummary:
     category: Category
     language: Language
     # Juego/franquicia detectado por la IA. Vacío = no identifica ninguno.
-    # El pipeline solo lo usa cuando el matcher determinista NO conclusó.
+    # El pipeline solo lo usa cuando el matcher determinista NO concluyo.
     game: str = ""
 
     def __post_init__(self):
@@ -77,6 +168,9 @@ class AIClient(ABC):
     """Interfaz común para Ollama y Groq — ambos cumplen este contrato."""
 
     MAX_RETRIES = 2
+    # Reintentos tras un 429. El backoff a ciegas (2^n) convertía un rate
+    # limit en minutos de espera: 14 esperas de 5-20 s en un solo run.
+    MAX_429_RETRIES = 1
     MAX_CONSECUTIVE_ERRORS = 3
 
     @abstractmethod
@@ -93,7 +187,7 @@ class AIClient(ABC):
         Lanza AIError si no puede producir salida válida tras reintentos.
         Lanza ConnectionError / TimeoutError / requests.HTTPError
         para errores de infraestructura (manejados por el pipeline).
-        
+
         Para source_type="reddit", la categoría se fuerza a "rumor" externamente
         y el cliente puede omitir pedirla al modelo.
         """
@@ -101,16 +195,7 @@ class AIClient(ABC):
 
     def _validate_response(self, raw: str, source_type: str = "media") -> "AISummary":
         """Parsea y valida la respuesta JSON cruda del modelo."""
-        import json
-        import re
-
-        # Strip think blocks (Qwen thinking mode)
-        cleaned = re.sub(r"think.*?think", "", raw, flags=re.DOTALL).strip()
-
-        try:
-            data = json.loads(cleaned)
-        except json.JSONDecodeError as exc:
-            raise AIError(f"JSON inválido: {exc}", raw_response=raw) from exc
+        data = parse_model_json(raw)
 
         # Campos obligatorios
         for field in ("summary", "relevance", "language"):
@@ -124,9 +209,12 @@ class AIClient(ABC):
         else:
             data["category"] = "rumor"  # valor por defecto para validación
 
-        # Relevance 1-5
+        # Relevance 1-5. Se tolera el string numérico ("3"): es una salida
+        # muy habitual de los modelos y no merece perder el resumen entero.
         rel = data["relevance"]
-        if not isinstance(rel, int) or not (1 <= rel <= 5):
+        if isinstance(rel, str) and rel.strip().isdigit():
+            rel = int(rel.strip())
+        if isinstance(rel, bool) or not isinstance(rel, int) or not (1 <= rel <= 5):
             raise AIError(f"relevance debe ser 1-5, no {rel!r}", raw_response=raw)
 
         # Category válida
@@ -134,7 +222,8 @@ class AIClient(ABC):
             category = Category(data["category"])
         except ValueError:
             raise AIError(
-                f"category inválida: {data['category']!r} (válidas: {[c.value for c in Category]})",
+                f"category inválida: {data['category']!r} "
+                f"(válidas: {[c.value for c in Category]})",
                 raw_response=raw,
             ) from None
 
@@ -143,7 +232,8 @@ class AIClient(ABC):
             language = Language(data["language"])
         except ValueError:
             raise AIError(
-                f"language inválida: {data['language']!r} (válidas: {[l.value for l in Language]})",
+                f"language inválida: {data['language']!r} "
+                f"(válidas: {[l.value for l in Language]})",
                 raw_response=raw,
             ) from None
 

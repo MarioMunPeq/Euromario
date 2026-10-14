@@ -1,5 +1,7 @@
 """Tests de la interfaz común de IA (base)."""
 
+import json
+
 import pytest
 
 from gaming_news_digest.ai.base import (
@@ -9,6 +11,7 @@ from gaming_news_digest.ai.base import (
     Category,
     Language,
     clean_game_name,
+    parse_model_json,
 )
 
 
@@ -136,3 +139,88 @@ def test_cliente_base_instanciable():
     client = DummyClient()
     assert hasattr(client, "MAX_RETRIES")
     assert hasattr(client, "MAX_CONSECUTIVE_ERRORS")
+    assert hasattr(client, "MAX_429_RETRIES")
+
+
+VALID = {
+    "summary": "LaExpansion trae una nueva zona jugable.",
+    "relevance": 4,
+    "category": "actualizacion",
+    "language": "en",
+    "game": "Arc Raiders",
+}
+
+
+class TestParseModelJson:
+    """Regresión del fallo que dejó la IA a 0 de 22 llamadas.
+
+    `openai/gpt-oss-20b` es un modelo de razonamiento: devuelve su análisis en
+    un canal `<channel>analysis<|message|>` que el regex `<think>` no quitaba,
+    así que el JSON llegaba corrupto y TODAS las llamadas acababan en
+    AIError. El digest publicado llegó a tener 22 de 66 tarjetas sin resumen.
+    """
+
+    def test_json_limpio(self):
+        assert parse_model_json(json.dumps(VALID)) == VALID
+
+    def test_canal_de_razonamiento_de_gpt_oss(self):
+        raw = (
+            "<channel>analysis<|message|>Primero identifico el juego, "
+            "despues resumo.<|end|>"
+            + json.dumps(VALID)
+        )
+        assert parse_model_json(raw) == VALID
+
+    def test_bloque_think(self):
+        raw = "<think>El articulo habla de una expansion.</think>\n" + json.dumps(VALID)
+        assert parse_model_json(raw) == VALID
+
+    def test_bloque_think_sin_cerrar(self):
+        raw = "<think>me quedo sin tokens a media respuesta"
+        with pytest.raises(AIError):
+            parse_model_json(raw)
+
+    def test_bloque_cercado(self):
+        raw = "```json\n" + json.dumps(VALID) + "\n```"
+        assert parse_model_json(raw) == VALID
+
+    def test_texto_antes_y_despues(self):
+        raw = "Claro! Aquí tienes el resumen:\n" + json.dumps(VALID) + "\nEspero sirva."
+        assert parse_model_json(raw) == VALID
+
+    def test_texto_sin_json_falla_con_motivo_y_respuesta(self):
+        with pytest.raises(AIError) as exc:
+            parse_model_json("lo siento, no puedo")
+        assert "JSON" in str(exc.value)
+        assert exc.value.raw_response == "lo siento, no puedo"
+
+    def test_lista_json_no_es_objeto(self):
+        with pytest.raises(AIError, match="no es un objeto"):
+            parse_model_json("[1, 2, 3]")
+
+    def test_llave_dentro_de_un_string_no_rompe_el_balanceo(self):
+        tricky = dict(VALID, summary='Dice "}" y sigue')
+        assert parse_model_json("x " + json.dumps(tricky) + " y") == tricky
+
+
+class TestValidateResponseTolerante:
+    def test_relevance_como_string_se_acepta(self):
+        """`"relevance": "3"` es salida habitual; no debe perder el resumen."""
+        client = DummyClient()
+        raw = json.dumps({**VALID, "relevance": "3"})
+        assert client._validate_response(raw).relevance == 3
+
+    def test_relevance_booleano_se_rechaza(self):
+        client = DummyClient()
+        with pytest.raises(AIError):
+            client._validate_response(json.dumps({**VALID, "relevance": True}))
+
+    def test_relevance_fuera_de_rango_se_rechaza(self):
+        client = DummyClient()
+        with pytest.raises(AIError):
+            client._validate_response(json.dumps({**VALID, "relevance": 9}))
+
+    def test_game_ausente_no_es_error(self):
+        client = DummyClient()
+        payload = {k: v for k, v in VALID.items() if k != "game"}
+        assert client._validate_response(json.dumps(payload)).game == ""

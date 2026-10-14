@@ -246,8 +246,19 @@ Groq provides the cloud client through an OpenAI-compatible chat-completions end
 Default model configured by the client:
 
 ```text
-openai/gpt-oss-20b
+llama-3.3-70b-versatile
 ```
+
+It can be changed **without touching code**, via the `GROQ_MODEL` environment
+variable (the workflow sets it explicitly so the choice is visible in one
+place).
+
+> The model used to be `openai/gpt-oss-20b`. That is a **reasoning** model: it
+> emits its analysis in a separate channel that the parser did not understand,
+> so not a single call returned valid JSON — 0 of 22 on 2026-10-14, leaving 22
+> of 66 published cards with no summary. The client now also requests
+> `response_format: {"type": "json_object"}`, which removes the whole family of
+> parse failures by construction.
 
 The API key is read from:
 
@@ -265,6 +276,28 @@ The AI layer distinguishes between invalid model output and infrastructure failu
 - A Groq infrastructure failure is treated as critical.
 - A failed item can receive a safe fallback instead of killing the entire run.
 - Reddit is deterministically categorized as a rumor regardless of what the model returns.
+- On a `429`, the client honours `Retry-After` (both the seconds and the
+  HTTP-date form) and retries **once**. The old blind `2^n` backoff turned a
+  rate limit into minutes of waiting: 14 waits of 5–20 s in a single run.
+- Every `AIError` logs its real reason plus a truncated copy of the raw model
+  output, so a parse failure is never mistaken for a network problem.
+
+### When the AI is completely down
+
+If the AI produces **zero** valid outputs across at least 3 attempts, the run
+**aborts before writing anything**. Publishing a digest where every card is
+empty is worse than not publishing: the site keeps the previous, usable digest
+instead.
+
+This is deliberate. The deploy step runs with `if: always()`, so the site never
+goes dark — it simply stays one day older. A log with
+
+```text
+La IA no produjo ni una sola salida válida en N intentos
+```
+
+means the digest was *not* published; check the preceding `AIError` warnings
+for the reason.
 
 The shared contract lives in [`ai/base.py`](src/gaming_news_digest/ai/base.py).
 
@@ -500,9 +533,20 @@ The workflow passes it to the pipeline with:
 ```yaml
 env:
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  GROQ_MODEL: llama-3.3-70b-versatile
 ```
 
+`GROQ_MODEL` is **not** a secret — edit it in the workflow to change model.
+
 **Never commit the key to the repository.**
+
+> There is no blind Ollama fallback when `GROQ_API_KEY` is set: the Ollama
+> install is skipped, so a Groq outage has nothing to fall back to. That is a
+> conscious trade-off. `llama3.2:3b` on a CPU-only runner takes 10–30 s per
+> item and produces noticeably worse summaries, which would degrade the digest
+> *silently* on every run. Instead, a total AI failure aborts the run before
+> anything is published, and the site keeps the previous digest — see
+> [Failure handling](#failure-handling).
 
 `GROQ_API_KEY` is fully optional. The pipeline detects it at startup:
 

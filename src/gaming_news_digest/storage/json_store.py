@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import re
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -113,6 +114,7 @@ def _read_digest_file(path: Path, *, label: str) -> list[NewsItem]:
         return []
 
     items: list[NewsItem] = []
+    sin_resumen: list[str] = []
     for index, raw in enumerate(news):
         if not isinstance(raw, dict):
             logger.warning(
@@ -133,13 +135,17 @@ def _read_digest_file(path: Path, *, label: str) -> list[NewsItem]:
             )
             continue
         if item.summary is None:
-            logger.info(
-                "Item '%s' cargado con summary=null: fallback IA documentado",
-                item.title,
-            )
+            sin_resumen.append(item.title)
         items.append(item)
 
     discarded = len(news) - len(items)
+    if sin_resumen:
+        # Una línea por item enterraba el log; el conteo dice lo mismo y las
+        # muestras permiten identificar el problema sin volcar 70 líneas.
+        logger.info(
+            "%s: %d item(s) sin resumen (fallback IA). Ejemplos: %s",
+            label, len(sin_resumen), " | ".join(sin_resumen[:3]),
+        )
     if discarded:
         logger.warning("%d item(s) del histórico descartados por contrato", discarded)
     return items
@@ -263,17 +269,56 @@ def _item_context(raw: dict) -> dict:
             if isinstance(raw.get(key), str)} | {"source": source_name}
 
 
+def _inherit_summary(item: NewsItem, previous: NewsItem | None) -> NewsItem:
+    """Conserva un resumen ya pagado si esta pasada la IA no lo consiguió.
+
+    ``summary is None`` significa "la IA no lo supo en ESTA pasada", no "este
+    artículo no tiene resumen". Con la regla "nuevo gana" a secas, un fallo
+    transitorio de la IA pisaba el resumen histórico: al día siguiente
+    ``_load_ai_cache`` ya no lo encontraba (solo cachea los que tienen
+    resumen), se volvía a pedir, y el resumen se perdía de forma
+    permanente. El run del 2026-10-14, con la IA al 0% por un modelo mal
+    elegido, dejó 22 de 66 tarjetas publicadas sin resumen y envenenó 39
+    entradas del histórico.
+
+    Se hereda solo ``summary``: el resto de campos (relevance, categoría,
+    imagen) se actualiza con normalidad, porque no dependen de la IA.
+    """
+    if previous is None or item.summary is not None:
+        return item
+    if previous.summary is None or not previous.summary.strip():
+        return item
+    return replace(
+        item,
+        summary=previous.summary,
+        summary_is_fallback=False,
+    )
+
+
 def _merge_by_id(existing: list[NewsItem], new: list[NewsItem]) -> list[NewsItem]:
     """Combina histórico + items nuevos, deduplicando por id.
 
     Regla: NUEVO GANA (el item de la ejecución actual sobrescribe al histórico
-    si tienen mismo id — por si cambió summary/relevance/category).
+    si tienen mismo id — por si cambió summary/relevance/category), SALVO
+    ``summary``: si la IA falló en esta pasada se hereda el resumen previo
+    (ver ``_inherit_summary``).
+
     Devuelve lista ordenada descendente por ``published_at``, SIN retención
     (la retención la aplica cada consumidor: histórico largo vs. publicado).
     """
     by_id = {it.id: it for it in existing}
+    heredados = 0
     for item in new:
-        by_id[item.id] = item  # nuevo gana
+        merged = _inherit_summary(item, by_id.get(item.id))
+        if merged is not item:
+            heredados += 1
+        by_id[item.id] = merged
+    if heredados:
+        logger.info(
+            "IA: %d item(s) sin resumen en esta pasada heredan el histórico "
+            "(fallo de la IA, no pérdida de caché)",
+            heredados,
+        )
 
     merged = list(by_id.values())
     merged.sort(key=lambda x: x.published_at, reverse=True)

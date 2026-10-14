@@ -6,8 +6,8 @@ from unittest.mock import Mock
 import pytest
 
 from gaming_news_digest.ai.base import AIError, AISummary, Category, Language
-from gaming_news_digest.models import FetchedItem, NewsItem, Source
-from gaming_news_digest.pipeline import Pipeline, _resolve_game_name
+from gaming_news_digest.models import FetchedItem, NewsItem, Source, normalize_url
+from gaming_news_digest.pipeline import AIRuntimeError, Pipeline, _resolve_game_name
 
 # Reloj fijo para todos los filtros temporales del pipeline (PROBLEMA 7):
 # hoy = 2026-08-30. Las fixtures publican relativo a NOW, así que pasan la
@@ -377,6 +377,78 @@ def test_groq_ai_error_no_aborta_pipeline():
     assert results[1].relevance == 1
     assert results[1].category == "rumor"
     assert results[2].summary == "ok3"
+
+
+class TestAbortaSiLaIaFallaEnBloque:
+    """Publicar un digest entero sin resúmenes es peor que no publicar.
+
+    El 2026-10-14 la IA salió 0 de 22 llamadas y quedaron 22 de 66 tarjetas
+    publicadas sin texto. Aquí se aborta ANTES de escribir, y el despliegue
+    (`if: always()`) deja la web con el digest anterior.
+
+    Trampa a evitar: `*_new` cuenta los ÉXITOS y `*_fallback` los fallos, así
+    que la condición "intentos >= N y ninguno tuvo éxito" es la que aborta. Una
+    versión anterior invertía los contadores y abortaba justo cuando había
+    igual de aciertos que fallos.
+    """
+
+    def _pipeline(self, side_effect):
+        client = Mock()
+        client.MAX_CONSECUTIVE_ERRORS = 3
+        client.model = "test-model"
+        client.summarize.side_effect = side_effect
+        pipeline = Pipeline.__new__(Pipeline)
+        pipeline._ai_cache = {}
+        pipeline.ollama = client
+        pipeline.groq = None
+        pipeline.current_client = client
+        pipeline._consecutive_ai_errors = 0
+        return pipeline
+
+    def test_todo_fallo_aborta(self):
+        pipeline = self._pipeline([AIError("caido")] * 6)
+        items = [make_item(f"n{i}", url_suffix=f"n{i}") for i in range(5)]
+
+        with pytest.raises(AIRuntimeError, match="ni una sola salida válida"):
+            list(pipeline._enrich_with_ai(items))
+
+    def test_ningun_intento_no_aborta(self):
+        """Si todo viene de caché no se llamó a la IA: no hay nada que abortar."""
+        pipeline = self._pipeline([])
+        pipeline._ai_cache = {
+            normalize_url(make_item(f"n{i}", url_suffix=f"n{i}").url): {
+                "summary": "de la cache", "relevance": 3,
+                "category": "actualizacion", "is_fallback": False, "game": None,
+            }
+            for i in range(5)
+        }
+        items = [make_item(f"n{i}", url_suffix=f"n{i}") for i in range(5)]
+
+        results = list(pipeline._enrich_with_ai(items))
+        assert len(results) == 5
+
+    def test_un_poco_de_exito_no_aborta(self):
+        """Con 1 éxito de 6 ya no es un fallo total: el resto cae al fallback."""
+        pipeline = self._pipeline(
+            [AIError("x"), make_ai_summary("ok", 3, Category.UPDATE), AIError("x"),
+             AIError("x"), AIError("x"), AIError("x")]
+        )
+        items = [make_item(f"n{i}", url_suffix=f"n{i}") for i in range(6)]
+
+        results = list(pipeline._enrich_with_ai(items))
+        assert any(r.summary == "ok" for r in results)
+        assert sum(1 for r in results if r.summary is None) == 5
+
+    def test_igual_de_exitos_que_fallos_no_aborta(self):
+        """La regresión: successes == failures NO es un fallo total."""
+        pipeline = self._pipeline(
+            [make_ai_summary("a", 3, Category.UPDATE), AIError("x"),
+             make_ai_summary("b", 3, Category.UPDATE), AIError("x")]
+        )
+        items = [make_item(f"n{i}", url_suffix=f"n{i}") for i in range(4)]
+
+        results = list(pipeline._enrich_with_ai(items))
+        assert [r.summary for r in results] == ["a", None, "b", None]
 
 
 def test_groq_infra_critico_aborta_con_parcial(monkeypatch):
@@ -1126,11 +1198,64 @@ class TestGameMatchLogging:
         with caplog.at_level(logging.INFO):
             pipeline.run(now=NOW)
 
-        # Verifica líneas GAME MATCH por ítem
+        # Verifica líneas GAME MATCH por ítem. Vienen a DEBUG: a INFO, con ~50
+        # noticias y 3 líneas por noticia, el detalle enterraba los tres
+        # agregados DIAGNÓSTICO que sí son accionables.
+        with caplog.at_level(logging.DEBUG):
+            caplog.clear()
+            pipeline.run(now=NOW)
         game_match_lines = [r.message for r in caplog.records if r.message.startswith("GAME MATCH:")]
         assert len(game_match_lines) == 3
         any_none = any("-> None [no_confident_match]" in line for line in game_match_lines)
         assert any_none, "Debería haber al menos un '-> None [no_confident_match]'"
+
+    def test_el_detalle_por_item_no_satura_info(self, monkeypatch, caplog):
+        """A nivel INFO solo deben verse los agregados."""
+        import logging
+        import re
+
+        import gaming_news_digest.pipeline as pipe
+        from gaming_news_digest.config import (
+            GamesConfig,
+            Limits,
+            QualityConfig,
+            SourcesConfig,
+        )
+        from gaming_news_digest.filtering.matcher import create_matcher
+
+        pipeline = Pipeline.__new__(Pipeline)
+        pipeline._ai_cache = {}
+        pipeline.limits = Limits(max_items_per_source=20, max_stories_per_game=8)
+        pipeline.sources = SourcesConfig()
+        pipeline._games = GamesConfig(include=())
+        pipeline._save_games_config = Mock()
+        pipeline.quality = QualityConfig()
+        pipeline.matcher = create_matcher((), ())
+        pipeline._title_re = [re.compile(p, re.IGNORECASE) for p in pipeline.quality.exclude_title_patterns]
+        pipeline._url_re = [re.compile(p, re.IGNORECASE) for p in pipeline.quality.exclude_url_patterns]
+
+        fetched = [make_item(f"Noticia {i}", game="Videojuegos") for i in range(6)]
+        monkeypatch.setattr(pipeline, "_fetch_all", lambda: fetched)
+        monkeypatch.setattr(pipeline, "_filter", pipeline._filter)
+        monkeypatch.setattr(pipe, "cluster_and_select_representatives", lambda items: items)
+        monkeypatch.setattr(
+            pipeline, "_enrich_with_ai",
+            lambda items: iter([make_news_item(i.title, i.game) for i in items]),
+        )
+        monkeypatch.setattr(pipe, "save_digest", lambda items, **kw: None)
+        monkeypatch.setattr(pipe, "apply_retention", lambda items, **kw: items)
+
+        with caplog.at_level(logging.INFO):
+            caplog.clear()
+            pipeline.run(now=NOW)
+
+        mensajes = [r.message for r in caplog.records]
+        assert not any(m.startswith("GAME MATCH:") for m in mensajes)
+        assert not any(m.startswith("TEMÁTICA: ") for m in mensajes)
+        assert not any(m.startswith("FECHA: ") for m in mensajes)
+        # El agregado sí debe seguir visibles: es lo accionable.
+        assert any(m.startswith("GAME MATCH (resumen):") for m in mensajes)
+        assert any(m.startswith("DIAGNÓSTICO FILTRO:") for m in mensajes)
 
     def test_diagnostico_juegos_counter_line(self, monkeypatch, caplog):
         import logging

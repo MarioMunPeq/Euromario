@@ -2,7 +2,7 @@
 
 on:
   schedule:
-    # 4 ejecuciones al día a las 07:23 / 13:23 / 19:23 / 01:23 hora de Madrid.
+    # 2 ejecuciones al día a las 07:23 y 19:23 hora de Madrid.
     #
     # El minuto 23 NO es arbitrario: GitHub documenta que los workflows
     # programados se retrasan con cargas altas y que "high load times include
@@ -10,13 +10,15 @@ on:
     # 5 h 52 m. Mover el disparo fuera de la cúspide es la única palanca que la
     # propia documentación reconoce.
     #
-    # Y 4 veces al día, no 1: aunque el retraso baje, sigue siendo Variable.
-    # Publicar más a menudo acota el caso peor (de ~6 h a ~1,5 h de desfase)
-    # sin ninguna infraestructura externa. Son ~28 min de runner al día.
+    # Bajamos de 4 a 2 ejecuciones: cada una hace ~22 llamadas a Groq, y con
+    # 4 el free tier empezaba a devolver 429 (14 esperas de 5-20 s en un solo
+    # run). A 2 ejecuciones quedan muy por debajo del límite. El trade-off es
+    # que el desfase máximo de la web pasa de ~1,5 h a ~3 h; con el retraso de
+    # fondo que ya tienen, la diferencia es marginal.
     #
     # `timezone` está soportado (IANA, con DST), así que 07:23 es 07:23 en
     # Madrid todo el año: en verano CEST y en invierno CET.
-    - cron: "23 1,7,13,19 * * *"
+    - cron: "23 7,19 * * *"
       timezone: "Europe/Madrid"
 
   # Regenerar el digest al tocar config o código del pipeline, sin esperar al cron.
@@ -49,6 +51,11 @@ env:
   # A nivel de JOB (no de paso) para que los `if:` de los pasos puedan leerlo:
   # los secretos no son accesibles directamente en condiciones, sí vía `env`.
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  # `openai/gpt-oss-20b` es un modelo de razonamiento: emitía su análisis en un
+  # canal aparte que el parser no entendía y NINGUNA llamada devolvió JSON
+  # válido (0 de 22 en el run del 2026-10-14, con 22 de 66 tarjetas publicadas
+  # sin resumen). Para cambiar de modelo basta con editar esta variable.
+  GROQ_MODEL: llama-3.3-70b-versatile
 
 jobs:
   actualizar-digest:

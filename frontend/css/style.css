@@ -8,10 +8,10 @@
 
 :root {
   /* Surfaces — neutral charcoal, no blue cast */
-  --bg:            #08080A;
-  --surface-1:     #0E0E11;
-  --surface-2:     #15151A;
-  --surface-3:     #1D1D23;
+  --bg:            #0C0C0F;
+  --surface-1:     #141418;
+  --surface-2:     #1C1C22;
+  --surface-3:     #26262E;
 
   /* Hairlines */
   --line:          rgb(255 255 255 / 0.08);
@@ -20,7 +20,7 @@
   /* Ink */
   --ink:           #F4F4F6;
   --ink-muted:     #9C9EA8;
-  --ink-subtle:    #62646E;
+  --ink-subtle:    #7C7F8A;
 
   /* Accent — EuroMario blue. The only brand colour. */
   --accent:        #35B8FF;
@@ -69,6 +69,8 @@
   --t-fast:    120ms var(--ease);
   --t-base:    220ms var(--ease);
   --t-slow:    420ms var(--ease);
+  /* El deslizador de los selectores. Suave y con un ligero rebote al final. */
+  --t-thumb:   420ms cubic-bezier(0.34, 1.4, 0.5, 1);
 }
 
 /* ── Reset ──────────────────────────────────────────────────── */
@@ -155,7 +157,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   grid-template-areas: "brand games segments";
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: var(--s2);
+  gap: var(--s4);
   width: 100%;
   min-height: var(--topbar-h);
   margin-inline: auto;
@@ -173,8 +175,8 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 .brand:hover { opacity: 0.75; }
 
 .brand__mark {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   flex: none;
 }
 
@@ -190,32 +192,61 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 /* Icon-only: the logos are the label. Accessible name via aria-label. */
 .gamefilters {
   grid-area: games;
+  position: relative;
+  justify-self: center;
   display: flex;
   justify-content: center;
-  gap: var(--s2);
+  gap: var(--s1);
   min-width: 0;
-  overflow: hidden;
+  padding: 4px;
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: 999px;
 }
 .gamefilters[hidden] { display: none; }
 
+/* El "thumb" es la única capa que se mueve. Mismo modelo que .segments:
+   JS mide el botón activo y escribe --thumb-x / --thumb-w. */
+.gamefilters__thumb,
+.segments__thumb {
+  position: absolute;
+  top: 4px;
+  /* left:0 a propósito. offsetLeft ya viene medido desde el borde de
+     padding del contenedor, así que un left:4px lo desplazaba 4px de más
+     y el círculo quedaba descentrado respecto al logo. El `top` sí es 4px
+     porque la altura se compensa con calc(100% - 8px). */
+  left: 0;
+  height: calc(100% - 8px);
+  width: var(--thumb-w, 0px);
+  transform: translateX(var(--thumb-x, 0px));
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 0;
+  transition:
+    transform var(--t-thumb),
+    width var(--t-thumb),
+    background var(--t-base),
+    border-color var(--t-base);
+}
+
+.gamefilters__thumb {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+}
+
 /* Icon-only. The accessible name comes from aria-label on the button. */
 .gamefilter {
+  position: relative;
+  z-index: 1;
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: var(--s2);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  color: var(--ink-muted);
-  transition:
-    background var(--t-fast),
-    border-color var(--t-fast);
+  border-radius: 999px;
+  transition: color var(--t-base);
 }
-.gamefilter:hover {
-  background: var(--surface-2);
-  color: var(--ink);
-}
+.gamefilter:hover { color: var(--ink); }
 
 /* Logos: siempre en blanco puro. El estado activo lo marca el fondo y el
    borde del botón, nunca la opacidad del icono (esa era la causa del gris). */
@@ -228,12 +259,11 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 }
 /* Only for logos that are solid black glyphs — see CONFIG.darkLogos. */
 .gamefilter__mark--invert { filter: brightness(0) invert(1); }
-.gamefilter:hover .gamefilter__mark { transform: scale(1.08); }
+.gamefilter:hover .gamefilter__mark { transform: scale(1.06); }
 
-.gamefilter[aria-pressed='true'] {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-}
+/* El activo ya no pinta fondo: lo hace el thumb que se desliza hasta aquí. */
+.gamefilter[aria-pressed='true'] { color: var(--accent); }
+.gamefilter[aria-pressed='true'] .gamefilter__mark--invert { filter: brightness(0) invert(1); }
 
 /* ── Section segmented control ──────────────────────────────── */
 
@@ -243,10 +273,26 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   justify-self: end;
   display: inline-flex;
   gap: 2px;
-  padding: 3px;
+  padding: 4px;
   background: var(--surface-1);
   border: 1px solid var(--line);
   border-radius: 999px;
+}
+
+.segments__thumb {
+  top: 4px;
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+}
+
+/* Cada sección tiene su tono: News azul, Rumors ámbar, All neutro. */
+.segments[data-section='news'] .segments__thumb {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.segments[data-section='rumors'] .segments__thumb {
+  background: var(--rumor-soft);
+  border-color: rgb(240 166 60 / 0.4);
 }
 
 .segments__btn {
@@ -255,46 +301,42 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   display: inline-flex;
   align-items: center;
   gap: var(--s2);
-  padding: var(--s1) var(--s3);
+  padding: var(--s2) var(--s3);
   border-radius: 999px;
-  font-size: var(--step--1);
+  font-size: var(--step-0);
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--ink-subtle);
+  color: var(--ink-muted);
+  /* Nada de transicionar transform: el thumb es quien se mueve. */
   transition: color var(--t-base);
 }
-.segments__btn:hover { color: var(--ink-muted); }
+.segments__btn:hover { color: var(--ink); }
 
-/* Activo = píldora de fondo, no icono más brillante: los iconos van siempre
-   en blanco y quien marca la selección es el contenedor. */
-.segments__btn[aria-checked='true'] {
-  color: var(--ink);
-  background: var(--surface-3);
-}
-.segments__btn[data-section='rumors'][aria-checked='true'] {
-  color: var(--rumor);
-  background: var(--rumor-soft);
-}
+/* Activo = solo el color del texto. El fondo lo lleva el thumb. */
+.segments__btn[aria-checked='true'] { color: var(--ink); }
+.segments__btn[data-section='news'][aria-checked='true'] { color: var(--accent); }
+.segments__btn[data-section='rumors'][aria-checked='true'] { color: var(--rumor); }
 
 .segments__icon {
-  width: 17px;
-  height: 17px;
+  width: 21px;
+  height: 21px;
   flex: none;
   filter: brightness(0) invert(1);
+  transition: opacity var(--t-base);
 }
+.segments__btn[aria-checked='true'] .segments__icon { opacity: 1; }
 
 /* Pantallas estrechas: el nombre se va y solo queda el isotipo. Con el texto
    completo, marca (114) + 2 logos (104) + segmentado (116) no caben en 320 px
    y los logos se recortaban a la mitad. */
+@media (max-width: 560px) {
+  .segments__text { display: none; }
+  .segments__btn { padding: var(--s2); }
+}
+
 @media (max-width: 420px) {
   .brand__name { display: none; }
   .gamefilter { padding: 6px; }
-}
-
-@media (max-width: 400px) {
-  .segments__text { display: none; }
-  .segments__btn { padding: var(--s2); }
-  .segments__icon { width: 18px; height: 18px; }
 }
 
 /* ── Layout shell ───────────────────────────────────────────── */
@@ -302,7 +344,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 .main {
   flex: 1;
   width: 100%;
-  /* Full-bleed: no max-width, no side gutters above 1024px. */
+  /* Full-bleed: el grid ya aplica su propio margen lateral (--gutter/--edge). */
   padding: var(--s5) 0 var(--s8);
 }
 
@@ -398,7 +440,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
   /* Per-card accent, driven by category. Section is signalled by a faint
      tint of the whole card + a hairline under the image, never a badge. */
   --card-accent: var(--accent);
-  --card-tint: color-mix(in srgb, var(--card-accent) 5%, var(--surface-1));
+  --card-tint: color-mix(in srgb, var(--card-accent) 9%, var(--surface-1));
   background: var(--card-tint);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -415,7 +457,7 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 
 .card:hover {
   border-color: var(--line-strong);
-  background: color-mix(in srgb, var(--card-accent) 8%, var(--surface-2));
+  background: color-mix(in srgb, var(--card-accent) 12%, var(--surface-2));
   transform: translateY(-2px);
 }
 .card:focus-within {
@@ -685,19 +727,19 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 /* ── Desktop top bar ────────────────────────────────────────── */
 
 @media (min-width: 720px) {
-  :root { --topbar-h: 72px; --gutter: 2rem; }
+  :root { --topbar-h: 80px; --gutter: 2rem; }
 
   .topbar__inner {
     gap: var(--s5);
     padding-block: var(--s3);
   }
 
-  .gamefilters { gap: var(--s3); }
+  .gamefilters { gap: var(--s1); }
 
   .gamefilter { padding: var(--s3); }
-  .gamefilter__mark { width: 42px; height: 42px; }
+  .gamefilter__mark { width: 38px; height: 38px; }
 
-  .brand__mark { width: 30px; height: 30px; }
+  .brand__mark { width: 38px; height: 38px; }
   .brand__name { font-size: var(--step-2); }
 }
 
@@ -712,4 +754,8 @@ h1, h2, h3, p { overflow-wrap: break-word; }
     scroll-behavior: auto !important;
   }
   .card:hover { transform: none; }
+  /* El deslizador se teletransporta, pero no desaparece: sin transición
+     el thumb aparecería en un sitio y saltaría al otro. */
+  .gamefilters__thumb,
+  .segments__thumb { transition: background var(--t-base), border-color var(--t-base); }
 }

@@ -1,8 +1,12 @@
 """Cliente para Ollama (modelo local)."""
 
+import logging
+
 import requests
 
 from .base import AIClient, AIError, AISummary
+
+logger = logging.getLogger(__name__)
 
 
 class OllamaClient(AIClient):
@@ -52,10 +56,16 @@ class OllamaClient(AIClient):
             except requests.HTTPError as exc:
                 status = exc.response.status_code if exc.response else "unknown"
                 raise requests.HTTPError(f"Ollama HTTP {status}") from exc
-            except AIError:
+            except AIError as exc:
+                # Motivo y respuesta cruda: sin esto, un fallo de parseo local
+                # es indistinguible de un problema de red en el log del run.
+                logger.warning(
+                    "Ollama %s | respuesta: %s",
+                    exc,
+                    " ".join((exc.raw_response or "(vacia)").split())[:300],
+                )
                 if attempt == self.MAX_RETRIES:
                     raise
-                # siguiente intento con prompt de corrección
                 continue
         raise AIError("Agotados reintentos en Ollama")
 

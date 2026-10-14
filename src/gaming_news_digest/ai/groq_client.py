@@ -3,6 +3,7 @@
 import logging
 import os
 import time
+from datetime import datetime, timezone
 
 import requests
 
@@ -11,16 +12,68 @@ from .base import AIClient, AIError, AISummary
 logger = logging.getLogger(__name__)
 
 
+#: Modelo por defecto. `openai/gpt-oss-20b` es un modelo de RAZONAMIENTO:
+#: emite su análisis en un canal aparte que no encaja con el bloque `<think>`
+#: que se limpia en `base.py`, así que la respuesta llegaba al `json.loads`
+#: con el razonamiento pegado y TODAS las llamadas terminaban en AIError.
+#: Los modelos instruct de Llama respetan `response_format: json_object`.
+DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+
+
+def _excerpt(raw: str | None, limit: int = 300) -> str:
+    """Recorta la respuesta cruda del modelo para poder diagnosticar."""
+    if not raw:
+        return "(vacia)"
+    flat = " ".join(raw.split())
+    return flat if len(flat) <= limit else flat[:limit] + "…"
+
+
+def _retry_after_seconds(response, default: int) -> int:
+    """Segundos a esperar tras un 429, respetando ``Retry-After``.
+
+    Acepta la forma entera (segundos) y la forma HTTP-date de RFC 9110, que
+    antes se ignoraba y hacía que el único reintento cayera de nuevo en 429.
+    """
+    raw = (response.headers.get("Retry-After") or "").strip()
+    if raw.isdigit():
+        return min(int(raw), 60)
+    if raw:
+        try:
+            from email.utils import parsedate_to_datetime
+
+            delta = parsedate_to_datetime(raw) - datetime.now(timezone.utc)
+            return max(1, min(int(delta.total_seconds()), 60))
+        except (TypeError, ValueError):
+            pass
+    return default
+
+
+def _rate_limit_detail(response) -> str:
+    """Qué límite se agotó: peticiones por minuto o tokens por minuto.
+
+    Sin esto el log decía solo "429 rate limited" y no había forma de saber
+    cuál de los dos límites era el culpable.
+    """
+    headers = getattr(response, "headers", {}) or {}
+    limit = headers.get("x-ratelimit-limit-requests") or headers.get("x-ratelimit-limit-tokens")
+    remaining = headers.get("x-ratelimit-remaining-requests")
+    unit = "requests"
+    if not remaining or headers.get("x-ratelimit-remaining-tokens") == "0":
+        unit = "tokens"
+    return f"limite={limit} {unit}, restante={remaining}" if limit else unit
+
+
 class GroqClient(AIClient):
     """Cliente para Groq API (compatible OpenAI chat.completions)."""
 
     def __init__(
         self,
-        model: str = "openai/gpt-oss-20b",
+        model: str | None = None,
         api_key: str | None = None,
         base_url: str = "https://api.groq.com/openai/v1",
     ):
-        self.model = model
+        # Override por entorno: cambiar de modelo sin tocar código ni desplegar.
+        self.model = model or os.getenv("GROQ_MODEL") or DEFAULT_GROQ_MODEL
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:
             raise ValueError("GROQ_API_KEY no configurada")
@@ -56,6 +109,11 @@ class GroqClient(AIClient):
                         ],
                         "temperature": 0.1,
                         "max_tokens": 300,
+                        # Groq lo soporta en los modelos instruct de Llama y
+                        # obliga a que la SALIDA sea JSON válido. Elimina por
+                        # construcción toda la familia de fallos de parseo, en
+                        # lugar de raspar el texto con regex a posteriori.
+                        "response_format": {"type": "json_object"},
                     },
                     timeout=30,
                 )
@@ -70,12 +128,30 @@ class GroqClient(AIClient):
             except requests.HTTPError as exc:
                 status = exc.response.status_code if exc.response is not None else 0
                 if status == 429:
-                    wait = min(2 ** attempt * 5, 30)
-                    logger.warning("Groq 429 rate limited, esperando %ds", wait)
+                    # Solo UN reintento tras 429 y el tiempo que nos digan: el
+                    # backoff a ciegas (2^n) convertía un rate limit en minutos
+                    # de espera acumulada en el runner.
+                    if attempt >= self.MAX_429_RETRIES:
+                        raise AIError(
+                            "Groq 429 persistente: "
+                            f"{_rate_limit_detail(exc.response)}"
+                        ) from exc
+                    wait = _retry_after_seconds(exc.response, default=15)
+                    logger.warning(
+                        "Groq 429 (%s), reintento en %ds [%d/%d]",
+                        _rate_limit_detail(exc.response),
+                        wait,
+                        attempt + 1,
+                        self.MAX_429_RETRIES,
+                    )
                     time.sleep(wait)
                     continue
                 raise requests.HTTPError(f"Groq HTTP {status}") from exc
-            except AIError:
+            except AIError as exc:
+                # Se registra el motivo REAL y la respuesta cruda: sin esto un
+                # fallo de parseo es indistinguible de un problema de red, y
+                # obliga a adivinar el motivo en el siguiente run.
+                logger.warning("Groq %s | respuesta: %s", exc, _excerpt(exc.raw_response))
                 if attempt == self.MAX_RETRIES:
                     raise
                 continue

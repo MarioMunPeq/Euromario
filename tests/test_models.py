@@ -1,5 +1,6 @@
 """Tests de los modelos de dominio (``Source`` y ``NewsItem``)."""
 
+import dataclasses
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -292,6 +293,9 @@ class TestToDict:
             "source_type",
             "game",
             "game_id",
+            # Persiste DE DÓNDE salió el nombre. Sin él, la caché de IA no
+            # puede recuperar el juego que identificó y `ia=0` para siempre.
+            "game_origin",
             "language",
             "published_at",
             "fetched_at",
@@ -371,3 +375,31 @@ class TestFromDict:
         data = src.to_dict()
         restored = Source.from_dict(data)
         assert restored.subreddit == "gamingleaks"
+
+
+class TestGameOrigin:
+    """El origen del nombre de juego tiene que sobrevivir al JSON.
+
+    Sin `game_origin`, al releer el JSON no hay forma de distinguir un nombre
+    puesto por el matcher de uno puesto por la IA. La caché de IA solo
+    reutiliza el resumen, así que el juego que identificó la IA se perdía en
+    cada ejecución y `DIAGNÓSTICO JUEGO FINAL` marcaba `ia=0` para siempre.
+    """
+
+    def test_ida_y_vuelta_por_json(self):
+        item = dataclasses.replace(make_item(summary="S."), game_origin="ai")
+        assert NewsItem.from_dict(item.to_dict()).game_origin == "ai"
+
+    def test_json_antiguo_sin_el_campo_se_presume_matcher(self):
+        data = make_item(summary="S.").to_dict()
+        del data["game_origin"]
+        assert NewsItem.from_dict(data).game_origin == "matcher"
+
+    def test_origen_invalido_se_rechaza(self):
+        with pytest.raises(ModelValidationError):
+            dataclasses.replace(make_item(summary="S."), game_origin="adivino")
+
+    @pytest.mark.parametrize("origin", ["matcher", "ai", "generico"])
+    def test_origenes_validos(self, origin):
+        item = dataclasses.replace(make_item(summary="S."), game_origin=origin)
+        assert item.to_dict()["game_origin"] == origin

@@ -252,19 +252,23 @@ function renderGameFilters(availableGames) {
   const games = CONFIG.featuredGames.filter((g) => availableGames.has(g) || state.logos[g]);
   if (!games.length) return;
 
-  els.gameFilters.innerHTML = games.map((game) => {
-    const logo = state.logos[game];
-    const mark = logo
-      ? `<img class="gamefilter__mark${CONFIG.darkLogos.has(game) ? ' gamefilter__mark--invert' : ''}" src="${escapeHtml(logo)}" alt="" aria-hidden="true" width="34" height="34">`
-      : `<span class="gamefilter__mark" aria-hidden="true"></span>`;
-    return `
+  els.gameFilters.innerHTML =
+    '<span class="gamefilters__thumb" aria-hidden="true" hidden></span>' +
+    games.map((game) => {
+      const logo = state.logos[game];
+      const mark = logo
+        ? `<img class="gamefilter__mark${CONFIG.darkLogos.has(game) ? ' gamefilter__mark--invert' : ''}" src="${escapeHtml(logo)}" alt="" aria-hidden="true" width="34" height="34">`
+        : `<span class="gamefilter__mark" aria-hidden="true"></span>`;
+      return `
       <button type="button" class="gamefilter" data-game="${escapeHtml(game)}"
+              title="${escapeHtml(gameLabel(game))}"
               aria-pressed="false" aria-label="${escapeHtml(gameLabel(game))}">
         ${mark}
       </button>`;
-  }).join('');
+    }).join('');
 
   els.gameFilters.hidden = false;
+  els.gameFiltersThumb = els.gameFilters.querySelector('.gamefilters__thumb');
 }
 
 function syncControls() {
@@ -273,8 +277,16 @@ function syncControls() {
   });
 
   els.sectionButtons.forEach((btn) => {
-    btn.setAttribute('aria-checked', String(btn.dataset.section === state.section));
+    const active = String(btn.dataset.section === state.section);
+    btn.setAttribute('aria-checked', active);
+    btn.tabIndex = active === 'true' ? 0 : -1;
   });
+
+  /* data-section en el contenedor: es lo que pinta el thumb de ámbar
+     cuando el deslizador está en Rumors. */
+  els.segments.dataset.section = state.section;
+
+  syncThumbs();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -341,6 +353,41 @@ function resetFilters() {
 // Events
 // ══════════════════════════════════════════════════════════════
 
+/* Selector deslizante. En vez de animar cada botón, hay un único "thumb"
+   (una píldora vacía) que se traslada hasta el botón activo. Mide el botón
+   con offsetLeft/offsetWidth, que ya resta el padding del contenedor, y
+   escribe las custom properties que el CSS usa para transform/width.
+   Los labels miden distinto ("All" vs "Rumors"), por eso se mide en vez de
+   calcular índices. */
+function placeThumb(container, thumb, target) {
+  if (!container || !thumb) return;
+
+  /* Sin objetivo (p. ej. ningún juego seleccionado) el thumb se oculta.
+     Si solo le pusiéramos width:0 seguiría viándose el borde de 1px como
+     una línea vertical suelta dentro de la píldora. */
+  if (!target) {
+    thumb.hidden = true;
+    return;
+  }
+
+  thumb.hidden = false;
+  thumb.style.setProperty('--thumb-x', `${target.offsetLeft}px`);
+  thumb.style.setProperty('--thumb-w', `${target.offsetWidth}px`);
+}
+
+function syncThumbs() {
+  const activeSection = Array.from(els.sectionButtons).find(
+    (b) => b.getAttribute('aria-checked') === 'true'
+  );
+  placeThumb(els.segments, els.segmentsThumb, activeSection);
+
+  placeThumb(
+    els.gameFilters,
+    els.gameFiltersThumb,
+    els.gameFilters.querySelector('.gamefilter[aria-pressed="true"]')
+  );
+}
+
 function bindEvents() {
   els.gameFilters.addEventListener('click', (e) => {
     const btn = e.target.closest('.gamefilter');
@@ -402,6 +449,9 @@ async function boot() {
 function init() {
   els = {
     gameFilters: document.getElementById('game-filters'),
+    gameFiltersThumb: null,
+    segments: document.getElementById('segments'),
+    segmentsThumb: document.querySelector('.segments__thumb'),
     sectionButtons: document.querySelectorAll('.segments__btn'),
     toolbar: document.getElementById('toolbar'),
     count: document.getElementById('toolbar-count'),
@@ -421,6 +471,16 @@ function init() {
 
   document.title = els.title.textContent;
   bindEvents();
+
+  /* El thumb se posiciona en píxeles medidos, así que hay que re-medirlo
+     cuando cambia el viewport (los labels se ocultan por debajo de 560px
+     y los botones cambian de ancho). */
+  window.addEventListener('resize', syncThumbs);
+  /* Las fuentes web cargan tarde y cambian el ancho de los labels. */
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(syncThumbs).catch(() => {});
+  }
+
   boot();
 }
 

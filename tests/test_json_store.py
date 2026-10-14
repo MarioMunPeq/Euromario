@@ -1,5 +1,6 @@
 """Tests de save_digest: escritura atómica, merge, retención y simulación de crash."""
 
+import dataclasses
 import hashlib
 import json
 import os
@@ -613,3 +614,76 @@ class TestNormalizeUrlQuitaTracking:
         a = NewsItem.from_dict(dict_for(base))
         b = NewsItem.from_dict(dict_for(base + "?utm_source=rss"))
         assert a.id == b.id
+
+
+class TestElFalloDeIaNoBorraLaCache:
+    """Regresión: `summary: null` significa "la IA no lo supo en esta pasada",
+    NO "este artículo no tiene resumen".
+
+    Con "nuevo gana" a secas, un fallo transitorio de la IA pisaba el resumen
+    histórico; al día siguiente la caché ya no lo encontraba (solo cachea los
+    que tienen resumen), se volvía a pedir y el resumen se perdía para
+    siempre. El run del 2026-10-14, con la IA al 0%, dejó 22 de 66 tarjetas
+    publicadas sin resumen y envenenó 39 entradas del histórico.
+    """
+
+    def test_summary_null_hereda_el_historico(self, tmp_path, monkeypatch):
+        from gaming_news_digest.storage import json_store as js
+
+        monkeypatch.setattr(js, "HISTORY_PATH", tmp_path / "history.json")
+        monkeypatch.setattr(js, "DATA_PATH", tmp_path / "news.json")
+
+        buena = make_item("Noticia", 1)
+        js.save_digest([buena])  # primer run: la IA funcionó
+
+        # Segundo run: la IA falla y devuelve summary=None
+        rota = dataclasses.replace(buena, summary=None, summary_is_fallback=True)
+        js.save_digest([rota])
+
+        history = json.loads((tmp_path / "history.json").read_text(encoding="utf-8"))
+        assert history["news"][0]["summary"] == buena.summary
+
+    def test_el_flag_de_fallback_se_limpia_en_memoria(self):
+        """``summary_is_fallback`` no se serializa, pero en memoria un item que
+        hereda un resumen real ya no debe marcarse como fallback."""
+        from gaming_news_digest.storage.json_store import _inherit_summary
+
+        buena = make_item("Noticia", 1)
+        rota = dataclasses.replace(buena, summary=None, summary_is_fallback=True)
+        heredado = _inherit_summary(rota, buena)
+
+        assert heredado.summary == buena.summary
+        assert heredado.summary_is_fallback is False
+
+    def test_el_resto_de_campos_si_se_actualiza(self, tmp_path, monkeypatch):
+        from gaming_news_digest.storage import json_store as js
+
+        monkeypatch.setattr(js, "HISTORY_PATH", tmp_path / "history.json")
+        monkeypatch.setattr(js, "DATA_PATH", tmp_path / "news.json")
+
+        buena = make_item("Noticia", 1)
+        js.save_digest([buena])
+
+        # La IA falla pero el matcher sí detecta otra categoría
+        otro = dataclasses.replace(
+            buena, summary=None, summary_is_fallback=True, category="rumor", relevance=5
+        )
+        js.save_digest([otro])
+
+        guardado = json.loads((tmp_path / "history.json").read_text(encoding="utf-8"))["news"][0]
+        assert guardado["category"] == "rumor"
+        assert guardado["relevance"] == 5
+        assert guardado["summary"] == buena.summary
+
+    def test_sin_resumen_previo_no_inventa_nada(self, tmp_path, monkeypatch):
+        from gaming_news_digest.storage import json_store as js
+
+        monkeypatch.setattr(js, "HISTORY_PATH", tmp_path / "history.json")
+        monkeypatch.setattr(js, "DATA_PATH", tmp_path / "news.json")
+
+        sin_resumen = dataclasses.replace(make_item("Nueva", 1), summary=None,
+                                          summary_is_fallback=True)
+        js.save_digest([sin_resumen])
+
+        guardado = json.loads((tmp_path / "history.json").read_text(encoding="utf-8"))["news"][0]
+        assert guardado["summary"] is None

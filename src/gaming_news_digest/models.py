@@ -14,6 +14,9 @@ from enum import StrEnum
 
 _HTTP_PREFIX = re.compile(r"^https?://", re.IGNORECASE)
 
+#: Orígenes válidos del campo ``game`` (ver ``NewsItem.game_origin``).
+_GAME_ORIGINS = frozenset({"matcher", "ai", "generico"})
+
 #: Nombre genérico para noticias cuyo juego no se pudo identificar. No es un
 #: juego: es un cajón de sastre, así que los topes "por juego" no deben contar
 #: sus noticias como si todas fueran del mismo título.
@@ -240,6 +243,12 @@ class NewsItem:
     is_verified: bool = False
     game_id: str | None = None
     summary_is_fallback: bool = False
+    #: De dónde salió ``game``. Sin persistirlo, al releer el JSON no hay forma
+    #: de saber si el nombre lo puso el matcher determinista o la IA, y la
+    #: caché de IA solo reutiliza el resumen: el nombre recuperado por la IA se
+    #: perdía en cada ejecución y ``DIAGNÓSTICO JUEGO FINAL`` marcaba
+    #: ``ia=0`` para siempre. "ai" | "matcher" | "generico".
+    game_origin: str = "matcher"
     id: str = field(init=False)
 
     def __post_init__(self):
@@ -276,6 +285,11 @@ class NewsItem:
         object.__setattr__(
             self, "game_id", _optional_text(self.game_id, "el game_id")
         )
+        if self.game_origin not in _GAME_ORIGINS:
+            raise ModelValidationError(
+                f"game_origin debe ser uno de {sorted(_GAME_ORIGINS)}, "
+                f"no {self.game_origin!r}"
+            )
         digest = hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()
         object.__setattr__(self, "id", digest[:16])
 
@@ -339,6 +353,7 @@ class NewsItem:
             "source_type": self.source.type.value,
             "game": self.game,
             "game_id": self.game_id,
+            "game_origin": self.game_origin,
             "language": self.language.value,
             "published_at": to_iso_utc(self.published_at),
             "fetched_at": to_iso_utc(self.fetched_at),
@@ -406,6 +421,10 @@ class NewsItem:
             is_verified=data.get("is_verified", False),
             game_id=data.get("game_id"),
             summary_is_fallback=summary is None,
+            # Ausente en todo el JSON publicado antes de este cambio: en ese
+            # caso el nombre vino del matcher (o es el genérico), nunca de la
+            # IA, así que se infiere eso y no se inventa una atribución.
+            game_origin=data.get("game_origin") or "matcher",
         )
         stored_id = data.get("id")
         if stored_id != item.id:

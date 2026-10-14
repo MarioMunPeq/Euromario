@@ -216,32 +216,17 @@ function hydrateImages(scope) {
 function renderGrid(items) {
   els.grid.innerHTML = items.map(renderCard).join('');
   hydrateImages(els.grid);
-  syncToolbar(items.length);
+  syncTopbarCount(items.length);
 }
 
 // ══════════════════════════════════════════════════════════════
-// Rendering — toolbar
+// Rendering — topbar count
 // ══════════════════════════════════════════════════════════════
 
-function activeFilterLabels() {
-  const labels = [];
-  if (state.game) labels.push(gameLabel(state.game));
-  if (state.section !== 'all') labels.push(state.section === 'news' ? 'News' : 'Rumors');
-  return labels;
-}
-
-function syncToolbar(count) {
-  const labels = activeFilterLabels();
+function syncTopbarCount(count) {
   const scope = state.section === 'all' ? '' : ` · ${state.section}`;
-
-  els.count.innerHTML = `<b>${count}</b> ${count === 1 ? 'story' : 'stories'}${scope}`;
-
-  const hasFilters = labels.length > 0;
-  els.toolbar.hidden = false;
-  els.clear.hidden = !hasFilters;
-  els.clearLabel.textContent = hasFilters ? labels.join(' · ') : 'Clear filters';
-  els.emptyReset.hidden = !hasFilters;
-  els.emptyReset.textContent = hasFilters ? `Clear ${labels.join(' · ')}` : 'Clear filters';
+  els.topbarCount.innerHTML = `<b>${count}</b> ${count === 1 ? 'story' : 'stories'}${scope}`;
+  els.topbarCount.hidden = false;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -298,7 +283,6 @@ function showView(view) {
   els.error.hidden = view !== 'error';
   els.empty.hidden = view !== 'empty';
   els.grid.hidden = view !== 'content';
-  els.toolbar.hidden = view === 'loading' || view === 'error';
 }
 
 function showError(message, title) {
@@ -316,7 +300,7 @@ function apply() {
   if (!items.length) {
     els.grid.innerHTML = '';
     hydrateImages(els.grid);
-    syncToolbar(0);
+    syncTopbarCount(0);
     showView('empty');
   } else {
     renderGrid(items);
@@ -406,8 +390,6 @@ function bindEvents() {
   });
 
   els.retry.addEventListener('click', boot);
-  els.clear.addEventListener('click', resetFilters);
-  els.emptyReset.addEventListener('click', resetFilters);
 
   window.addEventListener('popstate', () => {
     readUrl();
@@ -453,16 +435,12 @@ function init() {
     segments: document.getElementById('segments'),
     segmentsThumb: document.querySelector('.segments__thumb'),
     sectionButtons: document.querySelectorAll('.segments__btn'),
-    toolbar: document.getElementById('toolbar'),
-    count: document.getElementById('toolbar-count'),
-    clear: document.getElementById('clear-filters'),
-    clearLabel: document.getElementById('clear-filters-label'),
+    topbarCount: document.getElementById('topbar-count'),
     loading: document.getElementById('state-loading'),
     error: document.getElementById('state-error'),
     errorTitle: document.getElementById('error-title'),
     errorMessage: document.getElementById('error-message'),
     empty: document.getElementById('state-empty'),
-    emptyReset: document.getElementById('empty-reset-btn'),
     grid: document.getElementById('news-grid'),
     retry: document.getElementById('retry-btn'),
     footerUpdated: document.getElementById('footer-updated'),

@@ -32,6 +32,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -39,7 +40,7 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- Top bar: brand / game filters / section switch -->
+  <!-- Top bar: brand / game filters / section switch / count -->
   <header class="topbar">
     <div class="topbar__inner">
 
@@ -52,8 +53,9 @@
       <nav class="gamefilters" id="game-filters" aria-label="Filter by game" hidden></nav>
 
       <!-- Section switch. Single-select: All / News / Rumors. -->
-      <div class="segments" id="segments" role="radiogroup" aria-label="Filter by section">
-        <span class="segments__thumb" aria-hidden="true" hidden></span>
+      <div class="segments" id="segments" role="radiogroup" aria-label="Filter by section"
+     style="--thumb-x: 4px; --thumb-w: 73px;">
+        <span class="segments__thumb" aria-hidden="true"></span>
         <button type="button" class="segments__btn" data-section="all" role="radio" aria-checked="true">
           <img class="segments__icon" src="assets/icons/all.svg" alt="" aria-hidden="true" width="17" height="17">
           <span class="segments__text">All</span>
@@ -68,24 +70,14 @@
         </button>
       </div>
 
+      <!-- Result count (replaces the separate toolbar). -->
+      <div class="topbar__count" id="topbar-count" aria-live="polite" hidden></div>
+
     </div>
   </header>
 
   <!-- Main -->
   <main class="main" id="main">
-
-    <!-- Result summary + active filter chip -->
-    <div class="toolbar" id="toolbar" hidden>
-      <p class="toolbar__count" id="toolbar-count"></p>
-      <div class="toolbar__actions">
-        <button type="button" class="chip chip--clear" id="clear-filters" hidden>
-          <span id="clear-filters-label">Clear filters</span>
-          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-    </div>
 
     <!-- Loading -->
     <div class="panel" id="state-loading">

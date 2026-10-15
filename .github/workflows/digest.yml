@@ -51,12 +51,14 @@ env:
   # A nivel de JOB (no de paso) para que los `if:` de los pasos puedan leerlo:
   # los secretos no son accesibles directamente en condiciones, sí vía `env`.
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-  # `openai/gpt-oss-20b` es un modelo de razonamiento: emitía su análisis en un
-  # canal aparte que el parser no entendía y NINGUNA llamada devolvió JSON
-  # válido (0 de 22 en el run del 2026-10-14, con 22 de 66 tarjetas publicadas
-  # sin resumen). Para cambiar de modelo basta con editar esta variable.
-  # llama3-8b-8192: alias estable, siempre disponible en free tier, soporta json_object.
-  GROQ_MODEL: llama-3.1-8b-instant
+  # SIN GROQ_MODEL a proposito: Groq desc commissioned todos los modelos Llama
+  # para el tier gratuito (llama3-8b-8192 el 2025-08-30; llama-3.1-8b-instant y
+  # llama-3.3-70b-versatile el 2026-08-16) y cada retirada era un 404
+  # model_not_found que tumbaba el pipeline. El cliente ahora consulta
+  # GET /openai/v1/models y elige el primero disponible de su lista de
+  # preferencia, asi que no depende de un ID que Groq pueda retirar.
+  # Para fijar uno a mano, descomenta y ajusta (debe existir en tu cuenta):
+  # GROQ_MODEL: openai/gpt-oss-20b
 
 jobs:
   actualizar-digest:

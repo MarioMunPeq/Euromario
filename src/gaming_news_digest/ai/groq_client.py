@@ -1,4 +1,24 @@
-"""Cliente para Groq API (fallback cloud gratuito)."""
+"""Cliente para Groq API (fallback cloud gratuito).
+
+Contexto de por qué este cliente es como es
+-------------------------------------------
+Groq desc commissioned TODOS los modelos Llama para el tier gratuito:
+
+* ``llama3-8b-8192``  -> apagado 2025-08-30 (replacement: llama-3.1-8b-instant)
+* ``llama-3.1-8b-instant`` y ``llama-3.3-70b-versatile`` -> apagados 2026-08-16
+  (replacement oficial: ``openai/gpt-oss-20b`` / ``openai/gpt-oss-120b``)
+
+Los tres dames 404 ``model_not_found`` y tumbaban el pipeline entero. De ahí las
+dos decisiones que hacen que esto no vuelva a romperse:
+
+1. **Descubrimiento del modelo en tiempo de ejecución** contra
+   ``GET /openai/v1/models``. No hay nombres hardcodeados que se queden viejos.
+2. **Structured Outputs en modo estricto** (``response_format`` con
+   ``json_schema`` + ``strict: true``). Groq decodifica de forma restringida, así
+   que la salida es JSON válido POR CONSTRUCCIÓN: se elimina de raíz toda la
+   familia de fallos de parseo, que era el otro modo de fallo histórico del
+   pipeline (0 de 22 llamadas con éxito el 2026-10-14).
+"""
 
 import logging
 import os
@@ -12,14 +32,52 @@ from .base import AIClient, AIError, AISummary
 logger = logging.getLogger(__name__)
 
 
-#: Modelo por defecto. `openai/gpt-oss-20b` es un modelo de RAZONAMIENTO:
-#: emite su análisis en un canal aparte que no encaja con el bloque `<think>`
-#: que se limpia en `base.py`, así que la respuesta llegaba al `json.loads`
-#: con el razonamiento pegado y TODAS las llamadas terminaban en AIError.
-#: Los modelos instruct de Llama respetan `response_format: json_object`.
-# llama3-8b-8192: nombre estable, siempre disponible en free tier, rápido, soporta json_object.
-# Los nombres "3.1-instant" a veces cambian; este es el alias clásico que no falla.
-DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant"
+#: Modelo de referencia. Groq lo designa como reemplazo oficial de
+#: ``llama-3.1-8b-instant``. Es el mas barato ($0.075/$0.30 por millon de
+#: tokens) y el mas rapido (1000 tps) de los que soportan Structured Outputs.
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
+
+#: Orden de preferencia al descubrir modelos. El primero que exista y admita
+#: chat gana. Se recorre en orden porque la calidad baja a medida que avanzamos.
+MODEL_PREFERENCE: tuple[str, ...] = (
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.8-27b",
+)
+
+#: Modelos que aparecen en /models pero NO sirven para resumir: son de voz,
+#: moderación o guardas. Si se agota MODEL_PREFERENCE se elige "cualquier otro
+#: de chat" y hay que filtrar estos.
+NON_CHAT_HINTS: tuple[str, ...] = (
+    "whisper",
+    "tts",
+    "safeguard",
+    "guard",
+    "nemotron",
+    "orpheus",
+    "playai",
+)
+
+#: Esquema de la salida. En modo estricto TODAS las propiedades deben estar en
+#: ``required`` y los objetos deben declarar ``additionalProperties: false``;
+#: si no, Groq responde 400.
+_SUMMARY_SCHEMA: dict = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        # Enum en vez de "integer": el modelo no puede devolver 6 ni un string
+        # tipo "3", que era una fuente de reintentos.
+        "relevance": {"type": "integer", "enum": [1, 2, 3, 4, 5]},
+        "category": {
+            "type": "string",
+            "enum": ["lanzamiento", "actualizacion", "rumor", "analisis"],
+        },
+        "game": {"type": "string"},
+        "language": {"type": "string", "enum": ["en"]},
+    },
+    "required": ["summary", "relevance", "category", "game", "language"],
+    "additionalProperties": False,
+}
 
 
 def _excerpt(raw: str | None, limit: int = 300) -> str:
@@ -28,6 +86,16 @@ def _excerpt(raw: str | None, limit: int = 300) -> str:
         return "(vacia)"
     flat = " ".join(raw.split())
     return flat if len(flat) <= limit else flat[:limit] + "…"
+
+
+def _rate_limit_detail(response) -> str:
+    """Texto de la cabecera de rate limit, para diagnostics."""
+    headers = getattr(response, "headers", None) or {}
+    for key in ("x-ratelimit-remaining-tokens", "retry-after"):
+        value = headers.get(key)
+        if value:
+            return f"{key}={value}"
+    return "sin detalle"
 
 
 def _retry_after_seconds(response, default: int) -> int:
@@ -50,21 +118,6 @@ def _retry_after_seconds(response, default: int) -> int:
     return default
 
 
-def _rate_limit_detail(response) -> str:
-    """Qué límite se agotó: peticiones por minuto o tokens por minuto.
-
-    Sin esto el log decía solo "429 rate limited" y no había forma de saber
-    cuál de los dos límites era el culpable.
-    """
-    headers = getattr(response, "headers", {}) or {}
-    limit = headers.get("x-ratelimit-limit-requests") or headers.get("x-ratelimit-limit-tokens")
-    remaining = headers.get("x-ratelimit-remaining-requests")
-    unit = "requests"
-    if not remaining or headers.get("x-ratelimit-remaining-tokens") == "0":
-        unit = "tokens"
-    return f"limite={limit} {unit}, restante={remaining}" if limit else unit
-
-
 class GroqClient(AIClient):
     """Cliente para Groq API (compatible OpenAI chat.completions)."""
 
@@ -75,13 +128,86 @@ class GroqClient(AIClient):
         base_url: str = "https://api.groq.com/openai/v1",
     ):
         # Override por entorno: cambiar de modelo sin tocar código ni desplegar.
-        self.model = model or os.getenv("GROQ_MODEL") or DEFAULT_GROQ_MODEL
+        self._configured_model = model or os.getenv("GROQ_MODEL") or None
+        self.model = self._configured_model or DEFAULT_GROQ_MODEL
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:
             raise ValueError("GROQ_API_KEY no configurada")
         self.base_url = base_url.rstrip("/")
         self.api_url = f"{self.base_url}/chat/completions"
-        logger.info("GroqClient inicializado con modelo=%s", self.model)
+        self._model_resolved = self._configured_model is not None
+        logger.info(
+            "GroqClient inicializado (modelo configurado=%s)",
+            self._configured_model or "(auto-descubrimiento)",
+        )
+
+    # ── Descubrimiento de modelos ───────────────────────────────────
+
+    def _resolve_model(self) -> str:
+        """Elige un modelo que la cuenta puede usar de verdad.
+
+        Groq retira modelos sin previo aviso y el ID hardcodeado se convierte en
+        un 404 que tumba el pipeline. Preguntando a la API qué modelos tiene
+        la cuenta, el cliente sobrevive a los cambios de catálogo.
+
+        Se cachea el resultado: solo cuesta una llamada por ejecución.
+        """
+        if self._model_resolved:
+            return self.model
+
+        try:
+            response = requests.get(
+                f"{self.base_url}/models",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                timeout=15,
+            )
+            response.raise_for_status()
+            available = {m.get("id") for m in response.json().get("data", [])}
+        except (requests.RequestException, ValueError, KeyError) as exc:
+            # Descubrimiento es una optimización, no un requisito: si falla,
+            # seguimos con el modelo configurado y que el error real de la
+            # llamada de chat sea el que hable.
+            logger.warning(
+                "No se pudo listar modelos de Groq (%s); uso %s por defecto",
+                exc,
+                self.model,
+            )
+            self._model_resolved = True
+            return self.model
+
+        available.discard(None)
+        logger.info("Modelos disponibles en Groq: %s", sorted(available))
+
+        # 1) Primer nombre de la lista de preferencias que exista.
+        for candidate in MODEL_PREFERENCE:
+            if candidate in available:
+                self.model = candidate
+                self._model_resolved = True
+                logger.info("Modelo Groq seleccionado: %s", candidate)
+                return self.model
+
+        # 2) Cualquier otro modelo de chat (catalogo nuevo que no conocemos).
+        chat_models = sorted(
+            m
+            for m in available
+            if m and not any(hint in m.lower() for hint in NON_CHAT_HINTS)
+        )
+        if chat_models:
+            self.model = chat_models[0]
+            logger.warning(
+                "Ningún modelo preferido disponible; uso el primero de chat: %s",
+                self.model,
+            )
+        else:
+            logger.error(
+                "Ningún modelo de chat disponible en Groq. Disponibles: %s",
+                sorted(available),
+            )
+
+        self._model_resolved = True
+        return self.model
+
+    # ── Llamada principal ───────────────────────────────────────────
 
     def summarize(
         self,
@@ -96,17 +222,20 @@ class GroqClient(AIClient):
         if len(body) > max_body:
             body = body[:max_body] + "..."
 
+        model = self._resolve_model()
+
+        # Los modelos de razonamiento (gpt-oss, qwen) rindieron mejor con TODAS
+        # las instrucciones en el mensaje de usuario: es lo que recomienda la
+        # propia guía de prompting de Groq para estos modelos.
+        user_prompt = (
+            self._system_prompt(source_type)
+            + "\n\n"
+            + self._user_prompt(title, body, game, source_language, source_type)
+        )
+
         for attempt in range(self.MAX_RETRIES + 1):
+            payload = self._build_payload(model, user_prompt)
             try:
-                payload = {
-                    "model": self.model,
-                    "messages": [
-                        {"role": "system", "content": self._system_prompt(source_type)},
-                        {"role": "user", "content": self._user_prompt(title, body, game, source_language, source_type)},
-                    ],
-                    "temperature": 0.1,
-                    "max_tokens": 300,
-                }
                 response = requests.post(
                     self.api_url,
                     headers={
@@ -117,18 +246,23 @@ class GroqClient(AIClient):
                     timeout=30,
                 )
                 response.raise_for_status()
-                payload = response.json()
-                raw = payload["choices"][0]["message"]["content"]
-                return self._validate_response(raw, source_type)
+                message = response.json()["choices"][0]["message"]
+                # El razonamiento de gpt-oss viene en message.reasoning, fuera de
+                # `content`. include_reasoning=False lo evita, pero lo leemos
+                # solo como diagnóstico si el parseo falla.
+                raw = message.get("content") or ""
+                try:
+                    return self._validate_response(raw, source_type)
+                except AIError as exc:
+                    if not raw and message.get("reasoning"):
+                        exc.raw_response = message["reasoning"]
+                    raise
             except requests.Timeout as exc:
                 raise TimeoutError("Groq timeout") from exc
             except requests.ConnectionError as exc:
                 raise ConnectionError("Groq no disponible") from exc
             except requests.HTTPError as exc:
                 status = exc.response.status_code if exc.response is not None else 0
-                # Log del cuerpo de la respuesta para diagnosticar 400/404
-                if exc.response is not None:
-                    logger.error("Groq HTTP %s response: %s", status, exc.response.text[:500])
                 if status == 429:
                     # Solo UN reintento tras 429 y el tiempo que nos digan: el
                     # backoff a ciegas (2^n) convertía un rate limit en minutos
@@ -148,6 +282,12 @@ class GroqClient(AIClient):
                     )
                     time.sleep(wait)
                     continue
+                logger.error(
+                    "Groq HTTP %s | modelo=%s | respuesta=%s",
+                    status,
+                    model,
+                    _excerpt(exc.response.text if exc.response is not None else None),
+                )
                 raise requests.HTTPError(f"Groq HTTP {status}") from exc
             except AIError as exc:
                 # Se registra el motivo REAL y la respuesta cruda: sin esto un
@@ -158,6 +298,36 @@ class GroqClient(AIClient):
                     raise
                 continue
         raise AIError("Agotados reintentos en Groq")
+
+    def _build_payload(self, model: str, user_prompt: str) -> dict:
+        """Cuerpo de la petición.
+
+        ``max_completion_tokens`` (y no ``max_tokens``) porque en los modelos de
+        razonamiento los tokens de razonamiento se contabilizan aparte: con
+        ``max_tokens`` el modelo puede gastarlos todos pensando y devolver el
+        contenido vacío.
+        """
+        return {
+            "model": model,
+            "messages": [{"role": "user", "content": user_prompt}],
+            # Rango recomendado por Groq para gpt-oss (0.5-0.7); con 0.1 el
+            # modelo entraba en bucles de repetición.
+            "temperature": 0.6,
+            "max_completion_tokens": 1024,
+            # Structured Outputs estricto: JSON válido garantizado por
+            # decodificación restringida, sin regex ni parseos frágiles.
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "resumen_noticia",
+                    "strict": True,
+                    "schema": _SUMMARY_SCHEMA,
+                },
+            },
+            # No necesitamos el razonamiento: solo el JSON final.
+            "include_reasoning": False,
+            "reasoning_effort": "low",
+        }
 
     def _system_prompt(self, source_type: str) -> str:
         if source_type == "reddit":
@@ -184,8 +354,8 @@ class GroqClient(AIClient):
         )
         return (
             "You are a video game news editor. Summarize the news in 1-2 short lines, "
-            "ALWAYS WRITTEN IN ENGLISH. The summary must be in English regardless of the "
-            "article's original language. "
+            "ALWAYS WRITTEN IN ENGLISH. The summary must be in English regardless of "
+            "the article's original language. "
             "Add value beyond the title: include ONE concrete, checkable detail found in "
             "the article body (a number, a date, a price, a version, a platform, a name, "
             "or a direct quote) that is NOT already in the title. Never merely rephrase "
